@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fusion Blotter design canvas</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600;700&display=swap">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#06090F;color:#E4ECF7;font-family:'IBM Plex Sans',ui-sans-serif,system-ui,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
+header{padding:34px 32px 26px;border-bottom:1px solid #1E2A3D;background:#080B14}
+h1{margin:0;font-size:26px;font-weight:700;letter-spacing:.01em}
+.lede{margin:10px 0 0;max-width:940px;font-size:14px;line-height:1.6;color:#8FA3BF}
+.meta{margin:16px 0 0;font-size:12.5px;color:#61748F;font-family:'IBM Plex Mono',ui-monospace,Consolas,monospace}
+.row{padding:30px 32px;border-bottom:1px solid #131C29}
+.note{max-width:940px;margin-bottom:18px}
+.note-lead{margin:0 0 7px;font-size:15px;font-weight:600;color:#E4ECF7}
+.note-body{margin:0 0 5px;font-size:13.5px;line-height:1.6;color:#8FA3BF}
+.strip{display:flex;gap:26px;overflow-x:auto;padding-bottom:14px;align-items:flex-start}
+figure{margin:0;flex:none}
+figcaption{margin-bottom:9px;font-size:12px;font-weight:600;letter-spacing:.04em;color:#9DB0CA}
+.dim{color:#4E607A;font-weight:400;font-family:'IBM Plex Mono',ui-monospace,Consolas,monospace}
+iframe{border:1px solid #1E2A3D;border-radius:10px;background:#080B14;display:block}
+footer{padding:26px 32px 44px;font-size:12.5px;color:#4E607A;line-height:1.7}
+a{color:#22D3EE}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Fusion Blotter &middot; design canvas</h1>
+  <p class="lede">Three visual directions for the trade blotter, drawn to the same information architecture so they can be compared rather than admired. Each row reads left to right: the desktop single-page application, the same screen with New trade open and an optimistic pending row already in the grid, then the two phone pages. The final row is shared by all three: design tokens, and the anticipation and loading specification.</p>
+  <p class="meta">Brand chrome is cyan/teal. Emerald and rose are reserved for P&amp;L semantics, so a gain never reads as a button. Scroll each row sideways. Every board is also a standalone page under <code>fusion_blotter/</code>.</p>
+</header>
+
+  <section class="row">
+    <div class="note">
+      <p class="note-lead">A · DEEP TERMINAL — near-black navy, hairline rules, mono numerics, electric cyan.</p>
+      <p class="note-body">For: eight hours of unbroken screen time. Highest row density here, lowest glare, numbers read fastest.</p>
+      <p class="note-body">Trade-off: the least distinctive of the three at first glance. It looks like a tool, not a demo.</p>
+    </div>
+    <div class="strip">
+      <figure style="width:1440px">
+        <figcaption>A · Deep Terminal — desktop SPA <span class="dim">1440&times;1024</span></figcaption>
+        <iframe src="fusion_blotter/Main.html" width="1440" height="1024" loading="lazy" title="A · Deep Terminal — desktop SPA"></iframe>
+      </figure>
+      <figure style="width:1440px">
+        <figcaption>A · New trade + optimistic row <span class="dim">1440&times;1024</span></figcaption>
+        <iframe src="fusion_blotter/DeepTerminalOverlay.html" width="1440" height="1024" loading="lazy" title="A · New trade + optimistic row"></iframe>
+      </figure>
+      <figure style="width:390px">
+        <figcaption>A · Mobile blotter <span class="dim">390&times;844</span></figcaption>
+        <iframe src="fusion_blotter/DeepTerminalMobileList.html" width="390" height="844" loading="lazy" title="A · Mobile blotter"></iframe>
+      </figure>
+      <figure style="width:390px">
+        <figcaption>A · Mobile trade detail <span class="dim">390&times;844</span></figcaption>
+        <iframe src="fusion_blotter/DeepTerminalMobileDetail.html" width="390" height="844" loading="lazy" title="A · Mobile trade detail"></iframe>
+      </figure>
+    </div>
+  </section>
+
+  <section class="row">
+    <div class="note">
+      <p class="note-lead">B · GLASS HUD — frosted panels on a deep blue-green field, luminous edges, cyan-to-teal gradients, left icon rail, docked flow strip.</p>
+      <p class="note-body">For: the reviewer's first ten seconds. Strongest sense of live data, most memorable.</p>
+      <p class="note-body">Trade-off: blur and glow cost GPU on a 1,000-row virtualised grid, and glass reduces contrast headroom — it needs discipline to stay AA.</p>
+    </div>
+    <div class="strip">
+      <figure style="width:1440px">
+        <figcaption>B · Glass HUD — desktop SPA <span class="dim">1440&times;1024</span></figcaption>
+        <iframe src="fusion_blotter/GlassHudDesktop.html" width="1440" height="1024" loading="lazy" title="B · Glass HUD — desktop SPA"></iframe>
+      </figure>
+      <figure style="width:1440px">
+        <figcaption>B · New trade + optimistic row <span class="dim">1440&times;1024</span></figcaption>
+        <iframe src="fusion_blotter/GlassHudOverlay.html" width="1440" height="1024" loading="lazy" title="B · New trade + optimistic row"></iframe>
+      </figure>
+      <figure style="width:390px">
+        <figcaption>B · Mobile blotter <span class="dim">390&times;844</span></figcaption>
+        <iframe src="fusion_blotter/GlassHudMobileList.html" width="390" height="844" loading="lazy" title="B · Mobile blotter"></iframe>
+      </figure>
+      <figure style="width:390px">
+        <figcaption>B · Mobile trade detail <span class="dim">390&times;844</span></figcaption>
+        <iframe src="fusion_blotter/GlassHudMobileDetail.html" width="390" height="844" loading="lazy" title="B · Mobile trade detail"></iframe>
+      </figure>
+    </div>
+  </section>
+
+  <section class="row">
+    <div class="note">
+      <p class="note-lead">C · INSTITUTIONAL LIGHT — white and cool grey, deep blue structure, cyan as the interactive accent, saved-views sidebar.</p>
+      <p class="note-body">For: a bright room, a projector, screenshots in the README. Easiest to justify in a code review.</p>
+      <p class="note-body">Trade-off: the least futuristic. Gains most of its character back in dark mode, which the same tokens invert into.</p>
+    </div>
+    <div class="strip">
+      <figure style="width:1440px">
+        <figcaption>C · Institutional Light — desktop SPA <span class="dim">1440&times;1024</span></figcaption>
+        <iframe src="fusion_blotter/LightDesktop.html" width="1440" height="1024" loading="lazy" title="C · Institutional Light — desktop SPA"></iframe>
+      </figure>
+      <figure style="width:1440px">
+        <figcaption>C · New trade + optimistic row <span class="dim">1440&times;1024</span></figcaption>
+        <iframe src="fusion_blotter/LightOverlay.html" width="1440" height="1024" loading="lazy" title="C · New trade + optimistic row"></iframe>
+      </figure>
+      <figure style="width:390px">
+        <figcaption>C · Mobile blotter <span class="dim">390&times;844</span></figcaption>
+        <iframe src="fusion_blotter/LightMobileList.html" width="390" height="844" loading="lazy" title="C · Mobile blotter"></iframe>
+      </figure>
+      <figure style="width:390px">
+        <figcaption>C · Mobile trade detail <span class="dim">390&times;844</span></figcaption>
+        <iframe src="fusion_blotter/LightMobileDetail.html" width="390" height="844" loading="lazy" title="C · Mobile trade detail"></iframe>
+      </figure>
+    </div>
+  </section>
+
+  <section class="row">
+    <div class="note">
+      <p class="note-lead">SHARED — tokens on the left, anticipation and loading on the right.</p>
+      <p class="note-body">The anticipation board is the one to read closely: skeletons sized to the real grid, the three-frame optimistic lifecycle (sending → confirmed → rejected with retry), staleness, connection lifecycle, error surfaces, reveal order, and a motion table where every entry has a prefers-reduced-motion fallback.</p>
+      <p class="note-body">Colours are shown in Direction A tokens; the behaviour is identical in B and C.</p>
+    </div>
+    <div class="strip">
+      <figure style="width:1440px">
+        <figcaption>Shared · Design tokens &amp; components <span class="dim">1440&times;1024</span></figcaption>
+        <iframe src="fusion_blotter/Tokens.html" width="1440" height="1024" loading="lazy" title="Shared · Design tokens &amp; components"></iframe>
+      </figure>
+      <figure style="width:1440px">
+        <figcaption>Shared · Anticipation &amp; loading spec <span class="dim">1440&times;1900</span></figcaption>
+        <iframe src="fusion_blotter/Anticipation.html" width="1440" height="1900" loading="lazy" title="Shared · Anticipation &amp; loading spec"></iframe>
+      </figure>
+    </div>
+  </section>
+
+<footer>
+  Static export of the working design canvas. Artboards render at their authored size; the rows scroll horizontally rather than scaling, so type and row density read as designed.<br>
+  Source artboards and the canvas manifest were authored as Design Component files; this page is the in-repo copy so the design opens from a clone with no account or network access.
+</footer>
+
+</body>
+</html>
