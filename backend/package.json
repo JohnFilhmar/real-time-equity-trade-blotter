@@ -1,38 +1,48 @@
 {
   "name": "backend",
   "version": "1.0.0",
+  "private": true,
+  "description": "Trade blotter API",
   "main": "dist/index.js",
-  "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+  "type": "module",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22.0.0"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "scripts": {
+    "dev": "npm run build --workspace @blotter/shared && npm run prisma:generate && tsx watch src/index.ts",
+    "build": "npm run prisma:generate && tsc",
+    "start": "prisma migrate deploy && node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy"
+  },
   "dependencies": {
+    "@blotter/shared": "*",
+    "@faker-js/faker": "^9.9.0",
+    "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.0.0",
     "helmet": "^8.3.0",
+    "pg": "^8.16.0",
+    "prisma": "^7.10.0",
     "socket.io": "^4.8.3",
     "zod": "^4.6.1"
   },
   "devDependencies": {
-    "@faker-js/faker": "^9.9.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^22.20.2",
+    "@types/pg": "^8.11.10",
     "@types/supertest": "^7.2.1",
-    "prisma": "^7.10.0",
     "supertest": "^7.2.2",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2",
     "vitest": "^5.0.0"
-  },
-  "type": "module"
+  }
 }
