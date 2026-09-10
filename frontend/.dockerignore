@@ -1,0 +1,15 @@
+node_modules
+.next
+npm-debug.log
+.env
+.env.*
+!.env.example
+tests
+coverage
+docs
+uploads
+dump.rdb
+.git
+.gitignore
+Dockerfile
+.dockerignore
