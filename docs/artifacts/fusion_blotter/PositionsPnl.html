@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Position summary + P&L view</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080B14;color:#E4ECF7;font-family:'IBM Plex Sans',ui-sans-serif,system-ui,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#22D3EE;text-decoration:none} a:hover{color:#67E8F9}
+.mono{font-family:'IBM Plex Mono',ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.app{width:1440px;height:1024px;overflow:hidden;background:#080B14;display:flex;flex-direction:column}
+.tb{height:56px;flex:none;display:flex;align-items:center;gap:18px;padding:0 18px;border-bottom:1px solid #1E2A3D;background:#0B111C}
+.nav{display:flex;align-items:center;gap:4px;margin-left:8px}
+.navitem{height:30px;padding:0 12px;border-radius:6px;display:flex;align-items:center;font-size:12.5px;color:#8FA3BF}
+.navitem-on{background:#152134;color:#67E8F9;font-weight:600;box-shadow:inset 0 -2px 0 #22D3EE}
+.panel{background:#0E1522;border:1px solid #1E2A3D;border-radius:8px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.ph{height:44px;flex:none;display:flex;align-items:center;gap:10px;padding:0 13px;border-bottom:1px solid #1E2A3D}
+.klab{font-size:10.5px;letter-spacing:.09em;color:#61748F;font-weight:600}
+.kval{font-size:24px;font-weight:600;line-height:1}
+.hr,.r{display:grid;grid-template-columns:82px 92px 86px 86px 128px 116px 118px 1fr;align-items:center;padding:0 14px;column-gap:10px}
+.hr{height:34px;flex:none;font-size:10px;letter-spacing:.09em;color:#61748F;font-weight:600;border-bottom:1px solid #1E2A3D;background:#0B111C}
+.r{height:44px;font-size:12.5px;border-bottom:1px solid #131C29;color:#C6D5E8}
+.n{text-align:right}
+.chip{display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:4px;border:1px solid #223046;color:#9DB0CA;font-size:11.5px;background:#101827}
+.chip-on{border-color:#155E75;background:rgba(34,211,238,.10);color:#67E8F9}
+.long{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#34D399}
+.short{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#FB7185}
+.bar{position:relative;height:14px;flex:1}
+.zero{position:absolute;left:50%;top:0;bottom:0;width:1px;background:#243247}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="tb">
+    <div style="display:flex;align-items:center;gap:10px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 13h4.2l2.6-8.4 4.4 16.8 2.6-8.4H22"/></svg>
+      <div style="font-size:13.5px;font-weight:700;letter-spacing:.14em">FUSION BLOTTER</div>
+    </div>
+    <div class="nav">
+      <div class="navitem">Blotter</div>
+      <div class="navitem navitem-on">Positions &amp; P&amp;L</div>
+      <div class="navitem">Audit trail</div>
+    </div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+      <div class="mono" style="font-size:11px;color:#4E607A">marks 1s ago</div>
+      <div style="display:flex;align-items:center;gap:7px;height:26px;padding:0 10px;border-radius:13px;background:rgba(34,211,238,.10);border:1px solid rgba(34,211,238,.32);color:#22D3EE;font-size:11px;font-weight:600;letter-spacing:.06em">
+        <span style="width:6px;height:6px;border-radius:50%;background:#22D3EE"></span>LIVE<span class="mono" style="color:#67E8F9;letter-spacing:0">14ms</span>
+      </div>
+      <div style="width:28px;height:28px;border-radius:50%;background:#12303C;border:1px solid #17586B;color:#67E8F9;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">JS</div>
+    </div>
+  </div>
+
+  <div style="flex:1;display:flex;gap:14px;padding:14px 16px 16px;min-height:0">
+    <div style="flex:1;display:flex;flex-direction:column;gap:12px;min-width:0">
+
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;height:86px;flex:none">
+        <div class="panel" style="padding:11px 13px;justify-content:space-between">
+          <div class="klab">NET EXPOSURE</div>
+          <div style="display:flex;align-items:flex-end;justify-content:space-between">
+            <div class="kval mono" style="color:#34D399">+$3.08M</div>
+            <div style="font-size:11px;color:#61748F">net long</div>
+          </div>
+        </div>
+        <div class="panel" style="padding:11px 13px;justify-content:space-between">
+          <div class="klab">GROSS EXPOSURE</div>
+          <div style="display:flex;align-items:flex-end;justify-content:space-between">
+            <div class="kval mono">$6.38M</div>
+            <div style="font-size:11px;color:#61748F">6 symbols</div>
+          </div>
+        </div>
+        <div class="panel" style="padding:11px 13px;justify-content:space-between">
+          <div class="klab">UNREALISED P&amp;L</div>
+          <div style="display:flex;align-items:flex-end;justify-content:space-between">
+            <div class="kval mono" style="color:#34D399">+$12,049</div>
+            <div style="font-size:11px;color:#61748F">on 6 open</div>
+          </div>
+        </div>
+        <div class="panel" style="padding:11px 13px;justify-content:space-between">
+          <div class="klab">DAY P&amp;L</div>
+          <div style="display:flex;align-items:flex-end;justify-content:space-between">
+            <div class="kval mono" style="color:#34D399">+$412,880</div>
+            <svg width="70" height="28" viewBox="0 0 70 28" fill="none"><path d="M0 23 L9 21 L18 24 L27 15 L36 18 L45 10 L54 13 L62 6 L70 4" stroke="#34D399" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="flex:1">
+        <div class="ph">
+          <div style="font-size:13px;font-weight:600">Net position by symbol</div>
+          <div class="chip chip-on">Desk: LONDON<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+          <div class="chip">Book<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div>
+          <div class="chip">Trader<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:9px">
+            <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#22D3EE"><span style="width:6px;height:6px;border-radius:50%;background:#22D3EE"></span>recalculating on every trade event</div>
+            <div style="display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:5px;border:1px solid #1E2A3D;color:#8FA3BF"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12M8 11l4 4 4-4M4 21h16"/></svg></div>
+          </div>
+        </div>
+
+        <div class="hr">
+          <div>SYMBOL</div><div class="n">NET QTY</div><div class="n">AVG PRICE</div><div class="n">MARK</div><div class="n">NET NOTIONAL</div><div class="n">UNREALISED</div><div class="n">REALISED</div><div>EXPOSURE</div>
+        </div>
+
+        <div style="flex:1;overflow:hidden">
+          <div class="r">
+            <div style="font-weight:600;font-size:13px">NVDA</div>
+            <div class="mono n"><span class="long">+13,050</span></div>
+            <div class="mono n">184.62</div><div class="mono n" style="color:#34D399">185.04</div>
+            <div class="mono n" style="color:#34D399">+2,409,291</div>
+            <div class="mono n" style="color:#34D399">+5,481</div>
+            <div class="mono n" style="color:#34D399">+176,919</div>
+            <div class="bar" style="display:flex;align-items:center"><div class="zero"></div><div style="position:absolute;left:50%;height:12px;width:38%;background:#34D399;opacity:.85;border-radius:0 3px 3px 0"></div></div>
+          </div>
+          <div class="r">
+            <div style="font-weight:600;font-size:13px">VOD.L</div>
+            <div class="mono n"><span class="long">+22,000</span></div>
+            <div class="mono n">70.94</div><div class="mono n" style="color:#34D399">71.18</div>
+            <div class="mono n" style="color:#34D399">+1,560,680</div>
+            <div class="mono n" style="color:#34D399">+5,280</div>
+            <div class="mono n" style="color:#34D399">+208,780</div>
+            <div class="bar"><div class="zero"></div><div style="position:absolute;left:50%;top:1px;height:12px;width:24%;background:#34D399;opacity:.85;border-radius:0 3px 3px 0"></div></div>
+          </div>
+          <div class="r">
+            <div style="font-weight:600;font-size:13px">MSFT</div>
+            <div class="mono n"><span class="long">+1,200</span></div>
+            <div class="mono n">534.22</div><div class="mono n" style="color:#FB7185">533.86</div>
+            <div class="mono n" style="color:#34D399">+641,064</div>
+            <div class="mono n" style="color:#FB7185">-432</div>
+            <div class="mono n" style="color:#34D399">+96,972</div>
+            <div class="bar"><div class="zero"></div><div style="position:absolute;left:50%;top:1px;height:12px;width:10%;background:#34D399;opacity:.85;border-radius:0 3px 3px 0"></div></div>
+          </div>
+          <div class="r">
+            <div style="font-weight:600;font-size:13px">HSBA.L</div>
+            <div class="mono n"><span class="long">+18,500</span></div>
+            <div class="mono n">6.42</div><div class="mono n" style="color:#FB7185">6.39</div>
+            <div class="mono n" style="color:#34D399">+118,770</div>
+            <div class="mono n" style="color:#FB7185">-555</div>
+            <div class="mono n" style="color:#34D399">+13,455</div>
+            <div class="bar"><div class="zero"></div><div style="position:absolute;left:50%;top:1px;height:12px;width:2%;background:#34D399;opacity:.85;border-radius:0 3px 3px 0"></div></div>
+          </div>
+          <div class="r">
+            <div style="font-weight:600;font-size:13px">TSLA</div>
+            <div class="mono n"><span class="short">-1,500</span></div>
+            <div class="mono n">342.10</div><div class="mono n" style="color:#34D399">341.75</div>
+            <div class="mono n" style="color:#FB7185">-513,150</div>
+            <div class="mono n" style="color:#34D399">+525</div>
+            <div class="mono n" style="color:#FB7185">-29,425</div>
+            <div class="bar"><div class="zero"></div><div style="position:absolute;right:50%;top:1px;height:12px;width:8%;background:#FB7185;opacity:.85;border-radius:3px 0 0 3px"></div></div>
+          </div>
+          <div class="r" style="border-bottom:none">
+            <div style="font-weight:600;font-size:13px">AAPL</div>
+            <div class="mono n"><span class="short">-5,000</span></div>
+            <div class="mono n">227.45</div><div class="mono n" style="color:#34D399">227.10</div>
+            <div class="mono n" style="color:#FB7185">-1,137,250</div>
+            <div class="mono n" style="color:#34D399">+1,750</div>
+            <div class="mono n" style="color:#FB7185">-65,870</div>
+            <div class="bar"><div class="zero"></div><div style="position:absolute;right:50%;top:1px;height:12px;width:18%;background:#FB7185;opacity:.85;border-radius:3px 0 0 3px"></div></div>
+          </div>
+        </div>
+
+        <div style="height:44px;flex:none;display:grid;grid-template-columns:82px 92px 86px 86px 128px 116px 118px 1fr;align-items:center;padding:0 14px;column-gap:10px;border-top:1px solid #1E2A3D;background:#0B111C;font-size:12.5px">
+          <div style="font-weight:600;color:#9DB0CA">TOTAL</div>
+          <div></div><div></div><div></div>
+          <div class="mono n" style="color:#34D399;font-weight:600">+3,079,405</div>
+          <div class="mono n" style="color:#34D399;font-weight:600">+12,049</div>
+          <div class="mono n" style="color:#34D399;font-weight:600">+400,831</div>
+          <div style="font-size:11px;color:#61748F">gross $6,380,205</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:344px;flex:none;display:flex;flex-direction:column;gap:12px;min-height:0">
+
+      <div class="panel" style="flex:none">
+        <div class="ph" style="height:40px"><div style="font-size:12.5px;font-weight:600">Cumulative P&amp;L &middot; today</div>
+          <div class="mono" style="margin-left:auto;font-size:12px;color:#34D399">+$412,880</div>
+        </div>
+        <div style="padding:12px 13px 8px;position:relative">
+          <svg width="100%" height="118" viewBox="0 0 316 118" preserveAspectRatio="none">
+            <defs><linearGradient id="pnlArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#34D399" stop-opacity=".34"/><stop offset="100%" stop-color="#34D399" stop-opacity="0"/></linearGradient></defs>
+            <line x1="0" y1="86" x2="316" y2="86" stroke="#1E2A3D" stroke-width="1" stroke-dasharray="3 4"/>
+            <path d="M0 86 L26 80 L52 88 L78 72 L104 78 L130 60 L156 66 L182 48 L208 54 L234 34 L260 40 L286 22 L308 14 L308 104 L0 104 Z" fill="url(#pnlArea)"/>
+            <path d="M0 86 L26 80 L52 88 L78 72 L104 78 L130 60 L156 66 L182 48 L208 54 L234 34 L260 40 L286 22 L308 14" fill="none" stroke="#34D399" stroke-width="1.8" stroke-linejoin="round"/>
+          </svg>
+          <div style="position:absolute;right:12px;top:24px;width:8px;height:8px;border-radius:50%;background:#6EE7B7;box-shadow:0 0 0 4px rgba(52,211,153,.18)"></div>
+          <div class="mono" style="display:flex;justify-content:space-between;font-size:10px;color:#4E607A;padding-top:3px"><span>09:00</span><span>09:20</span><span>09:41</span></div>
+        </div>
+      </div>
+
+      <div class="panel" style="flex:none">
+        <div class="ph" style="height:40px"><div style="font-size:12.5px;font-weight:600">P&amp;L by book</div></div>
+        <div style="padding:12px 13px;display:flex;flex-direction:column;gap:11px">
+          <div>
+            <div style="display:flex;align-items:center;font-size:12px"><span class="mono" style="color:#C6D5E8">EQUITIES_UK</span><span class="mono" style="margin-left:auto;color:#34D399">+226,960</span></div>
+            <div style="height:6px;border-radius:3px;background:#16324A;margin-top:6px"><div style="width:100%;height:6px;border-radius:3px;background:#34D399"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;font-size:12px"><span class="mono" style="color:#C6D5E8">TECH_GROWTH</span><span class="mono" style="margin-left:auto;color:#34D399">+153,500</span></div>
+            <div style="height:6px;border-radius:3px;background:#16324A;margin-top:6px"><div style="width:68%;height:6px;border-radius:3px;background:#34D399"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;font-size:12px"><span class="mono" style="color:#C6D5E8">EQUITIES_US</span><span class="mono" style="margin-left:auto;color:#34D399">+32,420</span></div>
+            <div style="height:6px;border-radius:3px;background:#16324A;margin-top:6px"><div style="width:14%;height:6px;border-radius:3px;background:#34D399"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="flex:1;min-height:0">
+        <div class="ph" style="height:40px"><div style="font-size:12.5px;font-weight:600">How this is calculated</div></div>
+        <div style="padding:13px;font-size:11.5px;color:#8FA3BF;line-height:1.6;display:flex;flex-direction:column;gap:11px">
+          <div>Positions net every <span class="mono" style="color:#C6D5E8">ACTIVE</span> and <span class="mono" style="color:#C6D5E8">AMENDED</span> trade by symbol. Cancelled trades are excluded the moment the status flips, which is why a cancel moves this page as well as the blotter.</div>
+          <div>Realised P&amp;L closes buys against sells at average price. Unrealised marks the open quantity against the last traded price on the tape.</div>
+          <div style="padding:11px;border:1px solid #1B2740;border-radius:7px;background:#0A1120">
+            <div style="font-size:10px;letter-spacing:.08em;color:#61748F;font-weight:600;margin-bottom:6px">RECONCILES WITH</div>
+            <div style="display:flex;align-items:center;font-size:11.5px"><span>Blotter net position KPI</span><span class="mono" style="margin-left:auto;color:#34D399">+$3.08M</span></div>
+            <div style="display:flex;align-items:center;font-size:11.5px;margin-top:5px"><span>Blotter P&amp;L strip</span><span class="mono" style="margin-left:auto;color:#34D399">+$412,880</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

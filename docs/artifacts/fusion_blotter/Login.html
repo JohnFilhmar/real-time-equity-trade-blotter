@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Auth · Sign in (desktop)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080B14;color:#E4ECF7;font-family:'IBM Plex Sans',ui-sans-serif,system-ui,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#22D3EE;text-decoration:none} a:hover{color:#67E8F9}
+.mono{font-family:'IBM Plex Mono',ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.app{width:1440px;height:1024px;overflow:hidden;background:#080B14;display:flex}
+.left{width:748px;flex:none;position:relative;border-right:1px solid #1E2A3D;background:
+  radial-gradient(620px 420px at 24% 18%, rgba(34,211,238,.10), transparent 64%),
+  radial-gradient(520px 460px at 82% 88%, rgba(45,212,191,.08), transparent 62%),
+  #090D17;padding:56px;display:flex;flex-direction:column}
+.grid-lines{position:absolute;inset:0;background-image:linear-gradient(rgba(34,211,238,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(34,211,238,.045) 1px,transparent 1px);background-size:52px 52px}
+.right{flex:1;display:flex;align-items:center;justify-content:center;padding:56px}
+.fldlab{font-size:10px;letter-spacing:.09em;color:#61748F;font-weight:600;margin-bottom:7px}
+.inp{height:44px;border:1px solid #223046;border-radius:7px;background:#080D16;display:flex;align-items:center;padding:0 13px;font-size:14px;color:#E4ECF7}
+.inp-focus{border-color:#22D3EE;box-shadow:0 0 0 3px rgba(34,211,238,.15)}
+.btn{height:46px;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:9px;font-size:14px;font-weight:600}
+.tick{display:grid;grid-template-columns:64px 1fr 88px 74px;align-items:center;column-gap:12px;height:34px;border-bottom:1px solid rgba(30,42,61,.7);font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="left">
+    <div class="grid-lines"></div>
+
+    <div style="position:relative;display:flex;align-items:center;gap:11px">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 13h4.2l2.6-8.4 4.4 16.8 2.6-8.4H22"/></svg>
+      <div style="font-size:15px;font-weight:700;letter-spacing:.16em">FUSION BLOTTER</div>
+      <div style="font-size:9.5px;letter-spacing:.1em;color:#0E7490;border:1px solid #14485C;border-radius:3px;padding:2px 6px;font-weight:600">EQ CASH</div>
+    </div>
+
+    <div style="position:relative;margin-top:auto;max-width:560px">
+      <div style="font-size:38px;font-weight:600;line-height:1.16;letter-spacing:-.01em">
+        Every trade on the desk,<br>the moment it happens.
+      </div>
+      <div style="font-size:14.5px;color:#8FA3BF;line-height:1.6;margin-top:18px">
+        One blotter shared by traders and sales. Book, amend and cancel in place, and watch the desk's changes arrive without touching refresh.
+      </div>
+    </div>
+
+    <div style="position:relative;margin-top:34px;border:1px solid #1E2A3D;border-radius:10px;background:rgba(14,21,34,.72);overflow:hidden;max-width:560px">
+      <div style="height:38px;display:flex;align-items:center;gap:9px;padding:0 14px;border-bottom:1px solid #1E2A3D">
+        <span style="width:6px;height:6px;border-radius:50%;background:#22D3EE"></span>
+        <span style="font-size:11px;letter-spacing:.09em;color:#67E8F9;font-weight:600">LIVE TAPE</span>
+        <span class="mono" style="margin-left:auto;font-size:11px;color:#4E607A">1,284 today</span>
+      </div>
+      <div style="padding:0 14px">
+        <div class="tick"><span class="mono" style="font-weight:600">NVDA</span><span class="mono" style="color:#8FA3BF">12,400 @ 184.62</span><span class="mono n" style="text-align:right;color:#34D399">&#9650; BUY</span><span class="mono" style="text-align:right;color:#4E607A">09:41:12</span></div>
+        <div class="tick"><span class="mono" style="font-weight:600">AAPL</span><span class="mono" style="color:#8FA3BF">5,000 @ 227.45</span><span class="mono" style="text-align:right;color:#FB7185">&#9660; SELL</span><span class="mono" style="text-align:right;color:#4E607A">09:40:58</span></div>
+        <div class="tick"><span class="mono" style="font-weight:600">MSFT</span><span class="mono" style="color:#8FA3BF">1,200 @ 534.22</span><span class="mono" style="text-align:right;color:#34D399">&#9650; BUY</span><span class="mono" style="text-align:right;color:#4E607A">09:40:31</span></div>
+        <div class="tick" style="border-bottom:none;opacity:.5"><span class="mono" style="font-weight:600">VOD.L</span><span class="mono" style="color:#8FA3BF">25,000 @ 71.18</span><span class="mono" style="text-align:right;color:#FB7185">&#9660; SELL</span><span class="mono" style="text-align:right;color:#4E607A">09:39:47</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="right">
+    <div style="width:396px">
+      <div style="font-size:25px;font-weight:600">Sign in</div>
+      <div style="font-size:13.5px;color:#8FA3BF;margin-top:8px">Desk credentials. Your trader code stamps every trade you book.</div>
+
+      <div style="margin-top:20px;display:flex;gap:11px;padding:12px 13px;border-radius:8px;border:1px solid rgba(251,191,36,.28);background:rgba(251,191,36,.07)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FBBF24" stroke-width="2" stroke-linecap="round" style="margin-top:1px;flex:none"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5l3 2"/></svg>
+        <div>
+          <div style="font-size:12.5px;color:#FBBF24;font-weight:600">Session expired after 30 minutes idle</div>
+          <div style="font-size:11.5px;color:#8FA3BF;margin-top:3px">Your filters and column layout were kept.</div>
+        </div>
+      </div>
+
+      <div style="margin-top:22px">
+        <div class="fldlab">TRADER CODE</div>
+        <div class="inp inp-focus mono" style="justify-content:space-between">
+          JSMITH
+          <span style="font-size:11px;color:#4E607A;letter-spacing:.06em">LONDON EQ</span>
+        </div>
+      </div>
+
+      <div style="margin-top:16px">
+        <div style="display:flex;align-items:center">
+          <div class="fldlab" style="margin:0">PASSWORD</div>
+          <a href="#" style="margin-left:auto;font-size:11.5px;margin-bottom:7px">Forgot?</a>
+        </div>
+        <div class="inp" style="justify-content:space-between;margin-top:7px">
+          <span class="mono" style="letter-spacing:.22em;color:#9DB0CA">••••••••••••</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#61748F" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.6-6.4 10-6.4S22 12 22 12s-3.6 6.4-10 6.4S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:9px;margin-top:16px">
+        <div style="width:17px;height:17px;border-radius:4px;background:#22D3EE;display:flex;align-items:center;justify-content:center;flex:none">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#04212B" stroke-width="3.4" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <span style="font-size:12.5px;color:#C6D5E8">Keep me signed in on this machine</span>
+      </div>
+
+      <div class="btn" style="background:#22D3EE;color:#04212B;margin-top:20px">
+        Sign in
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px;margin:18px 0">
+        <div style="flex:1;height:1px;background:#1E2A3D"></div>
+        <span style="font-size:11px;letter-spacing:.08em;color:#4E607A">OR</span>
+        <div style="flex:1;height:1px;background:#1E2A3D"></div>
+      </div>
+
+      <div class="btn" style="border:1px solid #223046;color:#C6D5E8">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#67E8F9" stroke-width="2" stroke-linecap="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+        Continue with company SSO
+      </div>
+
+      <div style="margin-top:22px;padding-top:18px;border-top:1px solid #17212F;display:flex;gap:11px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4E607A" stroke-width="1.9" stroke-linecap="round" style="margin-top:1px;flex:none"><path d="M12 3l8 3.2v5.4c0 4.5-3.2 8.3-8 9.4-4.8-1.1-8-4.9-8-9.4V6.2z"/></svg>
+        <div style="font-size:11.5px;color:#61748F;line-height:1.55">
+          Booking rights follow your desk role. Read-only users see the blotter and the audit trail, and the New trade, Amend and Cancel actions are hidden rather than disabled.
+        </div>
+      </div>
+
+      <div class="mono" style="margin-top:16px;font-size:10.5px;color:#3B4A61;display:flex;gap:14px">
+        <span>build 1.4.0</span><span>api eu-west-2</span><span>socket live</span>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
