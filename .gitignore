@@ -144,3 +144,6 @@ vite.config.ts.timestamp-*
 
 # Claude Code session state and feature worktrees
 .claude/
+
+# Prisma generated client
+backend/src/generated/

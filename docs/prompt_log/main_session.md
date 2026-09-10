@@ -68,3 +68,17 @@ Significant prompts only, append-only, newest at the bottom. Rules: `/CLAUDE.md`
 **Outcome:** The plan had no trade model in it at all, so its alignment with the brief was never established. Added a model section that resolves the brief's two internal contradictions, `id` against `tradeId` and `tradeDate` against `tradeTimestamp`, by carrying every field from both statements, and settled field naming, indexes and what makes the seeded data realistic.
 
 **Artifact:** [Blotter Build Plan](../artifacts/blotter_build_plan.html)
+
+---
+
+### 2026-09-10T18:10Z - fix_remaining_scaffold_gaps
+
+**Prompt**
+
+> what are the remaining gaps besides the two that you have given a red banner BREAKS BUILD/RUN and
+> other gaps listed ? if there's nothing else, proceed fixing it and after finishing, merge it to
+> the default branch.
+
+**Outcome:** Found thirteen further gaps beyond the nine already listed, among them a missing root README, a healthcheck that never touched the database, and Prisma 7 requiring a driver adapter, a generator output path and a `prisma.config.ts` that the scaffold had never installed. Closed all twenty-two by restructuring the repository into npm workspaces with a shared zod contract, adding the Postgres schema, hand-authored migration and realistic seed, hardening the API, and rebuilding both Dockerfiles, then verified it by running the stack rather than asserting it.
+
+**Commits:** `12e5a5b`

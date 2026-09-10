@@ -1,9 +1,39 @@
-name: tp-icap-fusion
+name: tp-icap-blotter
 
 services:
+  database:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-blotter}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-blotter}
+      POSTGRES_DB: ${POSTGRES_DB:-blotter}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - database_data:/var/lib/postgresql/data
+    networks:
+      - blotter
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${POSTGRES_USER:-blotter} -d ${POSTGRES_DB:-blotter}
+      interval: 10s
+      timeout: 5s
+      start_period: 20s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+
   backend:
     build:
-      context: ./backend
+      context: .
+      dockerfile: backend/Dockerfile
       target: prod
     image: tp-icap/backend:local
     pull_policy: build
@@ -14,19 +44,26 @@ services:
     environment:
       NODE_ENV: production
       PORT: "5000"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-blotter}:${POSTGRES_PASSWORD:-blotter}@database:5432/${POSTGRES_DB:-blotter}?schema=public
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      SEED_ON_STARTUP: "true"
+      SEED_TRADE_COUNT: "500"
     ports:
-      - "5000:5000"
+      - "${BACKEND_PORT:-5000}:5000"
+    depends_on:
+      database:
+        condition: service_healthy
     networks:
-      - fusion
+      - blotter
     healthcheck:
       test:
         - CMD
         - node
         - -e
-        - fetch('http://127.0.0.1:5000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))
+        - fetch('http://127.0.0.1:5000/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))
       interval: 30s
       timeout: 5s
-      start_period: 20s
+      start_period: 40s
       retries: 3
     read_only: true
     tmpfs:
@@ -43,7 +80,8 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: .
+      dockerfile: frontend/Dockerfile
       target: runtime
     image: tp-icap/frontend:local
     pull_policy: build
@@ -56,12 +94,12 @@ services:
       API_URL: http://backend:5000
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5000}
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
       backend:
         condition: service_healthy
     networks:
-      - fusion
+      - blotter
     healthcheck:
       test:
         - CMD
@@ -70,7 +108,7 @@ services:
         - fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))
       interval: 30s
       timeout: 5s
-      start_period: 20s
+      start_period: 30s
       retries: 3
     cap_drop:
       - ALL
@@ -83,5 +121,8 @@ services:
           memory: 512M
 
 networks:
-  fusion:
+  blotter:
     driver: bridge
+
+volumes:
+  database_data:

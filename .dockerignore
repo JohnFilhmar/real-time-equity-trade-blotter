@@ -1,0 +1,23 @@
+**/node_modules
+**/.next
+**/dist
+**/coverage
+**/src/generated
+
+.git
+.gitignore
+.claude
+docs
+take-home-assessment.md
+
+# Never bake environment files into an image. There is deliberately no negation for
+# .env.example: an allowlisted exception here is how a real .env eventually follows it in.
+.env
+.env.*
+**/.env
+**/.env.*
+
+Dockerfile
+**/Dockerfile
+.dockerignore
+**/.dockerignore

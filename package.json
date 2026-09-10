@@ -1,0 +1,25 @@
+{
+  "name": "tp-icap-trade-blotter",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Real-time equity trade blotter",
+  "type": "module",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "workspaces": [
+    "shared",
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @blotter/shared && npm run build --workspace backend && npm run build --workspace frontend",
+    "build:shared": "npm run build --workspace @blotter/shared",
+    "dev:backend": "npm run dev --workspace backend",
+    "dev:frontend": "npm run dev --workspace frontend",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
+  }
+}
