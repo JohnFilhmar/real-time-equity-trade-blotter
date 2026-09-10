@@ -50,3 +50,21 @@ Significant prompts only, append-only, newest at the bottom. Rules: `/CLAUDE.md`
 **Artifact:** [Blotter Build Plan](../artifacts/blotter_build_plan.html)
 
 **Commits:** `f75d559`
+
+---
+
+### 2026-09-10T18:45Z - align_plan_with_trade_model
+
+**Prompt**
+
+> is the blotter build plan properly aligned with the models in the markdown
+> Trade Model
+> At minimum, a trade should contain: interface Trade { id: string; symbol: string; quantity:
+> number; price: number; side: "BUY" | "SELL"; trader: string; tradeDate: string; status: "ACTIVE"
+> | "CANCELLED"; }
+> [... truncated, ~1500 characters omitted: the sample payload and the suggested-fields list,
+> pasted from `take-home-assessment.md`]
+
+**Outcome:** The plan had no trade model in it at all, so its alignment with the brief was never established. Added a model section that resolves the brief's two internal contradictions, `id` against `tradeId` and `tradeDate` against `tradeTimestamp`, by carrying every field from both statements, and settled field naming, indexes and what makes the seeded data realistic.
+
+**Artifact:** [Blotter Build Plan](../artifacts/blotter_build_plan.html)
