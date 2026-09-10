@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>B · Mobile blotter</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#04121A;color:#EAF6F8;font-family:'Space Grotesk',ui-sans-serif,system-ui,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#67E8F9;text-decoration:none} a:hover{color:#A5F3FC}
+.mono{font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.app{width:390px;height:844px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:
+  radial-gradient(420px 320px at 12% 4%, rgba(45,212,191,.20), transparent 62%),
+  radial-gradient(420px 380px at 92% 96%, rgba(34,211,238,.18), transparent 60%),
+  linear-gradient(168deg,#04121A 0%,#061A22 55%,#04141C 100%)}
+.safe{height:44px;flex:none}
+.card{margin:0 14px 11px;border-radius:16px;border:1px solid rgba(103,232,249,.16);background:rgba(255,255,255,.05);backdrop-filter:blur(16px);padding:14px 15px;display:flex;flex-direction:column;gap:9px}
+.sym{font-size:17px;font-weight:600}
+.badge{display:inline-flex;align-items:center;gap:4px;height:21px;padding:0 8px;border-radius:11px;font-size:10.5px;font-weight:700;letter-spacing:.05em}
+.b-buy{color:#6EE7B7;background:rgba(52,211,153,.15);border:1px solid rgba(94,234,212,.34)}
+.b-sell{color:#FDA4AF;background:rgba(251,113,133,.12);border:1px solid rgba(251,113,133,.34)}
+.st{display:inline-flex;align-items:center;height:21px;padding:0 9px;border-radius:11px;font-size:10px;font-weight:600;letter-spacing:.07em}
+.st-a{color:#6EE7B7;background:rgba(52,211,153,.14);border:1px solid rgba(94,234,212,.3)}
+.st-m{color:#FCD34D;background:rgba(251,191,36,.13);border:1px solid rgba(251,191,36,.3)}
+.meta{font-size:11.5px;color:#7FA3AE}
+.chip{display:flex;align-items:center;gap:6px;height:44px;padding:0 13px;border-radius:17px;border:1px solid rgba(103,232,249,.18);color:#9FC4CE;font-size:12.5px;flex:none;background:rgba(255,255,255,.035)}
+.chip-on{border-color:rgba(103,232,249,.5);background:linear-gradient(135deg,rgba(34,211,238,.2),rgba(45,212,191,.08));color:#A5F3FC}
+.tab{display:flex;flex-direction:column;align-items:center;gap:5px;color:#5C8593;font-size:10.5px;font-weight:500}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="safe"></div>
+
+  <div style="height:58px;flex:none;display:flex;align-items:center;gap:10px;padding:0 16px">
+    <div>
+      <div style="font-size:20px;font-weight:700">Blotter</div>
+      <div class="mono" style="font-size:11px;color:#7FA3AE;margin-top:2px">1,284 trades &middot; today</div>
+    </div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+      <div style="display:flex;align-items:center;gap:7px;height:30px;padding:0 12px;border-radius:15px;background:linear-gradient(135deg,rgba(34,211,238,.22),rgba(45,212,191,.08));border:1px solid rgba(103,232,249,.44);box-shadow:0 0 16px rgba(34,211,238,.18)">
+        <span style="width:6px;height:6px;border-radius:50%;background:#67E8F9;box-shadow:0 0 8px #67E8F9"></span>
+        <span style="font-size:10.5px;font-weight:600;letter-spacing:.09em;color:#67E8F9">LIVE</span>
+      </div>
+      <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#9FC4CE">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:52px;flex:none;display:flex;align-items:center;gap:8px;padding:0 14px;overflow:hidden">
+    <div class="chip chip-on">Desk: LONDON<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+    <div class="chip chip-on">Today<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+    <div class="chip">Time<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div>
+    <div class="chip" style="margin-left:auto;width:34px;padding:0;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 5h18M6 12h12M10 19h4"/></svg></div>
+  </div>
+
+  <div style="flex:1;overflow:hidden;position:relative;padding-top:46px">
+    <div style="position:absolute;top:4px;left:0;right:0;display:flex;justify-content:center;z-index:2">
+      <div style="display:flex;align-items:center;gap:8px;height:34px;padding:0 16px;border-radius:17px;background:linear-gradient(135deg,rgba(34,211,238,.28),rgba(45,212,191,.16));border:1px solid rgba(103,232,249,.5);color:#EAFCFF;font-size:12.5px;font-weight:600;backdrop-filter:blur(14px);box-shadow:0 8px 26px rgba(34,211,238,.24)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+        3 new trades
+      </div>
+    </div>
+
+    <div class="card" style="border-color:rgba(103,232,249,.45);background:linear-gradient(135deg,rgba(34,211,238,.16),rgba(255,255,255,.04));box-shadow:0 0 26px rgba(34,211,238,.16)">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="sym">NVDA</span>
+        <span class="badge b-buy"><svg width="8" height="8" viewBox="0 0 12 12" fill="currentColor"><path d="M6 1l5 8H1z"/></svg>BUY</span>
+        <span style="font-size:9px;letter-spacing:.09em;color:#032027;background:linear-gradient(135deg,#22D3EE,#2DD4BF);border-radius:9px;padding:2px 6px;font-weight:700">NEW</span>
+        <span class="mono" style="margin-left:auto;font-size:15px;font-weight:600">$2,289,288</span>
+      </div>
+      <div style="display:flex;align-items:center">
+        <span class="mono" style="font-size:13px;color:#D2E9EE">12,400 @ 184.62</span>
+        <span class="st st-a" style="margin-left:auto">ACTIVE</span>
+      </div>
+      <div style="display:flex;align-items:center">
+        <span class="meta mono">TRD-100061 &middot; JSMITH &middot; TECH_GROWTH</span>
+        <span class="meta mono" style="margin-left:auto">now</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="sym">AAPL</span>
+        <span class="badge b-sell"><svg width="8" height="8" viewBox="0 0 12 12" fill="currentColor"><path d="M6 11L1 3h10z"/></svg>SELL</span>
+        <span class="mono" style="margin-left:auto;font-size:15px;font-weight:600">$1,137,250</span>
+      </div>
+      <div style="display:flex;align-items:center">
+        <span class="mono" style="font-size:13px;color:#D2E9EE">5,000 @ 227.45</span>
+        <span class="st st-m" style="margin-left:auto">AMENDED</span>
+      </div>
+      <div style="display:flex;align-items:center">
+        <span class="meta mono">TRD-100060 &middot; ABROWN &middot; JP Morgan</span>
+        <span class="meta mono" style="margin-left:auto">14s ago</span>
+      </div>
+    </div>
+
+    <div class="card" style="border-color:rgba(251,191,36,.32);background:linear-gradient(135deg,rgba(251,191,36,.10),rgba(255,255,255,.04))">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="sym">MSFT</span>
+        <span class="badge b-buy"><svg width="8" height="8" viewBox="0 0 12 12" fill="currentColor"><path d="M6 1l5 8H1z"/></svg>BUY</span>
+        <span class="mono" style="margin-left:auto;font-size:15px;font-weight:600">$641,064</span>
+      </div>
+      <div style="display:flex;align-items:center">
+        <span class="mono" style="font-size:13px;color:#D2E9EE">1,200 @ <span style="color:#FCD34D">534.22</span></span>
+        <span class="st st-m" style="margin-left:auto">AMENDED</span>
+      </div>
+      <div style="display:flex;align-items:center">
+        <span class="meta mono">TRD-100059 &middot; MJONES &middot; Morgan Stanley</span>
+        <span class="meta mono" style="margin-left:auto">41s ago</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="sym">VOD.L</span>
+        <span class="badge b-sell"><svg width="8" height="8" viewBox="0 0 12 12" fill="currentColor"><path d="M6 11L1 3h10z"/></svg>SELL</span>
+        <span class="mono" style="margin-left:auto;font-size:15px;font-weight:600">$1,779,500</span>
+      </div>
+      <div style="display:flex;align-items:center">
+        <span class="mono" style="font-size:13px;color:#D2E9EE">25,000 @ 71.18</span>
+        <span class="st st-a" style="margin-left:auto">ACTIVE</span>
+      </div>
+      <div style="display:flex;align-items:center">
+        <span class="meta mono">TRD-100058 &middot; RPATEL &middot; Barclays</span>
+        <span class="meta mono" style="margin-left:auto">1m ago</span>
+      </div>
+    </div>
+
+    <div class="card" style="opacity:.5">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="sym" style="text-decoration:line-through;text-decoration-color:#4C7482">TSLA</span>
+        <span class="badge" style="color:#9FC4CE;border:1px solid rgba(103,232,249,.2)">BUY</span>
+        <span class="mono" style="margin-left:auto;font-size:15px;font-weight:600;text-decoration:line-through;text-decoration-color:#4C7482">$273,400</span>
+      </div>
+      <div style="display:flex;align-items:center">
+        <span class="mono" style="font-size:13px;color:#9FC4CE">800 @ 341.75</span>
+        <span class="st" style="margin-left:auto;color:#FDA4AF;background:rgba(251,113,133,.1);border:1px solid rgba(251,113,133,.3)">CANCELLED</span>
+      </div>
+      <div style="display:flex;align-items:center">
+        <span class="meta mono">TRD-100057 &middot; KWONG &middot; Citadel Securities</span>
+        <span class="meta mono" style="margin-left:auto">2m ago</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="position:absolute;right:18px;bottom:104px;width:58px;height:58px;border-radius:29px;background:linear-gradient(135deg,#22D3EE,#2DD4BF);display:flex;align-items:center;justify-content:center;box-shadow:0 12px 30px rgba(34,211,238,.4)">
+    <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="#032027" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  </div>
+
+  <div style="flex:none;height:84px;margin:0 12px 14px;border-radius:22px;border:1px solid rgba(103,232,249,.18);background:rgba(6,22,30,.78);backdrop-filter:blur(20px);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:center;padding-top:6px">
+    <div class="tab" style="color:#A5F3FC">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg>Blotter
+    </div>
+    <div class="tab"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>Positions</div>
+    <div class="tab"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>New</div>
+    <div class="tab"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>Activity</div>
+    <div class="tab"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.6-3.6 4.4-5.4 8-5.4s6.4 1.8 8 5.4"/></svg>Profile</div>
+  </div>
+</div>
+</body>
+</html>

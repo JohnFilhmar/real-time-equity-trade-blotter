@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>C · New trade + optimistic row</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500;600&family=Source+Sans+3:wght@400;500;600;700&display=swap">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#F2F5F9;color:#0F1B2A;font-family:'Source Sans 3',ui-sans-serif,system-ui,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#0E7490;text-decoration:none} a:hover{color:#155E75}
+.mono{font-family:'Source Code Pro',ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.app{width:1440px;height:1024px;overflow:hidden;background:#F2F5F9;position:relative}
+.card{background:#FFFFFF;border:1px solid #DCE4EE;border-radius:10px;box-shadow:0 1px 2px rgba(15,27,42,.04);display:flex;flex-direction:column;overflow:hidden}
+.hr,.r{display:grid;grid-template-columns:96px 62px 52px 76px 78px 98px 70px 1fr 72px 84px;align-items:center;padding:0 14px;column-gap:8px}
+.hr{height:34px;font-size:10px;letter-spacing:.08em;color:#7C8CA1;font-weight:600;border-bottom:1px solid #DCE4EE;background:#F7FAFD}
+.r{height:32px;font-size:12.5px;border-bottom:1px solid #EDF1F6;color:#2B3B4E}
+.n{text-align:right}
+.side{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700}
+.st{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.05em}
+.st-a{color:#047857;background:#E7F6F0;border:1px solid #B9E4D5}
+.st-m{color:#B45309;background:#FDF3E3;border:1px solid #F2DDB5}
+.st-p{color:#0E5A6E;background:#E4F4F8;border:1px solid #A9DDEA}
+.fldlab{font-size:10px;letter-spacing:.07em;color:#7C8CA1;font-weight:600;margin-bottom:5px}
+.inp{height:40px;border:1px solid #DCE4EE;border-radius:7px;background:#FFFFFF;display:flex;align-items:center;padding:0 12px;font-size:13.5px}
+.inp-focus{border-color:#0891B2;box-shadow:0 0 0 3px rgba(8,145,178,.14)}
+.inp-err{border-color:#E11D48;background:#FFF7F9}
+.btn{height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13.5px;font-weight:600}
+.sopt{height:40px;border-radius:7px;border:1px solid #DCE4EE;display:flex;align-items:center;justify-content:center;gap:7px;font-size:13.5px;font-weight:600;color:#7C8CA1;background:#FFFFFF}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div style="position:absolute;inset:0;padding:0">
+    <div style="height:60px;display:flex;align-items:center;gap:12px;padding:0 20px;background:#FFFFFF;border-bottom:1px solid #DCE4EE">
+      <div style="width:28px;height:28px;border-radius:7px;background:#123B63;display:flex;align-items:center;justify-content:center">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h3.6l2.4-7.6 4 15.2 2.4-7.6H21"/></svg>
+      </div>
+      <div style="font-size:15px;font-weight:700;color:#123B63">Fusion Blotter</div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:7px;height:28px;padding:0 11px;border-radius:14px;background:#E4F4F8;border:1px solid #A9DDEA">
+        <span style="width:7px;height:7px;border-radius:50%;background:#0891B2"></span>
+        <span style="font-size:11px;font-weight:700;letter-spacing:.05em;color:#0E5A6E">LIVE</span>
+        <span class="mono" style="font-size:11px;color:#0E7490">14ms</span>
+      </div>
+    </div>
+
+    <div style="padding:14px 16px;display:flex;gap:14px;height:964px">
+      <div style="width:214px;flex:none" class="card"><div style="padding:12px 10px;opacity:.5"><div style="height:8px;width:74px;background:#E1E8F0;border-radius:4px;margin:0 6px 14px"></div><div style="height:34px;background:#E4F4F8;border-radius:7px;margin-bottom:8px"></div><div style="height:34px;background:#F2F5F9;border-radius:7px;margin-bottom:8px"></div><div style="height:34px;background:#F2F5F9;border-radius:7px;margin-bottom:8px"></div><div style="height:34px;background:#F2F5F9;border-radius:7px"></div></div></div>
+
+      <div style="flex:1;display:flex;flex-direction:column;gap:14px;min-width:0">
+        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;height:84px;flex:none">
+          <div class="card" style="padding:11px 13px;justify-content:space-between"><div style="font-size:10.5px;letter-spacing:.08em;color:#7C8CA1;font-weight:600">TRADES TODAY</div><div class="mono" style="font-size:23px;font-weight:600">1,285</div></div>
+          <div class="card" style="padding:11px 13px;justify-content:space-between"><div style="font-size:10.5px;letter-spacing:.08em;color:#7C8CA1;font-weight:600">NOTIONAL TRADED</div><div class="mono" style="font-size:23px;font-weight:600">$1.42<span style="font-size:14px;color:#7C8CA1">bn</span></div></div>
+          <div class="card" style="padding:11px 13px;justify-content:space-between"><div style="font-size:10.5px;letter-spacing:.08em;color:#7C8CA1;font-weight:600">NET POSITION</div><div class="mono" style="font-size:23px;font-weight:600;color:#047857">+$184.6M</div></div>
+          <div class="card" style="padding:11px 13px;justify-content:space-between"><div style="font-size:10.5px;letter-spacing:.08em;color:#7C8CA1;font-weight:600">ACTIVE / CANCELLED</div><div class="mono" style="font-size:23px;font-weight:600">1,248 <span style="color:#C6D0DC">/</span> <span style="color:#4A5D73">37</span></div></div>
+        </div>
+
+        <div class="card" style="flex:1">
+          <div style="height:46px;flex:none;display:flex;align-items:center;gap:11px;padding:0 14px;border-bottom:1px solid #DCE4EE">
+            <div style="font-size:14px;font-weight:600">Trade Blotter</div>
+            <div style="display:flex;align-items:center;gap:6px;height:22px;padding:0 9px;border-radius:11px;background:#E4F4F8;font-size:11px;color:#0E5A6E;font-weight:600"><span style="width:6px;height:6px;border-radius:50%;background:#0891B2"></span>streaming</div>
+            <div class="mono" style="margin-left:auto;font-size:11.5px;color:#6B7A8D">updated 1s ago</div>
+          </div>
+
+          <div class="hr"><div>TRADE ID</div><div>SYMBOL</div><div>SIDE</div><div class="n">QTY</div><div class="n">PRICE</div><div class="n">NOTIONAL</div><div>TRADER</div><div>COUNTERPARTY</div><div>TIME</div><div>STATUS</div></div>
+
+          <div class="r" style="background:#F1FAFC;border-left:3px dashed #0891B2">
+            <div class="mono" style="display:flex;align-items:center;gap:6px;color:#0E5A6E;font-weight:600">TRD-&mdash;&mdash;&mdash;
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0891B2" stroke-width="3" stroke-linecap="round"><path d="M12 3a9 9 0 0 1 9 9"/><circle cx="12" cy="12" r="9" opacity=".25"/></svg>
+            </div>
+            <div style="font-weight:700">NVDA</div>
+            <div class="side" style="color:#047857"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 1l5 8H1z"/></svg>BUY</div>
+            <div class="mono n">12,400</div><div class="mono n">184.62</div><div class="mono n">2,289,288</div>
+            <div class="mono" style="font-size:11.5px">JSMITH</div><div style="font-size:12px;color:#4A5D73">Goldman Sachs</div>
+            <div class="mono" style="font-size:11.5px;color:#6B7A8D">now</div><div><span class="st st-p">SENDING</span></div>
+          </div>
+
+          <div class="r"><div class="mono">TRD-100060</div><div style="font-weight:700">AAPL</div><div class="side" style="color:#BE123C"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 11L1 3h10z"/></svg>SELL</div><div class="mono n">5,000</div><div class="mono n">227.45</div><div class="mono n">1,137,250</div><div class="mono" style="font-size:11.5px">ABROWN</div><div style="font-size:12px;color:#4A5D73">JP Morgan</div><div class="mono" style="font-size:11.5px">09:40:58</div><div><span class="st st-m">AMENDED</span></div></div>
+          <div class="r"><div class="mono">TRD-100059</div><div style="font-weight:700">MSFT</div><div class="side" style="color:#047857"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 1l5 8H1z"/></svg>BUY</div><div class="mono n">1,200</div><div class="mono n">534.22</div><div class="mono n">641,064</div><div class="mono" style="font-size:11.5px">MJONES</div><div style="font-size:12px;color:#4A5D73">Morgan Stanley</div><div class="mono" style="font-size:11.5px">09:40:31</div><div><span class="st st-m">AMENDED</span></div></div>
+          <div class="r"><div class="mono">TRD-100058</div><div style="font-weight:700">VOD.L</div><div class="side" style="color:#BE123C"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 11L1 3h10z"/></svg>SELL</div><div class="mono n">25,000</div><div class="mono n">71.18</div><div class="mono n">1,779,500</div><div class="mono" style="font-size:11.5px">RPATEL</div><div style="font-size:12px;color:#4A5D73">Barclays</div><div class="mono" style="font-size:11.5px">09:39:47</div><div><span class="st st-a">ACTIVE</span></div></div>
+          <div class="r"><div class="mono">TRD-100056</div><div style="font-weight:700">HSBA.L</div><div class="side" style="color:#047857"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 1l5 8H1z"/></svg>BUY</div><div class="mono n">18,500</div><div class="mono n">6.42</div><div class="mono n">118,770</div><div class="mono" style="font-size:11.5px">LDIAZ</div><div style="font-size:12px;color:#4A5D73">UBS</div><div class="mono" style="font-size:11.5px">09:38:15</div><div><span class="st st-a">ACTIVE</span></div></div>
+          <div class="r"><div class="mono">TRD-100055</div><div style="font-weight:700">AAPL</div><div class="side" style="color:#047857"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 1l5 8H1z"/></svg>BUY</div><div class="mono n">3,200</div><div class="mono n">227.10</div><div class="mono n">726,720</div><div class="mono" style="font-size:11.5px">JSMITH</div><div style="font-size:12px;color:#4A5D73">Goldman Sachs</div><div class="mono" style="font-size:11.5px">09:37:44</div><div><span class="st st-a">ACTIVE</span></div></div>
+          <div class="r"><div class="mono">TRD-100054</div><div style="font-weight:700">NVDA</div><div class="side" style="color:#BE123C"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 11L1 3h10z"/></svg>SELL</div><div class="mono n">6,750</div><div class="mono n">183.90</div><div class="mono n">1,241,325</div><div class="mono" style="font-size:11.5px">ABROWN</div><div style="font-size:12px;color:#4A5D73">JP Morgan</div><div class="mono" style="font-size:11.5px">09:36:59</div><div><span class="st st-a">ACTIVE</span></div></div>
+          <div class="r"><div class="mono">TRD-100053</div><div style="font-weight:700">MSFT</div><div class="side" style="color:#BE123C"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 11L1 3h10z"/></svg>SELL</div><div class="mono n">2,400</div><div class="mono n">533.86</div><div class="mono n">1,281,264</div><div class="mono" style="font-size:11.5px">MJONES</div><div style="font-size:12px;color:#4A5D73">Morgan Stanley</div><div class="mono" style="font-size:11.5px">09:36:12</div><div><span class="st st-a">ACTIVE</span></div></div>
+          <div class="r"><div class="mono">TRD-100052</div><div style="font-weight:700">TSLA</div><div class="side" style="color:#BE123C"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 11L1 3h10z"/></svg>SELL</div><div class="mono n">1,500</div><div class="mono n">342.10</div><div class="mono n">513,150</div><div class="mono" style="font-size:11.5px">RPATEL</div><div style="font-size:12px;color:#4A5D73">Barclays</div><div class="mono" style="font-size:11.5px">09:35:38</div><div><span class="st st-a">ACTIVE</span></div></div>
+          <div class="r"><div class="mono">TRD-100051</div><div style="font-weight:700">VOD.L</div><div class="side" style="color:#047857"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 1l5 8H1z"/></svg>BUY</div><div class="mono n">22,000</div><div class="mono n">70.94</div><div class="mono n">1,560,680</div><div class="mono" style="font-size:11.5px">KWONG</div><div style="font-size:12px;color:#4A5D73">UBS</div><div class="mono" style="font-size:11.5px">09:34:51</div><div><span class="st st-a">ACTIVE</span></div></div>
+          <div class="r" style="border-bottom:none"><div class="mono">TRD-100050</div><div style="font-weight:700">AAPL</div><div class="side" style="color:#BE123C"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 11L1 3h10z"/></svg>SELL</div><div class="mono n">9,100</div><div class="mono n">226.88</div><div class="mono n">2,064,608</div><div class="mono" style="font-size:11.5px">LDIAZ</div><div style="font-size:12px;color:#4A5D73">Citadel Securities</div><div class="mono" style="font-size:11.5px">09:34:07</div><div><span class="st st-a">ACTIVE</span></div></div>
+        </div>
+
+        <div style="height:184px;flex:none;display:flex;gap:14px">
+          <div class="card" style="flex:1.6;padding:13px 15px"><div style="font-size:13px;font-weight:600">Notional flow &middot; last 30 min</div></div>
+          <div class="card" style="flex:1;padding:13px 15px"><div style="font-size:13px;font-weight:600">Net position by symbol</div></div>
+        </div>
+      </div>
+
+      <div style="width:330px;flex:none" class="card"><div style="padding:14px;opacity:.5"><div style="height:14px;width:104px;background:#E1E8F0;border-radius:4px;margin-bottom:16px"></div><div style="height:26px;width:82px;background:#E1E8F0;border-radius:4px;margin-bottom:18px"></div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px"><div style="height:30px;background:#F2F5F9;border-radius:5px"></div><div style="height:30px;background:#F2F5F9;border-radius:5px"></div><div style="height:30px;background:#F2F5F9;border-radius:5px"></div><div style="height:30px;background:#F2F5F9;border-radius:5px"></div></div></div></div>
+    </div>
+  </div>
+
+  <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#E1E8F0">
+    <div style="width:36%;height:3px;margin-left:26%;background:linear-gradient(90deg,rgba(8,145,178,0),#0891B2,rgba(8,145,178,0))"></div>
+  </div>
+
+  <div style="position:absolute;inset:0;background:rgba(15,27,42,.34)"></div>
+
+  <!-- CREATE TRADE SLIDE-OVER -->
+  <div style="position:absolute;top:0;right:0;bottom:0;width:472px;background:#FFFFFF;border-left:1px solid #DCE4EE;box-shadow:-24px 0 60px rgba(15,27,42,.16);display:flex;flex-direction:column">
+    <div style="height:64px;flex:none;display:flex;align-items:center;gap:12px;padding:0 22px;border-bottom:1px solid #DCE4EE">
+      <div>
+        <div style="font-size:17px;font-weight:700">New trade</div>
+        <div style="font-size:11.5px;color:#7C8CA1;margin-top:2px">Draft &middot; not yet booked</div>
+      </div>
+      <div style="margin-left:auto;width:32px;height:32px;border-radius:7px;border:1px solid #DCE4EE;display:flex;align-items:center;justify-content:center;color:#7C8CA1">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </div>
+    </div>
+
+    <div style="flex:1;padding:22px;display:flex;flex-direction:column;gap:17px;overflow:hidden">
+      <div>
+        <div class="fldlab">SYMBOL</div>
+        <div class="inp inp-focus" style="justify-content:space-between">
+          <span class="mono" style="font-weight:600">NVDA</span>
+          <span style="font-size:12px;color:#7C8CA1">NVIDIA Corp &middot; XNAS</span>
+        </div>
+        <div style="margin-top:7px;border:1px solid #DCE4EE;border-radius:7px;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#F1FAFC;font-size:12.5px"><span class="mono" style="width:58px;font-weight:600">NVDA</span><span style="color:#4A5D73">NVIDIA Corp</span><span class="mono" style="margin-left:auto;color:#7C8CA1">184.62</span></div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;font-size:12.5px"><span class="mono" style="width:58px;color:#4A5D73">NVDA.L</span><span style="color:#7C8CA1">NVIDIA Corp CDI</span><span class="mono" style="margin-left:auto;color:#6B7A8D">137.90</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="fldlab">SIDE</div>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+          <div class="sopt" style="border-color:#B9E4D5;background:#E7F6F0;color:#047857"><svg width="11" height="11" viewBox="0 0 12 12" fill="currentColor"><path d="M6 1l5 8H1z"/></svg>BUY</div>
+          <div class="sopt"><svg width="11" height="11" viewBox="0 0 12 12" fill="currentColor"><path d="M6 11L1 3h10z"/></svg>SELL</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+        <div>
+          <div class="fldlab">QUANTITY</div>
+          <div class="inp inp-err mono" style="justify-content:space-between">-400
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#E11D48" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#BE123C;margin-top:6px">Quantity must be a positive whole number</div>
+        </div>
+        <div>
+          <div class="fldlab">PRICE</div>
+          <div class="inp mono" style="justify-content:space-between">184.62<span style="font-size:11.5px;color:#6B7A8D">USD</span></div>
+          <div style="font-size:12px;color:#6B7A8D;margin-top:6px">Last 184.62 &middot; mid 184.59</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+        <div><div class="fldlab">BOOK</div><div class="inp" style="justify-content:space-between">TECH_GROWTH<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9DAABB" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div></div>
+        <div><div class="fldlab">COUNTERPARTY</div><div class="inp" style="justify-content:space-between">Goldman Sachs<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9DAABB" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+        <div><div class="fldlab">TRADER</div><div class="inp mono" style="background:#F7FAFD;color:#7C8CA1">JSMITH</div></div>
+        <div><div class="fldlab">TIMESTAMP</div><div class="inp mono" style="background:#F7FAFD;color:#7C8CA1;font-size:12.5px">2026-08-18T09:41:12Z</div></div>
+      </div>
+
+      <div style="margin-top:auto;border:1px solid #DCE4EE;border-radius:9px;background:#F7FAFD;padding:15px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span class="fldlab" style="margin:0">NOTIONAL</span>
+          <span class="mono" style="font-size:19px;font-weight:700">$2,289,288.00</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;font-size:12px;color:#6B7A8D">
+          <span class="mono">12,400 &times; 184.62</span><span>updates as you type</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex:none;padding:16px 22px;border-top:1px solid #DCE4EE;background:#F7FAFD">
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#BE123C;margin-bottom:12px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+        1 field needs attention before this trade can be booked
+      </div>
+      <div style="display:flex;gap:11px">
+        <div class="btn" style="width:112px;border:1px solid #DCE4EE;color:#4A5D73;background:#FFFFFF">Cancel</div>
+        <div class="btn" style="flex:1;background:#0E7490;color:#FFFFFF">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 3a9 9 0 0 1 9 9"/><circle cx="12" cy="12" r="9" opacity=".35"/></svg>
+          Booking trade
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- toasts -->
+  <div style="position:absolute;left:24px;bottom:24px;display:flex;flex-direction:column;gap:11px">
+    <div style="width:340px;border-radius:9px;border:1px solid #DCE4EE;border-left:3px solid #B45309;background:#FFFFFF;padding:13px 14px;display:flex;gap:11px;box-shadow:0 14px 34px rgba(15,27,42,.14)">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B45309" stroke-width="2" stroke-linecap="round" style="margin-top:1px"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3z"/></svg>
+      <div style="flex:1">
+        <div style="font-size:13px"><span class="mono" style="font-weight:600">ABROWN</span> amended <span class="mono">TRD-100059</span></div>
+        <div style="font-size:12px;color:#4A5D73;margin-top:4px">price <span class="mono" style="text-decoration:line-through;color:#6B7A8D">533.86</span> &rarr; <span class="mono" style="color:#047857;font-weight:600">534.22</span></div>
+      </div>
+      <div style="font-size:12px;color:#0E7490;font-weight:700">View</div>
+    </div>
+    <div style="width:340px;border-radius:9px;border:1px solid #DCE4EE;border-left:3px solid #059669;background:#FFFFFF;padding:13px 14px;display:flex;gap:11px;box-shadow:0 14px 34px rgba(15,27,42,.14)">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" style="margin-top:1px"><path d="M20 6L9 17l-5-5"/></svg>
+      <div style="flex:1">
+        <div style="font-size:13px"><span class="mono">TRD-100060</span> booked by <span class="mono" style="font-weight:600">ABROWN</span></div>
+        <div style="font-size:12px;color:#4A5D73;margin-top:4px">AAPL SELL 5,000 @ 227.45 &middot; 14s ago</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

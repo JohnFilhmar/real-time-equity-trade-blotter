@@ -15,6 +15,7 @@ root `CLAUDE.md`.
 | File | Agent | Role |
 |---|---|---|
 | [`main_session.md`](main_session.md) | `main_session` | Primary interactive agent: architecture, decisions, implementation, subagent dispatch |
+| [`design_session.md`](design_session.md) | `design_session` | Background design agent: visual directions, design tokens, interaction and loading specifications |
 
 `template.md` is the entry template, not a log.
 
