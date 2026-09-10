@@ -1,12 +1,14 @@
 # Prompt log
 
-This directory is the **Prompt Log** deliverable named in the take-home brief. It records every
-prompt given to an AI agent during development, alongside a one to three sentence summary of what
-that agent actually did about it.
+The **Prompt Log** deliverable from the take-home brief: the significant prompts given to AI agents
+during development, each with a one to two sentence summary of what came of it.
 
-One file per agent, appended as the work happens. The rule that governs it, including the entry
-format and the escalation rule for prompts too involved to summarise in three sentences, is in the
-repository root `CLAUDE.md`.
+This is a representative sample, not a transcript. Prompts that changed the architecture, produced
+or changed code, settled a trade-off, or corrected the direction of the work are here. Status
+checks and clarifying questions are not.
+
+One file per agent, appended as the work happens. The rule that governs it is in the repository
+root `CLAUDE.md`.
 
 ## Agents
 
@@ -18,14 +20,12 @@ repository root `CLAUDE.md`.
 
 ## Reading it
 
-Entries are chronological, oldest first, timestamped in UTC. Prompts are verbatim, including
-typos, because the brief asks for the prompts that were actually used rather than a tidied version
-of them.
+Entries run oldest first, timestamped in UTC. Prompts are verbatim, including typos, because the
+brief asks for the prompts that were actually used rather than a tidied version of them.
 
-Where a one to three sentence summary could not carry the answer honestly, the entry links an
-artifact under [`../artifacts/`](../artifacts/) built by the agent that answered. Those artifacts
-are committed to this repository so they open from a clone, with no account or network access
-needed.
+Where two sentences could not carry the answer honestly, the entry links an artifact under
+[`../artifacts/`](../artifacts/) built by the agent that answered. Those artifacts are committed
+here, so they open from a clone with no account or network access needed.
 
 The **AI Usage Report**, also required by the brief, is assembled from this log at the end of the
 project and lives at `docs/ai_usage_report.md`.
