@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>B · Glass HUD — desktop SPA</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#04121A;color:#EAF6F8;font-family:'Space Grotesk',ui-sans-serif,system-ui,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#67E8F9;text-decoration:none} a:hover{color:#A5F3FC}
+.mono{font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.app{width:1440px;height:1024px;overflow:hidden;position:relative;background:
+  radial-gradient(760px 520px at 14% 6%, rgba(45,212,191,.16), transparent 62%),
+  radial-gradient(700px 560px at 88% 92%, rgba(34,211,238,.15), transparent 60%),
+  linear-gradient(160deg,#04121A 0%,#061A22 52%,#04141C 100%);display:flex}
+.grid-overlay{position:absolute;inset:0;background-image:linear-gradient(rgba(103,232,249,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(103,232,249,.045) 1px,transparent 1px);background-size:48px 48px;pointer-events:none}
+.rail{width:66px;flex:none;display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 0;border-right:1px solid rgba(103,232,249,.12);background:rgba(4,18,26,.55);backdrop-filter:blur(14px);position:relative;z-index:1}
+.rico{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#6E93A0}
+.rico-on{background:linear-gradient(135deg,rgba(34,211,238,.22),rgba(45,212,191,.12));border:1px solid rgba(103,232,249,.42);color:#A5F3FC;box-shadow:0 0 20px rgba(34,211,238,.22)}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative;z-index:1}
+.hud{height:64px;flex:none;display:flex;align-items:center;gap:18px;padding:0 20px;border-bottom:1px solid rgba(103,232,249,.12)}
+.glass{background:rgba(255,255,255,.045);border:1px solid rgba(103,232,249,.16);border-radius:14px;backdrop-filter:blur(18px);box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 18px 40px rgba(0,10,16,.34);display:flex;flex-direction:column;overflow:hidden}
+.body{flex:1;display:flex;gap:14px;padding:14px 18px 18px;min-height:0}
+.col{flex:1;display:flex;flex-direction:column;gap:14px;min-width:0}
+.klab{font-size:10px;letter-spacing:.14em;color:#7FA3AE;font-weight:600}
+.kval{font-size:26px;font-weight:600;line-height:1;color:#EAF6F8}
+.hr,.r{display:grid;grid-template-columns:108px 74px 60px 90px 94px 116px 86px 120px 1fr 82px 100px;align-items:center;padding:0 15px;column-gap:8px}
+.hr{height:34px;flex:none;font-size:9.5px;letter-spacing:.14em;color:#7FA3AE;font-weight:600;border-bottom:1px solid rgba(103,232,249,.14)}
+.r{height:32px;font-size:12px;border-bottom:1px solid rgba(103,232,249,.07);color:#D2E9EE}
+.n{text-align:right}
+.side{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600}
+.st{display:inline-flex;align-items:center;height:19px;padding:0 8px;border-radius:9.5px;font-size:9.5px;font-weight:600;letter-spacing:.09em}
+.st-a{color:#6EE7B7;background:rgba(52,211,153,.14);border:1px solid rgba(52,211,153,.34)}
+.st-m{color:#FCD34D;background:rgba(251,191,36,.13);border:1px solid rgba(251,191,36,.32)}
+.st-c{color:#FDA4AF;background:rgba(251,113,133,.11);border:1px solid rgba(251,113,133,.32)}
+.chip{display:flex;align-items:center;gap:6px;height:26px;padding:0 11px;border-radius:13px;border:1px solid rgba(103,232,249,.18);color:#9FC4CE;font-size:11.5px;background:rgba(255,255,255,.03)}
+.chip-on{border-color:rgba(103,232,249,.52);background:linear-gradient(135deg,rgba(34,211,238,.20),rgba(45,212,191,.10));color:#A5F3FC;box-shadow:0 0 16px rgba(34,211,238,.18)}
+.fldlab{font-size:9.5px;letter-spacing:.13em;color:#7FA3AE;font-weight:600;margin-bottom:4px}
+.fldval{font-size:13px;color:#E4F6F9}
+.btn{height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:600}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="grid-overlay"></div>
+
+  <div class="rail">
+    <div style="width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,#22D3EE,#2DD4BF);display:flex;align-items:center;justify-content:center;margin-bottom:10px;box-shadow:0 0 22px rgba(34,211,238,.42)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#032027" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h3.6l2.4-7.6 4 15.2 2.4-7.6H21"/></svg>
+    </div>
+    <div class="rico rico-on"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg></div>
+    <div class="rico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg></div>
+    <div class="rico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg></div>
+    <div class="rico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="9"/></svg></div>
+    <div class="rico" style="margin-top:auto"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9L7 7M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg></div>
+    <div style="width:34px;height:34px;border-radius:50%;background:rgba(34,211,238,.16);border:1px solid rgba(103,232,249,.4);color:#A5F3FC;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600">JS</div>
+  </div>
+
+  <div class="main">
+    <div class="hud">
+      <div>
+        <div style="font-size:15px;font-weight:700;letter-spacing:.03em">Fusion Blotter</div>
+        <div class="mono" style="font-size:10.5px;color:#7FA3AE;margin-top:2px;letter-spacing:.05em">EQUITY CASH &middot; LONDON DESK</div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:9px;height:34px;padding:0 14px;border-radius:17px;background:rgba(255,255,255,.04);border:1px solid rgba(103,232,249,.14);width:340px;color:#6E93A0;font-size:12.5px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
+        Search symbol, trader, counterparty
+      </div>
+
+      <div style="margin-left:auto;display:flex;align-items:center;gap:14px">
+        <div class="mono" style="font-size:11px;color:#7FA3AE;letter-spacing:.06em">SEQ 1,284</div>
+        <div style="display:flex;align-items:center;gap:9px;height:32px;padding:0 14px;border-radius:16px;background:linear-gradient(135deg,rgba(34,211,238,.20),rgba(45,212,191,.08));border:1px solid rgba(103,232,249,.46);box-shadow:0 0 20px rgba(34,211,238,.20)">
+          <span style="width:7px;height:7px;border-radius:50%;background:#67E8F9;box-shadow:0 0 0 4px rgba(103,232,249,.20),0 0 12px #67E8F9"></span>
+          <span style="font-size:11px;font-weight:600;letter-spacing:.1em;color:#67E8F9">SOCKET LIVE</span>
+          <span class="mono" style="font-size:11px;color:#A5F3FC">14ms</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="body">
+      <div class="col">
+
+        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;height:96px;flex:none">
+          <div class="glass" style="padding:13px 15px;justify-content:space-between">
+            <div class="klab">TRADES TODAY</div>
+            <div style="display:flex;align-items:flex-end;justify-content:space-between">
+              <div class="kval mono">1,284</div>
+              <div style="font-size:11px;color:#6EE7B7">+6.2%</div>
+            </div>
+          </div>
+          <div class="glass" style="padding:13px 15px;justify-content:space-between">
+            <div class="klab">NOTIONAL TRADED</div>
+            <div style="display:flex;align-items:flex-end;justify-content:space-between">
+              <div class="kval mono">$1.42bn</div>
+              <div style="font-size:11px;color:#6EE7B7">+96.4M</div>
+            </div>
+          </div>
+          <div class="glass" style="padding:13px 15px;justify-content:space-between">
+            <div class="klab">NET POSITION</div>
+            <div style="display:flex;align-items:flex-end;justify-content:space-between">
+              <div class="kval mono" style="color:#6EE7B7">+$3.08M</div>
+              <div style="font-size:11px;color:#7FA3AE">6 symbols</div>
+            </div>
+          </div>
+          <div class="glass" style="padding:13px 15px;justify-content:space-between">
+            <div class="klab">ACTIVE / CANCELLED</div>
+            <div style="display:flex;align-items:flex-end;justify-content:space-between">
+              <div class="kval mono">1,247<span style="color:#31586A"> / </span><span style="color:#9FC4CE">37</span></div>
+              <div style="font-size:11px;color:#7FA3AE">2.9%</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass" style="flex:1">
+          <div style="height:48px;flex:none;display:flex;align-items:center;gap:12px;padding:0 15px;border-bottom:1px solid rgba(103,232,249,.12)">
+            <div style="font-size:14px;font-weight:600">Trade Blotter</div>
+            <div class="chip chip-on">Desk: LONDON<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+            <div class="chip chip-on">Today<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+            <div class="chip">Symbol<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div>
+            <div class="chip">Trader<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
+              <div class="mono" style="font-size:11px;color:#5C8593">updated 2s ago</div>
+              <div class="btn" style="height:30px;padding:0 14px;background:linear-gradient(135deg,#22D3EE,#2DD4BF);color:#032027;font-size:12px;border-radius:15px;box-shadow:0 0 18px rgba(34,211,238,.34)">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                New trade
+              </div>
+            </div>
+          </div>
+
+          <div class="hr">
+            <div>TRADE ID</div><div>SYMBOL</div><div>SIDE</div><div class="n">QUANTITY</div><div class="n">PRICE</div><div class="n">NOTIONAL</div><div>TRADER</div><div>BOOK</div><div>COUNTERPARTY</div>
+            <div style="display:flex;align-items:center;gap:4px;color:#A5F3FC">TIME<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div><div>STATUS</div>
+          </div>
+
+          <div style="flex:1;overflow:hidden">
+            <div class="r" style="background:linear-gradient(90deg,rgba(34,211,238,.20),rgba(34,211,238,.02));box-shadow:inset 3px 0 0 #22D3EE,0 0 26px rgba(34,211,238,.14)">
+              <div class="mono" style="display:flex;align-items:center;gap:6px;color:#EAFCFF">TRD-100061<span style="font-size:8.5px;letter-spacing:.09em;color:#032027;background:linear-gradient(135deg,#22D3EE,#2DD4BF);border-radius:8px;padding:1px 5px;font-weight:700">NEW</span></div>
+              <div style="font-weight:600">NVDA</div>
+              <div class="side" style="color:#6EE7B7"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 1l5 8H1z"/></svg>BUY</div>
+              <div class="mono n">12,400</div><div class="mono n">184.62</div><div class="mono n">2,289,288</div>
+              <div class="mono" style="font-size:11px">JSMITH</div><div style="font-size:11px;color:#9FC4CE">TECH_GROWTH</div><div style="font-size:11px;color:#9FC4CE">Goldman Sachs</div>
+              <div class="mono" style="font-size:11px">09:41:12</div><div><span class="st st-a">ACTIVE</span></div>
+            </div>
+
+            <div class="r" style="background:rgba(103,232,249,.09);box-shadow:inset 3px 0 0 rgba(165,243,252,.7)">
+              <div class="mono">TRD-100060</div><div style="font-weight:600">AAPL</div>
+              <div class="side" style="color:#FDA4AF"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 11L1 3h10z"/></svg>SELL</div>
+              <div class="mono n">5,000</div><div class="mono n">227.45</div><div class="mono n">1,137,250</div>
+              <div class="mono" style="font-size:11px">ABROWN</div><div style="font-size:11px;color:#9FC4CE">EQUITIES_US</div><div style="font-size:11px;color:#9FC4CE">JP Morgan</div>
+              <div class="mono" style="font-size:11px">09:40:58</div><div><span class="st st-m">AMENDED</span></div>
+            </div>
+
+            <div class="r" style="background:rgba(251,191,36,.10)">
+              <div class="mono">TRD-100059</div><div style="font-weight:600">MSFT</div>
+              <div class="side" style="color:#6EE7B7"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 1l5 8H1z"/></svg>BUY</div>
+              <div class="mono n">1,200</div><div class="mono n" style="color:#FCD34D">534.22</div><div class="mono n">641,064</div>
+              <div class="mono" style="font-size:11px">MJONES</div><div style="font-size:11px;color:#9FC4CE">EQUITIES_US</div><div style="font-size:11px;color:#9FC4CE">Morgan Stanley</div>
+              <div class="mono" style="font-size:11px">09:40:31</div><div><span class="st st-m">AMENDED</span></div>
+            </div>
+
+            <div class="r"><div class="mono">TRD-100058</div><div style="font-weight:600">VOD.L</div><div class="side" style="color:#FDA4AF"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 11L1 3h10z"/></svg>SELL</div><div class="mono n">25,000</div><div class="mono n">71.18</div><div class="mono n">1,779,500</div><div class="mono" style="font-size:11px">RPATEL</div><div style="font-size:11px;color:#9FC4CE">EQUITIES_UK</div><div style="font-size:11px;color:#9FC4CE">Barclays</div><div class="mono" style="font-size:11px">09:39:47</div><div><span class="st st-a">ACTIVE</span></div></div>
+
+            <div class="r" style="opacity:.46;text-decoration:line-through;text-decoration-color:#4C7482"><div class="mono">TRD-100057</div><div style="font-weight:600">TSLA</div><div class="side"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 1l5 8H1z"/></svg>BUY</div><div class="mono n">800</div><div class="mono n">341.75</div><div class="mono n">273,400</div><div class="mono" style="font-size:11px">KWONG</div><div style="font-size:11px">TECH_GROWTH</div><div style="font-size:11px">Citadel Securities</div><div class="mono" style="font-size:11px">09:39:02</div><div style="text-decoration:none"><span class="st st-c">CANCELLED</span></div></div>
+
+            <div class="r"><div class="mono">TRD-100056</div><div style="font-weight:600">HSBA.L</div><div class="side" style="color:#6EE7B7"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 1l5 8H1z"/></svg>BUY</div><div class="mono n">18,500</div><div class="mono n">6.42</div><div class="mono n">118,770</div><div class="mono" style="font-size:11px">LDIAZ</div><div style="font-size:11px;color:#9FC4CE">EQUITIES_UK</div><div style="font-size:11px;color:#9FC4CE">UBS</div><div class="mono" style="font-size:11px">09:38:15</div><div><span class="st st-a">ACTIVE</span></div></div>
+
+            <div class="r"><div class="mono">TRD-100055</div><div style="font-weight:600">AAPL</div><div class="side" style="color:#6EE7B7"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 1l5 8H1z"/></svg>BUY</div><div class="mono n">3,200</div><div class="mono n" style="background:rgba(52,211,153,.18);border-radius:6px;color:#6EE7B7;padding:2px 5px;margin-right:-5px">&#9650; 227.10</div><div class="mono n">726,720</div><div class="mono" style="font-size:11px">JSMITH</div><div style="font-size:11px;color:#9FC4CE">EQUITIES_US</div><div style="font-size:11px;color:#9FC4CE">Goldman Sachs</div><div class="mono" style="font-size:11px">09:37:44</div><div><span class="st st-a">ACTIVE</span></div></div>
+
+            <div class="r"><div class="mono">TRD-100054</div><div style="font-weight:600">NVDA</div><div class="side" style="color:#FDA4AF"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 11L1 3h10z"/></svg>SELL</div><div class="mono n">6,750</div><div class="mono n" style="background:rgba(251,113,133,.16);border-radius:6px;color:#FDA4AF;padding:2px 5px;margin-right:-5px">&#9660; 183.90</div><div class="mono n">1,241,325</div><div class="mono" style="font-size:11px">ABROWN</div><div style="font-size:11px;color:#9FC4CE">TECH_GROWTH</div><div style="font-size:11px;color:#9FC4CE">JP Morgan</div><div class="mono" style="font-size:11px">09:36:59</div><div><span class="st st-a">ACTIVE</span></div></div>
+
+            <div class="r"><div class="mono">TRD-100053</div><div style="font-weight:600">MSFT</div><div class="side" style="color:#FDA4AF"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 11L1 3h10z"/></svg>SELL</div><div class="mono n">2,400</div><div class="mono n">533.86</div><div class="mono n">1,281,264</div><div class="mono" style="font-size:11px">MJONES</div><div style="font-size:11px;color:#9FC4CE">EQUITIES_US</div><div style="font-size:11px;color:#9FC4CE">Morgan Stanley</div><div class="mono" style="font-size:11px">09:36:12</div><div><span class="st st-a">ACTIVE</span></div></div>
+
+            <div class="r"><div class="mono">TRD-100052</div><div style="font-weight:600">TSLA</div><div class="side" style="color:#FDA4AF"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 11L1 3h10z"/></svg>SELL</div><div class="mono n">1,500</div><div class="mono n">342.10</div><div class="mono n">513,150</div><div class="mono" style="font-size:11px">RPATEL</div><div style="font-size:11px;color:#9FC4CE">TECH_GROWTH</div><div style="font-size:11px;color:#9FC4CE">Barclays</div><div class="mono" style="font-size:11px">09:35:38</div><div><span class="st st-a">ACTIVE</span></div></div>
+
+            <div class="r" style="border-bottom:none"><div class="mono">TRD-100051</div><div style="font-weight:600">VOD.L</div><div class="side" style="color:#6EE7B7"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 1l5 8H1z"/></svg>BUY</div><div class="mono n">22,000</div><div class="mono n">70.94</div><div class="mono n">1,560,680</div><div class="mono" style="font-size:11px">KWONG</div><div style="font-size:11px;color:#9FC4CE">EQUITIES_UK</div><div style="font-size:11px;color:#9FC4CE">UBS</div><div class="mono" style="font-size:11px">09:34:51</div><div><span class="st st-a">ACTIVE</span></div></div>
+          </div>
+
+          <div style="height:36px;flex:none;display:flex;align-items:center;gap:12px;padding:0 15px;border-top:1px solid rgba(103,232,249,.12);font-size:11px;color:#5C8593">
+            <span class="mono">1&ndash;11 of 1,284</span><span style="color:#234A57">|</span><span>virtualised stream</span>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:8px"><span>Auto-scroll</span><div style="width:28px;height:15px;border-radius:8px;background:linear-gradient(135deg,#22D3EE,#2DD4BF);position:relative"><div style="position:absolute;right:2px;top:2px;width:11px;height:11px;border-radius:50%;background:#032027"></div></div></div>
+          </div>
+        </div>
+
+        <div class="glass" style="height:196px;flex:none">
+          <div style="height:42px;flex:none;display:flex;align-items:center;gap:12px;padding:0 15px;border-bottom:1px solid rgba(103,232,249,.10)">
+            <div style="font-size:13px;font-weight:600">Notional flow</div>
+            <div class="chip chip-on" style="height:22px;font-size:10px;letter-spacing:.09em">STREAMING</div>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:16px">
+              <div><span class="klab">30M</span> <span class="mono" style="font-size:12.5px;color:#A5F3FC;margin-left:6px">$1.42bn</span></div>
+              <div><span class="klab">P&amp;L</span> <span class="mono" style="font-size:12.5px;color:#6EE7B7;margin-left:6px">+$412,880</span></div>
+            </div>
+          </div>
+          <div style="flex:1;position:relative;padding:8px 15px 6px">
+            <svg width="100%" height="110" viewBox="0 0 1000 110" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="ghArea" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#2DD4BF" stop-opacity=".42"/>
+                  <stop offset="100%" stop-color="#22D3EE" stop-opacity="0"/>
+                </linearGradient>
+                <linearGradient id="ghLine" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#2DD4BF" stop-opacity=".25"/>
+                  <stop offset="60%" stop-color="#22D3EE"/>
+                  <stop offset="100%" stop-color="#A5F3FC"/>
+                </linearGradient>
+              </defs>
+              <path d="M0 88 L42 82 L84 90 L126 74 L168 80 L210 66 L252 72 L294 58 L336 64 L378 50 L420 56 L462 44 L504 50 L546 38 L588 46 L630 32 L672 40 L714 28 L756 34 L798 22 L840 28 L882 18 L924 24 L966 12 L966 100 L0 100 Z" fill="url(#ghArea)"/>
+              <path d="M0 88 L42 82 L84 90 L126 74 L168 80 L210 66 L252 72 L294 58 L336 64 L378 50 L420 56 L462 44 L504 50 L546 38 L588 46 L630 32 L672 40 L714 28 L756 34 L798 22 L840 28 L882 18 L924 24 L966 12" fill="none" stroke="url(#ghLine)" stroke-width="2.2" stroke-linejoin="round"/>
+            </svg>
+            <div style="position:absolute;right:44px;top:19px;width:10px;height:10px;border-radius:50%;background:#A5F3FC;box-shadow:0 0 0 6px rgba(34,211,238,.16),0 0 22px rgba(165,243,252,.85)"></div>
+            <div class="mono" style="display:flex;justify-content:space-between;font-size:10px;color:#4E7784;padding-top:2px">
+              <span>09:11</span><span>09:18</span><span>09:25</span><span>09:32</span><span>09:41</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:340px;flex:none;display:flex;flex-direction:column;gap:14px;min-height:0">
+        <div class="glass" style="flex:1">
+          <div style="height:48px;flex:none;display:flex;align-items:center;gap:10px;padding:0 15px;border-bottom:1px solid rgba(103,232,249,.12)">
+            <div class="mono" style="font-size:13px;font-weight:600">TRD-100060</div>
+            <span class="st st-m">AMENDED</span>
+            <div style="margin-left:auto;color:#7FA3AE"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+          </div>
+
+          <div style="padding:15px;border-bottom:1px solid rgba(103,232,249,.10)">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div>
+                <div style="font-size:22px;font-weight:600">AAPL</div>
+                <div style="font-size:11px;color:#7FA3AE;margin-top:3px">Apple Inc. &middot; XNAS</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:14px;background:rgba(251,113,133,.13);border:1px solid rgba(251,113,133,.36);color:#FDA4AF;font-size:12px;font-weight:600">
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor"><path d="M6 11L1 3h10z"/></svg>SELL
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin-top:15px">
+              <div><div class="fldlab">QUANTITY</div><div class="fldval mono">5,000</div></div>
+              <div><div class="fldlab">PRICE</div><div class="fldval mono">227.45</div></div>
+              <div><div class="fldlab">NOTIONAL</div><div class="fldval mono">$1,137,250</div></div>
+              <div><div class="fldlab">TRADER</div><div class="fldval mono">ABROWN</div></div>
+              <div><div class="fldlab">BOOK</div><div class="fldval">EQUITIES_US</div></div>
+              <div><div class="fldlab">COUNTERPARTY</div><div class="fldval">JP Morgan</div></div>
+            </div>
+          </div>
+
+          <div style="padding:14px 15px;flex:1;min-height:0">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:13px">
+              <div class="fldlab" style="margin:0">AUDIT TRAIL</div>
+              <div style="font-size:10px;color:#A5F3FC;background:rgba(34,211,238,.14);border-radius:9px;padding:1px 7px">3</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:14px;position:relative">
+              <div style="position:absolute;left:5px;top:9px;bottom:9px;width:1px;background:linear-gradient(#22D3EE,rgba(34,211,238,.12))"></div>
+              <div style="display:flex;gap:12px"><div style="width:11px;height:11px;border-radius:50%;background:#22D3EE;flex:none;margin-top:2px;box-shadow:0 0 12px rgba(34,211,238,.7)"></div><div><div style="font-size:12.5px">Amended by <span class="mono" style="font-weight:600">ABROWN</span></div><div style="font-size:11.5px;color:#9FC4CE;margin-top:3px">price <span class="mono" style="color:#5C8593;text-decoration:line-through">227.10</span> &rarr; <span class="mono" style="color:#6EE7B7">227.45</span></div><div class="mono" style="font-size:10.5px;color:#4E7784;margin-top:3px">09:41:22</div></div></div>
+              <div style="display:flex;gap:12px"><div style="width:11px;height:11px;border-radius:50%;background:#1C4553;flex:none;margin-top:2px"></div><div><div style="font-size:12.5px">Amended by <span class="mono" style="font-weight:600">MJONES</span></div><div style="font-size:11.5px;color:#9FC4CE;margin-top:3px">quantity <span class="mono" style="color:#5C8593;text-decoration:line-through">4,200</span> &rarr; <span class="mono">5,000</span></div><div class="mono" style="font-size:10.5px;color:#4E7784;margin-top:3px">09:41:04</div></div></div>
+              <div style="display:flex;gap:12px"><div style="width:11px;height:11px;border-radius:50%;background:#1C4553;flex:none;margin-top:2px"></div><div><div style="font-size:12.5px">Created by <span class="mono" style="font-weight:600">ABROWN</span></div><div style="font-size:11.5px;color:#9FC4CE;margin-top:3px">4,200 @ 227.10 &middot; JP Morgan</div><div class="mono" style="font-size:10.5px;color:#4E7784;margin-top:3px">09:40:58</div></div></div>
+            </div>
+          </div>
+
+          <div style="padding:14px 15px;border-top:1px solid rgba(103,232,249,.12);display:flex;gap:10px">
+            <div class="btn" style="flex:1;background:linear-gradient(135deg,#22D3EE,#2DD4BF);color:#032027;box-shadow:0 0 20px rgba(34,211,238,.28)">Amend trade</div>
+            <div class="btn" style="width:112px;border:1px solid rgba(251,113,133,.42);color:#FDA4AF">Cancel</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
