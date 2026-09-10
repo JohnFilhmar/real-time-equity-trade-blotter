@@ -3,19 +3,16 @@
 **Agent slug:** `<agent_slug>`
 **Role:** <one line: what this agent is used for in this project>
 
-Append-only. Newest entry at the bottom. Format and rules: `/CLAUDE.md`.
+Significant prompts only, append-only, newest at the bottom. Rules: `/CLAUDE.md`.
 
 ---
 
 ### <YYYY-MM-DDTHH:MMZ> - <snake_case_slug>
 
-**Prompt**
+**Prompt:** "Verbatim, typos included. Blockquote it instead if it runs long."
 
-> Verbatim prompt text. Typos included. Truncate past ~2000 characters with
-> `[... truncated, N characters omitted]`.
+**Outcome:** One or two sentences, past tense. What changed, and the decision if one was made.
 
-**Response** - One to three sentences, past tense, stating the outcome.
+**Artifact:** [title](../artifacts/slug.html)
 
-**Artifact** - [title](../artifacts/slug.html)
-
-**Commits** - `abc1234`
+**Commits:** `abc1234`
