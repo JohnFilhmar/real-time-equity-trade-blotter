@@ -464,6 +464,125 @@
   </section>
 
   <section>
+    <h2>The trade model</h2>
+    <p>
+      The brief states the model twice, and the two statements do not agree. The <code>Trade</code>
+      interface names <code>id</code> and <code>tradeDate</code>; the sample payload names
+      <code>tradeId</code> and <code>tradeTimestamp</code>, and adds <code>book</code> and
+      <code>counterparty</code>, which the interface omits entirely.
+    </p>
+    <div class="callout">
+      <strong>Resolution: satisfy both, and say so in the README.</strong>
+      <p>
+        The interface is described as a minimum and the sample as the data the blotter actually
+        consumes, so the sample is the wider contract and the interface is the floor. Carrying every
+        field from both costs two extra columns and removes any question of whether the brief was
+        read closely.
+      </p>
+    </div>
+    <div class="scroller">
+      <table>
+        <thead>
+          <tr><th>API field</th><th>Type</th><th>Column</th><th>From</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>id</code></td><td>string</td><td><code>id uuid</code></td><td>interface</td>
+            <td>Primary key. Stable across amendments.</td>
+          </tr>
+          <tr>
+            <td><code>tradeId</code></td><td>string</td><td><code>trade_id text</code></td><td>sample</td>
+            <td>Business key, <code>TRD-100001</code>, from a Postgres sequence. Unique.</td>
+          </tr>
+          <tr>
+            <td><code>symbol</code></td><td>string</td><td><code>symbol text</code></td><td>both</td>
+            <td>Indexed. Drawn from a fixed instrument universe.</td>
+          </tr>
+          <tr>
+            <td><code>side</code></td><td><code>BUY | SELL</code></td><td><code>side enum</code></td><td>both</td>
+            <td>Postgres enum, not a free string.</td>
+          </tr>
+          <tr>
+            <td><code>quantity</code></td><td>number</td><td><code>quantity integer</code></td><td>both</td>
+            <td>Must be positive. Round lots in the seed.</td>
+          </tr>
+          <tr>
+            <td><code>price</code></td><td>number</td><td><code>price numeric(18,6)</code></td><td>both</td>
+            <td>Decimal in the database, converted to a JSON number at the boundary to match the
+                sample.</td>
+          </tr>
+          <tr>
+            <td><code>trader</code></td><td>string</td><td><code>trader text</code></td><td>both</td>
+            <td>Required, non-empty. Indexed.</td>
+          </tr>
+          <tr>
+            <td><code>book</code></td><td>string</td><td><code>book text</code></td><td>sample</td>
+            <td>Indexed. Books are data, not code, so not an enum.</td>
+          </tr>
+          <tr>
+            <td><code>counterparty</code></td><td>string</td><td><code>counterparty text</code></td><td>sample</td>
+            <td>Drawn from a fixed list of real street names.</td>
+          </tr>
+          <tr>
+            <td><code>tradeTimestamp</code></td><td>string</td><td><code>trade_timestamp timestamptz</code></td><td>sample</td>
+            <td>Full ISO-8601 UTC instant. Satisfies the interface's <code>tradeDate</code>.</td>
+          </tr>
+          <tr>
+            <td><code>status</code></td><td><code>ACTIVE | CANCELLED</code></td><td><code>status enum</code></td><td>both</td>
+            <td>Amendment is not a status. It bumps <code>version</code> and writes an audit row.</td>
+          </tr>
+          <tr>
+            <td><code>version</code></td><td>number</td><td><code>version integer</code></td><td>extension</td>
+            <td>Optimistic concurrency, so two traders amending at once cannot silently overwrite
+                each other.</td>
+          </tr>
+          <tr>
+            <td><code>createdAt</code>, <code>updatedAt</code></td><td>string</td><td><code>timestamptz</code></td><td>extension</td>
+            <td>Distinct from <code>tradeTimestamp</code>, which is when the trade happened rather
+                than when the row was written.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Field naming</h3>
+    <p>
+      The brief's payload is camelCase, and this repository's convention is <code>snake_case</code>
+      for JSON fields. The brief wins at the wire, because it is a given contract and a reviewer
+      comparing the response against their own sample should see the same keys. Everything the
+      convention does own stays <code>snake_case</code>: database columns, file names, variables.
+      Prisma's <code>@map</code> bridges the two in one place.
+    </p>
+
+    <h3>Indexes</h3>
+    <p>
+      Driven by what the blotter actually queries rather than added by reflex: a composite on
+      <code>(status, trade_timestamp desc)</code> for the default view, single-column indexes on
+      <code>symbol</code>, <code>trader</code> and <code>book</code> for the filters, and a unique
+      constraint on <code>trade_id</code>.
+    </p>
+
+    <h3>What makes the seed realistic</h3>
+    <p>
+      The brief asks for realistic randomised data, and uniform random values are the obvious way
+      to fail that while technically complying.
+    </p>
+    <ul class="plain">
+      <li>Prices start from each symbol's own level, taking the sample's figures as the anchor
+          (AAPL near 227, MSFT near 534, TSLA near 341), then drift. A price of 12.40 on AAPL reads
+          as random noise, not as market data.</li>
+      <li>Quantities are round lots, multiples of 100, skewed so small tickets outnumber blocks.</li>
+      <li>Timestamps fall inside a trading session and cluster at the open and the close.</li>
+      <li>Traders come from a fixed desk roster in the sample's own initial-plus-surname form
+          (<code>JSMITH</code>, <code>ABROWN</code>, <code>MJONES</code>), and books correlate with
+          the instrument's listing venue rather than being drawn independently.</li>
+      <li>Roughly 5% arrive <code>CANCELLED</code>, so the status filter has something to find.</li>
+      <li>500 rows, inside the 100 to 1,000 the brief asks for, generated from a fixed seed so the
+          dataset is reproducible between runs.</li>
+    </ul>
+  </section>
+
+  <section>
     <h2>Target structure</h2>
     <p>
       Grouped by role, one role per directory. The repository interface is what lets the service
