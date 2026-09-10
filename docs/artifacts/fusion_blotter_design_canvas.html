@@ -29,7 +29,7 @@ a{color:#22D3EE}
 
 <header>
   <h1>Fusion Blotter &middot; design canvas</h1>
-  <p class="lede">Three visual directions for the trade blotter, drawn to the same information architecture so they can be compared rather than admired. Each row reads left to right: the desktop single-page application, the same screen with New trade open and an optimistic pending row already in the grid, then the two phone pages. The final row is shared by all three: design tokens, and the anticipation and loading specification.</p>
+  <p class="lede">Three visual directions for the trade blotter, drawn to the same information architecture so they can be compared rather than admired. Rows 1 to 3 are the directions, each reading left to right: the desktop single-page application, the same screen with New trade open and an optimistic pending row already in the grid, then the two phone pages. Row 4 is shared by all three. Rows 5 and 6 carry the remaining features from the brief, including every optional extension, drawn in Direction A.</p>
   <p class="meta">Brand chrome is cyan/teal. Emerald and rose are reserved for P&amp;L semantics, so a gain never reads as a button. Scroll each row sideways. Every board is also a standalone page under <code>fusion_blotter/</code>.</p>
 </header>
 
@@ -125,6 +125,61 @@ a{color:#22D3EE}
       <figure style="width:1440px">
         <figcaption>Shared · Anticipation &amp; loading spec <span class="dim">1440&times;1900</span></figcaption>
         <iframe src="fusion_blotter/Anticipation.html" width="1440" height="1900" loading="lazy" title="Shared · Anticipation &amp; loading spec"></iframe>
+      </figure>
+    </div>
+  </section>
+
+  <section class="row">
+    <div class="note">
+      <p class="note-lead">FEATURE COVERAGE · DESKTOP — the rest of the brief, including every optional extension.</p>
+      <p class="note-body">Sign in (bonus: user authentication). Cancel confirmation, which the first three rows only implied, beside the shared validation-rule set (bonus: trade validation rules). Position summary and P&amp;L in one page (two bonuses), reconciling to the blotter's own KPIs. Audit trail as a full page with field-level before and after (bonus: audit trail).</p>
+      <p class="note-body">The two remaining bonuses are not screens: virtualised grid is annotated in the blotter footer, and containerisation is a delivery concern.</p>
+    </div>
+    <div class="strip">
+      <figure style="width:1440px">
+        <figcaption>Auth · Sign in (desktop) <span class="dim">1440&times;1024</span></figcaption>
+        <iframe src="fusion_blotter/Login.html" width="1440" height="1024" loading="lazy" title="Auth · Sign in (desktop)"></iframe>
+      </figure>
+      <figure style="width:1440px">
+        <figcaption>Cancel confirmation + validation rules <span class="dim">1440&times;1024</span></figcaption>
+        <iframe src="fusion_blotter/CancelConfirm.html" width="1440" height="1024" loading="lazy" title="Cancel confirmation + validation rules"></iframe>
+      </figure>
+      <figure style="width:1440px">
+        <figcaption>Position summary + P&amp;L view <span class="dim">1440&times;1024</span></figcaption>
+        <iframe src="fusion_blotter/PositionsPnl.html" width="1440" height="1024" loading="lazy" title="Position summary + P&amp;L view"></iframe>
+      </figure>
+      <figure style="width:1440px">
+        <figcaption>Audit trail (full view) <span class="dim">1440&times;1024</span></figcaption>
+        <iframe src="fusion_blotter/AuditTrail.html" width="1440" height="1024" loading="lazy" title="Audit trail (full view)"></iframe>
+      </figure>
+    </div>
+  </section>
+
+  <section class="row">
+    <div class="note">
+      <p class="note-lead">FEATURE COVERAGE · MOBILE — the five tabs the bottom bar promises, now all drawn.</p>
+      <p class="note-body">Sign in, New trade as a full page with the same validation, Positions and P&amp;L, Activity as the audit trail in feed form, and Profile carrying the role and permission model, where a right the user does not hold is hidden rather than shown disabled.</p>
+    </div>
+    <div class="strip">
+      <figure style="width:390px">
+        <figcaption>Auth · Sign in (mobile) <span class="dim">390&times;844</span></figcaption>
+        <iframe src="fusion_blotter/LoginMobile.html" width="390" height="844" loading="lazy" title="Auth · Sign in (mobile)"></iframe>
+      </figure>
+      <figure style="width:390px">
+        <figcaption>Mobile · New trade <span class="dim">390&times;844</span></figcaption>
+        <iframe src="fusion_blotter/NewTradeMobile.html" width="390" height="844" loading="lazy" title="Mobile · New trade"></iframe>
+      </figure>
+      <figure style="width:390px">
+        <figcaption>Mobile · Positions &amp; P&amp;L <span class="dim">390&times;844</span></figcaption>
+        <iframe src="fusion_blotter/PositionsMobile.html" width="390" height="844" loading="lazy" title="Mobile · Positions &amp; P&amp;L"></iframe>
+      </figure>
+      <figure style="width:390px">
+        <figcaption>Mobile · Activity (audit trail) <span class="dim">390&times;844</span></figcaption>
+        <iframe src="fusion_blotter/ActivityMobile.html" width="390" height="844" loading="lazy" title="Mobile · Activity (audit trail)"></iframe>
+      </figure>
+      <figure style="width:390px">
+        <figcaption>Mobile · Profile &amp; permissions <span class="dim">390&times;844</span></figcaption>
+        <iframe src="fusion_blotter/ProfileMobile.html" width="390" height="844" loading="lazy" title="Mobile · Profile &amp; permissions"></iframe>
       </figure>
     </div>
   </section>

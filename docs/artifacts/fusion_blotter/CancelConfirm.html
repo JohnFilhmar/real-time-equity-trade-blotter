@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cancel confirmation + validation rules</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080B14;color:#E4ECF7;font-family:'IBM Plex Sans',ui-sans-serif,system-ui,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#22D3EE;text-decoration:none} a:hover{color:#67E8F9}
+.mono{font-family:'IBM Plex Mono',ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.app{width:1440px;height:1024px;overflow:hidden;background:#080B14;position:relative}
+.tb{height:56px;display:flex;align-items:center;gap:18px;padding:0 18px;border-bottom:1px solid #1E2A3D;background:#0B111C}
+.panel{background:#0E1522;border:1px solid #1E2A3D;border-radius:8px;display:flex;flex-direction:column;overflow:hidden}
+.hr,.r{display:grid;grid-template-columns:108px 74px 58px 88px 90px 112px 84px 118px 1fr 82px 96px;align-items:center;padding:0 13px;column-gap:8px}
+.hr{height:32px;font-size:10px;letter-spacing:.09em;color:#61748F;font-weight:600;border-bottom:1px solid #1E2A3D;background:#0B111C}
+.r{height:30px;font-size:12px;border-bottom:1px solid #131C29;color:#C6D5E8}
+.n{text-align:right}
+.side{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600}
+.st{display:inline-flex;align-items:center;height:19px;padding:0 7px;border-radius:3px;font-size:10px;font-weight:600;letter-spacing:.06em}
+.st-a{color:#34D399;background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.28)}
+.st-m{color:#FBBF24;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.30)}
+.btn{height:38px;border-radius:6px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:600}
+.ico{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:5px;border:1px solid #1E2A3D;color:#8FA3BF}
+.fldlab{font-size:10px;letter-spacing:.08em;color:#61748F;font-weight:600;margin-bottom:5px}
+.rule{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #131C29;font-size:12px}
+.ok{width:16px;height:16px;border-radius:50%;background:rgba(52,211,153,.14);color:#34D399;display:flex;align-items:center;justify-content:center;flex:none}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div style="position:absolute;inset:0">
+    <div class="tb">
+      <div style="display:flex;align-items:center;gap:10px">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 13h4.2l2.6-8.4 4.4 16.8 2.6-8.4H22"/></svg>
+        <div style="font-size:13.5px;font-weight:700;letter-spacing:.14em">FUSION BLOTTER</div>
+      </div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+        <!-- explicit refresh-from-API control -->
+        <div style="display:flex;align-items:center;gap:8px;height:30px;padding:0 12px;border-radius:6px;border:1px solid #223046;color:#C6D5E8;font-size:12px;font-weight:600">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" stroke-width="2.2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v5h-5"/></svg>
+          Refresh
+          <span class="mono" style="color:#4E607A;font-weight:400">2s</span>
+        </div>
+        <div class="pill" style="display:flex;align-items:center;gap:7px;height:26px;padding:0 10px;border-radius:13px;background:rgba(34,211,238,.10);border:1px solid rgba(34,211,238,.32);color:#22D3EE;font-size:11px;font-weight:600;letter-spacing:.06em">
+          <span style="width:6px;height:6px;border-radius:50%;background:#22D3EE"></span>LIVE<span class="mono" style="color:#67E8F9;letter-spacing:0">14ms</span>
+        </div>
+        <div style="width:28px;height:28px;border-radius:50%;background:#12303C;border:1px solid #17586B;color:#67E8F9;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">JS</div>
+      </div>
+    </div>
+
+    <div style="padding:14px 16px;display:flex;gap:14px;height:968px">
+      <div style="flex:1;display:flex;flex-direction:column;gap:12px;min-width:0">
+        <div class="panel" style="flex:1">
+          <div style="height:44px;flex:none;display:flex;align-items:center;gap:10px;padding:0 13px;border-bottom:1px solid #1E2A3D">
+            <div style="font-size:13px;font-weight:600">Trade Blotter</div>
+            <div class="mono" style="font-size:11px;color:#61748F">1,284 rows</div>
+          </div>
+          <div class="hr"><div>TRADE ID</div><div>SYMBOL</div><div>SIDE</div><div class="n">QUANTITY</div><div class="n">PRICE</div><div class="n">NOTIONAL</div><div>TRADER</div><div>BOOK</div><div>COUNTERPARTY</div><div>TIME</div><div>STATUS</div></div>
+
+          <div class="r"><div class="mono">TRD-100061</div><div style="font-weight:600">NVDA</div><div class="side" style="color:#34D399"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 1l5 8H1z"/></svg>BUY</div><div class="mono n">12,400</div><div class="mono n">184.62</div><div class="mono n">2,289,288</div><div class="mono" style="font-size:11px">JSMITH</div><div style="font-size:11px;color:#9DB0CA">TECH_GROWTH</div><div style="font-size:11px;color:#9DB0CA">Goldman Sachs</div><div class="mono" style="font-size:11px">09:41:12</div><div><span class="st st-a">ACTIVE</span></div></div>
+          <div class="r"><div class="mono">TRD-100060</div><div style="font-weight:600">AAPL</div><div class="side" style="color:#FB7185"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 11L1 3h10z"/></svg>SELL</div><div class="mono n">5,000</div><div class="mono n">227.45</div><div class="mono n">1,137,250</div><div class="mono" style="font-size:11px">ABROWN</div><div style="font-size:11px;color:#9DB0CA">EQUITIES_US</div><div style="font-size:11px;color:#9DB0CA">JP Morgan</div><div class="mono" style="font-size:11px">09:40:58</div><div><span class="st st-m">AMENDED</span></div></div>
+          <div class="r"><div class="mono">TRD-100059</div><div style="font-weight:600">MSFT</div><div class="side" style="color:#34D399"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 1l5 8H1z"/></svg>BUY</div><div class="mono n">1,200</div><div class="mono n">534.22</div><div class="mono n">641,064</div><div class="mono" style="font-size:11px">MJONES</div><div style="font-size:11px;color:#9DB0CA">EQUITIES_US</div><div style="font-size:11px;color:#9DB0CA">Morgan Stanley</div><div class="mono" style="font-size:11px">09:40:31</div><div><span class="st st-m">AMENDED</span></div></div>
+
+          <!-- the row being cancelled: selected, held, and clearly the modal's subject -->
+          <div class="r" style="background:rgba(251,113,133,.10);box-shadow:inset 2px 0 0 #FB7185">
+            <div class="mono" style="color:#FFE4E9">TRD-100058</div><div style="font-weight:600">VOD.L</div>
+            <div class="side" style="color:#FB7185"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 11L1 3h10z"/></svg>SELL</div>
+            <div class="mono n">25,000</div><div class="mono n">71.18</div><div class="mono n">1,779,500</div>
+            <div class="mono" style="font-size:11px">RPATEL</div><div style="font-size:11px;color:#9DB0CA">EQUITIES_UK</div><div style="font-size:11px;color:#9DB0CA">Barclays</div>
+            <div class="mono" style="font-size:11px">09:39:47</div>
+            <div><span class="st" style="color:#FB7185;background:rgba(251,113,133,.14);border:1px solid rgba(251,113,133,.36)">CANCELLING</span></div>
+          </div>
+
+          <div class="r"><div class="mono">TRD-100056</div><div style="font-weight:600">HSBA.L</div><div class="side" style="color:#34D399"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 1l5 8H1z"/></svg>BUY</div><div class="mono n">18,500</div><div class="mono n">6.42</div><div class="mono n">118,770</div><div class="mono" style="font-size:11px">LDIAZ</div><div style="font-size:11px;color:#9DB0CA">EQUITIES_UK</div><div style="font-size:11px;color:#9DB0CA">UBS</div><div class="mono" style="font-size:11px">09:38:15</div><div><span class="st st-a">ACTIVE</span></div></div>
+          <div class="r"><div class="mono">TRD-100055</div><div style="font-weight:600">AAPL</div><div class="side" style="color:#34D399"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 1l5 8H1z"/></svg>BUY</div><div class="mono n">3,200</div><div class="mono n">227.10</div><div class="mono n">726,720</div><div class="mono" style="font-size:11px">JSMITH</div><div style="font-size:11px;color:#9DB0CA">EQUITIES_US</div><div style="font-size:11px;color:#9DB0CA">Goldman Sachs</div><div class="mono" style="font-size:11px">09:37:44</div><div><span class="st st-a">ACTIVE</span></div></div>
+          <div class="r"><div class="mono">TRD-100054</div><div style="font-weight:600">NVDA</div><div class="side" style="color:#FB7185"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 11L1 3h10z"/></svg>SELL</div><div class="mono n">6,750</div><div class="mono n">183.90</div><div class="mono n">1,241,325</div><div class="mono" style="font-size:11px">ABROWN</div><div style="font-size:11px;color:#9DB0CA">TECH_GROWTH</div><div style="font-size:11px;color:#9DB0CA">JP Morgan</div><div class="mono" style="font-size:11px">09:36:59</div><div><span class="st st-a">ACTIVE</span></div></div>
+          <div class="r" style="border-bottom:none"><div class="mono">TRD-100053</div><div style="font-weight:600">MSFT</div><div class="side" style="color:#FB7185"><svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 11L1 3h10z"/></svg>SELL</div><div class="mono n">2,400</div><div class="mono n">533.86</div><div class="mono n">1,281,264</div><div class="mono" style="font-size:11px">MJONES</div><div style="font-size:11px;color:#9DB0CA">EQUITIES_US</div><div style="font-size:11px;color:#9DB0CA">Morgan Stanley</div><div class="mono" style="font-size:11px">09:36:12</div><div><span class="st st-a">ACTIVE</span></div></div>
+        </div>
+      </div>
+
+      <!-- validation rules reference, the same rules the create and amend forms enforce -->
+      <div class="panel" style="width:344px;flex:none">
+        <div style="height:44px;flex:none;display:flex;align-items:center;gap:10px;padding:0 13px;border-bottom:1px solid #1E2A3D">
+          <div style="font-size:13px;font-weight:600">Trade validation rules</div>
+          <div style="margin-left:auto;font-size:10px;letter-spacing:.08em;color:#0E7490;border:1px solid #14485C;border-radius:3px;padding:2px 6px;font-weight:600">SHARED</div>
+        </div>
+        <div style="padding:13px">
+          <div style="font-size:11.5px;color:#8FA3BF;line-height:1.55;margin-bottom:13px">
+            One schema, enforced in the form as you type and again on the server. The rail lists what the API will reject, so the UI never promises something the backend refuses.
+          </div>
+          <div class="rule"><span class="ok"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>Quantity is a positive integer</span><span class="mono" style="margin-left:auto;font-size:10.5px;color:#4E607A">&gt; 0</span></div>
+          <div class="rule"><span class="ok"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>Price is positive, 2 decimals</span><span class="mono" style="margin-left:auto;font-size:10.5px;color:#4E607A">&gt; 0.00</span></div>
+          <div class="rule"><span class="ok"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>Trader is required</span><span class="mono" style="margin-left:auto;font-size:10.5px;color:#4E607A">JSMITH</span></div>
+          <div class="rule"><span class="ok"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>Symbol is on the traded universe</span><span class="mono" style="margin-left:auto;font-size:10.5px;color:#4E607A">6 listed</span></div>
+          <div class="rule"><span class="ok"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>Side is BUY or SELL</span><span class="mono" style="margin-left:auto;font-size:10.5px;color:#4E607A">enum</span></div>
+          <div class="rule"><span class="ok"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>Book is open at trade time</span><span class="mono" style="margin-left:auto;font-size:10.5px;color:#4E607A">4 books</span></div>
+          <div class="rule" style="border-bottom:none"><span class="ok" style="background:rgba(251,191,36,.14);color:#FBBF24"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 8v5M12 16.5v.5"/></svg></span><span>Notional over $2.0M needs approval</span><span class="mono" style="margin-left:auto;font-size:10.5px;color:#FBBF24">warn</span></div>
+
+          <div style="margin-top:15px;padding-top:13px;border-top:1px solid #1E2A3D">
+            <div class="fldlab">CANCELLED TRADES</div>
+            <div style="font-size:11.5px;color:#8FA3BF;line-height:1.55">
+              A cancel is a status transition, never a delete. The row stays in the blotter, struck through, and the audit trail keeps who cancelled it and why.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="position:absolute;inset:0;background:rgba(4,7,13,.66)"></div>
+
+  <!-- CANCEL CONFIRMATION -->
+  <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:520px;border-radius:12px;border:1px solid #2A3A52;background:#0E1522;box-shadow:0 34px 80px rgba(0,0,0,.62);overflow:hidden">
+    <div style="padding:22px 24px 0;display:flex;gap:14px">
+      <div style="width:38px;height:38px;border-radius:10px;flex:none;background:rgba(251,113,133,.12);border:1px solid rgba(251,113,133,.34);display:flex;align-items:center;justify-content:center">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#FB7185" stroke-width="2" stroke-linecap="round"><path d="M12 8v5M12 16.5v.5"/><path d="M10.3 3.9 2.4 17.5A1.9 1.9 0 0 0 4 20.4h16a1.9 1.9 0 0 0 1.6-2.9L13.7 3.9a1.9 1.9 0 0 0-3.4 0z"/></svg>
+      </div>
+      <div>
+        <div style="font-size:17px;font-weight:600">Cancel this trade?</div>
+        <div style="font-size:12.5px;color:#8FA3BF;margin-top:5px;line-height:1.5">
+          Every connected client sees the cancellation immediately. The trade is not deleted, it moves to CANCELLED and stays in the blotter.
+        </div>
+      </div>
+    </div>
+
+    <div style="margin:18px 24px 0;border:1px solid #1B2740;border-radius:8px;background:#0A1120;padding:14px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="mono" style="font-size:13px;font-weight:600">TRD-100058</span>
+        <span style="font-size:15px;font-weight:600">VOD.L</span>
+        <span style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:4px;background:rgba(251,113,133,.10);border:1px solid rgba(251,113,133,.32);color:#FB7185;font-size:11px;font-weight:600">
+          <svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 11L1 3h10z"/></svg>SELL
+        </span>
+        <span class="mono" style="margin-left:auto;font-size:14px;font-weight:600">$1,779,500</span>
+      </div>
+      <div style="display:flex;gap:22px;margin-top:11px;font-size:11.5px;color:#8FA3BF">
+        <span class="mono">25,000 @ 71.18</span>
+        <span class="mono">RPATEL</span>
+        <span class="mono">EQUITIES_UK</span>
+        <span class="mono">Barclays</span>
+        <span class="mono" style="margin-left:auto">09:39:47</span>
+      </div>
+    </div>
+
+    <div style="padding:16px 24px 0">
+      <div class="fldlab">CANCELLATION REASON <span style="color:#FB7185">required</span></div>
+      <div style="height:38px;border:1px solid #22D3EE;box-shadow:0 0 0 3px rgba(34,211,238,.14);border-radius:6px;background:#080D16;display:flex;align-items:center;padding:0 11px;font-size:13px;justify-content:space-between">
+        Booked in error
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#61748F" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div style="font-size:11px;color:#4E607A;margin-top:7px">Written to the audit trail against your user, <span class="mono">JSMITH</span>.</div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:11px;padding:20px 24px 22px">
+      <div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:#61748F">
+        <span class="mono" style="border:1px solid #223046;border-radius:3px;padding:1px 5px">Esc</span> to keep
+      </div>
+      <div style="margin-left:auto;display:flex;gap:10px">
+        <div class="btn" style="width:118px;border:1px solid #223046;color:#C6D5E8">Keep trade</div>
+        <div class="btn" style="width:158px;background:#FB7185;color:#2A0710">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          Cancel trade
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

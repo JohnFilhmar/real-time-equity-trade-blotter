@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mobile · Activity (audit trail)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080B14;color:#E4ECF7;font-family:'IBM Plex Sans',ui-sans-serif,system-ui,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#22D3EE;text-decoration:none} a:hover{color:#67E8F9}
+.mono{font-family:'IBM Plex Mono',ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.app{width:390px;height:844px;overflow:hidden;background:#080B14;display:flex;flex-direction:column}
+.safe{height:44px;flex:none;background:#0B111C}
+.hd{height:56px;flex:none;display:flex;align-items:center;gap:10px;padding:0 8px 0 16px;background:#0B111C;border-bottom:1px solid #1E2A3D}
+.fbar{height:56px;flex:none;display:flex;align-items:center;gap:8px;padding:0 16px;background:#0A0F1A;border-bottom:1px solid #17212F;overflow:hidden}
+.chip{display:flex;align-items:center;gap:6px;height:44px;padding:0 14px;border-radius:22px;border:1px solid #223046;color:#9DB0CA;font-size:12.5px;flex:none}
+.chip-on{border-color:#155E75;background:rgba(34,211,238,.10);color:#67E8F9}
+.daylab{padding:11px 16px 7px;font-size:10px;letter-spacing:.1em;color:#4E607A;font-weight:600;background:#080B14}
+.ev{display:flex;gap:12px;padding:13px 16px;border-bottom:1px solid #131C29}
+.dot{width:30px;height:30px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center}
+.d-create{background:rgba(34,211,238,.11);border:1px solid rgba(34,211,238,.30);color:#22D3EE}
+.d-amend{background:rgba(251,191,36,.11);border:1px solid rgba(251,191,36,.30);color:#FBBF24}
+.d-cancel{background:rgba(251,113,133,.10);border:1px solid rgba(251,113,133,.30);color:#FB7185}
+.was{color:#61748F;text-decoration:line-through}
+.tabs{height:78px;flex:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:#0B111C;border-top:1px solid #1E2A3D;padding-top:9px}
+.tab{display:flex;flex-direction:column;align-items:center;gap:5px;color:#5C6E88;font-size:10.5px;font-weight:500}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="safe"></div>
+
+  <div class="hd">
+    <div>
+      <div style="font-size:19px;font-weight:700">Activity</div>
+      <div class="mono" style="font-size:11px;color:#61748F;margin-top:1px">1,364 events today</div>
+    </div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:4px">
+      <div style="display:flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:14px;background:rgba(34,211,238,.10);border:1px solid rgba(34,211,238,.30);color:#22D3EE;font-size:10.5px;font-weight:600;letter-spacing:.06em">
+        <span style="width:6px;height:6px;border-radius:50%;background:#22D3EE"></span>LIVE
+      </div>
+      <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#8FA3BF">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="fbar">
+    <div class="chip chip-on">All actions<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div>
+    <div class="chip">Any trader<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div>
+    <div class="chip">Today<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div>
+  </div>
+
+  <div style="flex:1;overflow:hidden">
+    <div class="daylab">LAST FEW MINUTES</div>
+
+    <div class="ev" style="background:linear-gradient(90deg,rgba(34,211,238,.11),transparent);box-shadow:inset 3px 0 0 #22D3EE">
+      <div class="dot d-create"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+      <div style="flex:1">
+        <div style="font-size:13.5px"><span class="mono" style="font-weight:600">JSMITH</span> booked <span class="mono">TRD-100061</span></div>
+        <div style="font-size:12px;color:#9DB0CA;margin-top:4px">NVDA BUY <span class="mono">12,400 @ 184.62</span></div>
+        <div class="mono" style="font-size:11px;color:#4E607A;margin-top:4px">now &middot; TECH_GROWTH</div>
+      </div>
+    </div>
+
+    <div class="ev">
+      <div class="dot d-amend"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3z"/></svg></div>
+      <div style="flex:1">
+        <div style="font-size:13.5px"><span class="mono" style="font-weight:600">ABROWN</span> amended <span class="mono">TRD-100060</span></div>
+        <div style="font-size:12px;color:#9DB0CA;margin-top:4px">price <span class="mono was">227.10</span> &rarr; <span class="mono" style="color:#34D399">227.45</span></div>
+        <div class="mono" style="font-size:11px;color:#4E607A;margin-top:4px">18s ago &middot; AAPL</div>
+      </div>
+    </div>
+
+    <div class="ev">
+      <div class="dot d-amend"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3z"/></svg></div>
+      <div style="flex:1">
+        <div style="font-size:13.5px"><span class="mono" style="font-weight:600">MJONES</span> amended <span class="mono">TRD-100060</span></div>
+        <div style="font-size:12px;color:#9DB0CA;margin-top:4px">quantity <span class="mono was">4,200</span> &rarr; <span class="mono">5,000</span></div>
+        <div class="mono" style="font-size:11px;color:#4E607A;margin-top:4px">22s ago &middot; AAPL</div>
+      </div>
+    </div>
+
+    <div class="ev">
+      <div class="dot d-create"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+      <div style="flex:1">
+        <div style="font-size:13.5px"><span class="mono" style="font-weight:600">ABROWN</span> booked <span class="mono">TRD-100060</span></div>
+        <div style="font-size:12px;color:#9DB0CA;margin-top:4px">AAPL SELL <span class="mono">4,200 @ 227.10</span></div>
+        <div class="mono" style="font-size:11px;color:#4E607A;margin-top:4px">14s ago &middot; JP Morgan</div>
+      </div>
+    </div>
+
+    <div class="daylab">EARLIER</div>
+
+    <div class="ev">
+      <div class="dot d-cancel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+      <div style="flex:1">
+        <div style="font-size:13.5px"><span class="mono" style="font-weight:600">KWONG</span> cancelled <span class="mono">TRD-100057</span></div>
+        <div style="font-size:12px;color:#9DB0CA;margin-top:4px">status <span class="mono was">ACTIVE</span> &rarr; <span class="mono" style="color:#FB7185">CANCELLED</span> &middot; booked in error</div>
+        <div class="mono" style="font-size:11px;color:#4E607A;margin-top:4px">2m ago &middot; TSLA</div>
+      </div>
+    </div>
+
+    <div class="ev" style="border-bottom:none">
+      <div class="dot d-create"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+      <div style="flex:1">
+        <div style="font-size:13.5px"><span class="mono" style="font-weight:600">LDIAZ</span> booked <span class="mono">TRD-100056</span></div>
+        <div style="font-size:12px;color:#9DB0CA;margin-top:4px">HSBA.L BUY <span class="mono">18,500 @ 6.42</span></div>
+        <div class="mono" style="font-size:11px;color:#4E607A;margin-top:4px">3m ago &middot; UBS</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg>Blotter</div>
+    <div class="tab"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>Positions</div>
+    <div class="tab"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>New</div>
+    <div class="tab" style="color:#22D3EE"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>Activity</div>
+    <div class="tab"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.6-3.6 4.4-5.4 8-5.4s6.4 1.8 8 5.4"/></svg>Profile</div>
+  </div>
+</div>
+</body>
+</html>

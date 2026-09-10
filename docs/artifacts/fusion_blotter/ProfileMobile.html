@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mobile · Profile & permissions</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080B14;color:#E4ECF7;font-family:'IBM Plex Sans',ui-sans-serif,system-ui,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#22D3EE;text-decoration:none} a:hover{color:#67E8F9}
+.mono{font-family:'IBM Plex Mono',ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.app{width:390px;height:844px;overflow:hidden;background:#080B14;display:flex;flex-direction:column}
+.safe{height:44px;flex:none;background:#0B111C}
+.hd{height:56px;flex:none;display:flex;align-items:center;padding:0 16px;background:#0B111C;border-bottom:1px solid #1E2A3D}
+.sect{padding:16px 16px 6px;font-size:10px;letter-spacing:.1em;color:#4E607A;font-weight:600}
+.item{height:52px;display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid #131C29;font-size:13.5px}
+.allow{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:11px;font-size:10.5px;font-weight:600;letter-spacing:.05em;color:#34D399;background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.28)}
+.deny{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:11px;font-size:10.5px;font-weight:600;letter-spacing:.05em;color:#61748F;border:1px solid #223046}
+.tog{width:44px;height:26px;border-radius:13px;position:relative;flex:none}
+.tog-on{background:#0E7490}
+.tog-off{background:#1E2A3D}
+.knob{position:absolute;top:3px;width:20px;height:20px;border-radius:50%}
+.tabs{height:78px;flex:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:#0B111C;border-top:1px solid #1E2A3D;padding-top:9px}
+.tab{display:flex;flex-direction:column;align-items:center;gap:5px;color:#5C6E88;font-size:10.5px;font-weight:500}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="safe"></div>
+
+  <div class="hd">
+    <div style="font-size:19px;font-weight:700">Profile</div>
+  </div>
+
+  <div style="flex:1;overflow:hidden">
+
+    <div style="padding:18px 16px;display:flex;align-items:center;gap:14px;border-bottom:1px solid #131C29">
+      <div style="width:56px;height:56px;border-radius:50%;background:#12303C;border:1px solid #17586B;color:#67E8F9;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:600">JS</div>
+      <div>
+        <div class="mono" style="font-size:17px;font-weight:600">JSMITH</div>
+        <div style="font-size:12.5px;color:#8FA3BF;margin-top:4px">Trader &middot; London equities desk</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:7px">
+          <span style="width:6px;height:6px;border-radius:50%;background:#22D3EE"></span>
+          <span class="mono" style="font-size:11px;color:#61748F">signed in 2h 14m &middot; socket live</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sect">BOOKING RIGHTS</div>
+    <div class="item">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8FA3BF" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      Book new trades
+      <span class="allow" style="margin-left:auto"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>ALLOWED</span>
+    </div>
+    <div class="item">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8FA3BF" stroke-width="2" stroke-linecap="round"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3z"/></svg>
+      Amend own trades
+      <span class="allow" style="margin-left:auto"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>ALLOWED</span>
+    </div>
+    <div class="item">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8FA3BF" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      Cancel own trades
+      <span class="allow" style="margin-left:auto"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>ALLOWED</span>
+    </div>
+    <div class="item" style="color:#8FA3BF">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#4E607A" stroke-width="2" stroke-linecap="round"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="M2 4l20 16" stroke="#4E607A"/></svg>
+      Amend another trader's book
+      <span class="deny" style="margin-left:auto">DESK HEAD ONLY</span>
+    </div>
+
+    <div class="sect">PREFERENCES</div>
+    <div class="item">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8FA3BF" stroke-width="2" stroke-linecap="round"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>
+      Live updates
+      <div class="tog tog-on" style="margin-left:auto"><div class="knob" style="right:3px;background:#67E8F9"></div></div>
+    </div>
+    <div class="item">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8FA3BF" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14" opacity="0"/><path d="M5 9h4l5-4v14l-5-4H5z"/><path d="M17.5 9.5a4 4 0 0 1 0 5"/></svg>
+      Sound on new trade
+      <div class="tog tog-off" style="margin-left:auto"><div class="knob" style="left:3px;background:#5C6E88"></div></div>
+    </div>
+    <div class="item">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8FA3BF" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      Reduce motion
+      <div class="tog tog-off" style="margin-left:auto"><div class="knob" style="left:3px;background:#5C6E88"></div></div>
+    </div>
+    <div class="item">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8FA3BF" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg>
+      Default blotter view
+      <span class="mono" style="margin-left:auto;font-size:12.5px;color:#67E8F9">All trades</span>
+    </div>
+
+    <div style="padding:16px">
+      <div style="height:52px;border-radius:10px;border:1px solid rgba(251,113,133,.40);color:#FB7185;display:flex;align-items:center;justify-content:center;gap:9px;font-size:14.5px;font-weight:600">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17l5-5-5-5M20 12H9M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5"/></svg>
+        Sign out
+      </div>
+      <div class="mono" style="margin-top:14px;font-size:10.5px;color:#3B4A61;display:flex;justify-content:center;gap:14px">
+        <span>build 1.4.0</span><span>api eu-west-2</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg>Blotter</div>
+    <div class="tab"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>Positions</div>
+    <div class="tab"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>New</div>
+    <div class="tab"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>Activity</div>
+    <div class="tab" style="color:#22D3EE"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.6-3.6 4.4-5.4 8-5.4s6.4 1.8 8 5.4"/></svg>Profile</div>
+  </div>
+</div>
+</body>
+</html>
