@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TradeSide {
+  BUY
+  SELL
+
+  @@map("trade_side")
+}
+
+enum TradeStatus {
+  ACTIVE
+  CANCELLED
+
+  @@map("trade_status")
+}
+
+/// An executed equity trade as it appears on the blotter.
+model Trade {
+  id             String      @id @default(uuid()) @db.Uuid
+  tradeId        String      @unique @map("trade_id") @db.VarChar(24)
+  symbol         String      @db.VarChar(12)
+  side           TradeSide
+  quantity       Int
+  price          Decimal     @db.Decimal(18, 6)
+  trader         String      @db.VarChar(32)
+  book           String      @db.VarChar(64)
+  counterparty   String      @db.VarChar(128)
+  tradeTimestamp DateTime    @map("trade_timestamp") @db.Timestamptz(3)
+  status         TradeStatus @default(ACTIVE)
+  version        Int         @default(1)
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  amendments TradeAmendment[]
+
+  @@index([status, tradeTimestamp(sort: Desc)], map: "trade_status_timestamp_idx")
+  @@index([symbol], map: "trade_symbol_idx")
+  @@index([trader], map: "trade_trader_idx")
+  @@index([book], map: "trade_book_idx")
+  @@map("trade")
+}
+
+/// One row per amendment, written in the same transaction as the update it describes.
+model TradeAmendment {
+  id        String   @id @default(uuid()) @db.Uuid
+  tradeUuid String   @map("trade_uuid") @db.Uuid
+  version   Int
+  changes   Json     @db.JsonB
+  amendedBy String   @map("amended_by") @db.VarChar(32)
+  amendedAt DateTime @default(now()) @map("amended_at") @db.Timestamptz(3)
+
+  trade Trade @relation(fields: [tradeUuid], references: [id], onDelete: Cascade)
+
+  @@index([tradeUuid, version], map: "trade_amendment_trade_version_idx")
+  @@map("trade_amendment")
+}
