@@ -1,0 +1,622 @@
+<title>Blotter Build Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap">
+
+<style>
+  :root {
+    --ground: #f5f6f8;
+    --surface: #ffffff;
+    --surface_sunk: #eef0f4;
+    --ink: #151a21;
+    --ink_muted: #5b6675;
+    --rule: #dce0e6;
+    --rule_strong: #c3cad3;
+    --accent: #12596e;
+    --accent_soft: #dceaf0;
+    --buy: #0e7a50;
+    --sell: #a8332a;
+
+    --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --body: "Newsreader", Georgia, "Times New Roman", serif;
+    --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  }
+
+  :root:not([data-theme="light"]) {
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0f1319;
+      --surface: #161b22;
+      --surface_sunk: #1c222b;
+      --ink: #e6eaf0;
+      --ink_muted: #94a1b1;
+      --rule: #262d38;
+      --rule_strong: #38424f;
+      --accent: #62aec6;
+      --accent_soft: #17323d;
+      --buy: #3ac48d;
+      --sell: #e47365;
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0f1319;
+    --surface: #161b22;
+    --surface_sunk: #1c222b;
+    --ink: #e6eaf0;
+    --ink_muted: #94a1b1;
+    --rule: #262d38;
+    --rule_strong: #38424f;
+    --accent: #62aec6;
+    --accent_soft: #17323d;
+    --buy: #3ac48d;
+    --sell: #e47365;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 17px;
+    line-height: 1.65;
+    padding-inline: 20px;
+    padding-block: 56px 96px;
+  }
+
+  .wrap {
+    max-width: 74ch;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 52px;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--display);
+    text-wrap: balance;
+    margin: 0;
+    line-height: 1.15;
+  }
+
+  h1 {
+    font-size: clamp(2.1rem, 6vw, 3rem);
+    font-weight: 700;
+    letter-spacing: -0.022em;
+  }
+
+  h2 {
+    font-size: 1.42rem;
+    font-weight: 600;
+    letter-spacing: -0.012em;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--rule_strong);
+  }
+
+  h3 {
+    font-size: 1.03rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+
+  p { margin: 0; }
+
+  a {
+    color: var(--accent);
+    text-underline-offset: 3px;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink_muted);
+  }
+
+  header { display: flex; flex-direction: column; gap: 14px; }
+
+  .standfirst {
+    font-size: 1.14rem;
+    color: var(--ink_muted);
+    max-width: 60ch;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 26px;
+    font-family: var(--mono);
+    font-size: 0.79rem;
+    color: var(--ink_muted);
+    padding-top: 14px;
+    border-top: 1px solid var(--rule);
+  }
+
+  .meta b {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  section { display: flex; flex-direction: column; gap: 20px; }
+
+  .scroller {
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    background: var(--surface);
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-family: var(--display);
+    font-size: 0.87rem;
+    min-width: 540px;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 11px 15px;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+
+  th {
+    font-size: 0.71rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink_muted);
+    background: var(--surface_sunk);
+    white-space: nowrap;
+  }
+
+  tbody tr:last-child td { border-bottom: 0; }
+
+  td code, p code, li code {
+    font-family: var(--mono);
+    font-size: 0.85em;
+    background: var(--surface_sunk);
+    padding: 1px 5px;
+    border-radius: 2px;
+  }
+
+  .flag {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    padding: 2px 7px;
+    border-radius: 2px;
+    border: 1px solid currentColor;
+  }
+
+  .flag.breaks { color: var(--sell); }
+  .flag.gap { color: var(--accent); }
+
+  pre {
+    font-family: var(--mono);
+    font-size: 0.79rem;
+    line-height: 1.75;
+    margin: 0;
+    padding: 18px 20px;
+    overflow-x: auto;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    color: var(--ink);
+  }
+
+  pre .note { color: var(--ink_muted); }
+
+  ol.phases {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    counter-reset: phase -1;
+  }
+
+  ol.phases li {
+    display: grid;
+    grid-template-columns: 2.6rem 1fr;
+    gap: 4px 16px;
+    padding: 16px 0;
+    border-top: 1px solid var(--rule);
+  }
+
+  ol.phases li::before {
+    counter-increment: phase;
+    content: counter(phase, decimal-leading-zero);
+    font-family: var(--mono);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    padding-top: 2px;
+  }
+
+  .phase_head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px 14px;
+  }
+
+  .hours {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--ink_muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .phase_body {
+    grid-column: 2;
+    font-size: 0.95rem;
+    color: var(--ink_muted);
+  }
+
+  .bar {
+    grid-column: 2;
+    height: 4px;
+    background: var(--surface_sunk);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+
+  .bar span {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+  }
+
+  ul.plain {
+    margin: 0;
+    padding-left: 1.15em;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .callout {
+    background: var(--accent_soft);
+    border-left: 3px solid var(--accent);
+    padding: 16px 20px;
+    font-size: 0.95rem;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  footer {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--ink_muted);
+    border-top: 1px solid var(--rule);
+    padding-top: 18px;
+  }
+
+  @media (max-width: 460px) {
+    body { font-size: 16px; padding-block: 36px 64px; }
+    .wrap { gap: 40px; }
+    ol.phases li { grid-template-columns: 2.1rem 1fr; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">TP ICAP take-home &middot; full stack exercise</p>
+    <h1>Blotter Build Plan</h1>
+    <p class="standfirst">
+      Execution plan for a real-time equity trade blotter, starting from the bare Express and
+      Next.js scaffold already committed. Decisions first, then the phase order that gets to a
+      submittable state inside the 8&ndash;15 hour budget.
+    </p>
+    <div class="meta">
+      <span><b>Stack</b> Express 5 &middot; Prisma 7 &middot; Postgres &middot; Next 16 &middot; React 19</span>
+      <span><b>Budget</b> ~12 h</span>
+      <span><b>Window</b> 7 calendar days</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>Decisions taken up front</h2>
+    <p>
+      Each of these is a graded trade-off. The rejected option matters as much as the chosen one,
+      so both go in the README.
+    </p>
+    <div class="scroller">
+      <table>
+        <thead>
+          <tr><th>Question</th><th>Chosen</th><th>Why</th><th>Rejected</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Database</td>
+            <td>Postgres 17 + Prisma</td>
+            <td>The compose file already sets <code>read_only: true</code> on the backend, which a
+                SQLite file cannot survive. Postgres also lets the schema show real indexing and
+                enum design.</td>
+            <td>SQLite</td>
+          </tr>
+          <tr>
+            <td>Price column</td>
+            <td><code>Decimal(18,6)</code></td>
+            <td>Binary floats cannot represent a price exactly. On a trading blotter that is the
+                first thing a reviewer looks for.</td>
+            <td><code>Float</code>, <code>Double</code></td>
+          </tr>
+          <tr>
+            <td>Realtime transport</td>
+            <td>Socket.IO</td>
+            <td>Reconnection with backoff, rooms for later per-book scoping, and a typed event map
+                through <code>Server&lt;ClientToServer, ServerToClient&gt;</code>.</td>
+            <td>Raw <code>ws</code>, SSE</td>
+          </tr>
+          <tr>
+            <td>API contract</td>
+            <td>Shared <code>zod</code> package</td>
+            <td>One canonical schema per model in an npm workspace both apps import, so the request
+                shape, the response type and the socket payload cannot drift apart.</td>
+            <td>Duplicated types per app</td>
+          </tr>
+          <tr>
+            <td>Live update strategy</td>
+            <td>Patch the query cache</td>
+            <td>Socket events call <code>setQueryData</code>. Refetching the whole blotter on every
+                event scales badly and reads as the lazy option.</td>
+            <td>Refetch on event</td>
+          </tr>
+          <tr>
+            <td>Authentication</td>
+            <td>Out of scope, documented</td>
+            <td>Not a requirement. The transport hardening that does apply is kept; the JWT
+                rotation and RBAC design is described in the README instead of half-built.</td>
+            <td>Half-built login</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Scaffold defects to clear first</h2>
+    <p>
+      Found by reading the committed scaffold. Two of these break the Docker image outright rather
+      than degrading it, so they lead phase 00.
+    </p>
+    <div class="scroller">
+      <table>
+        <thead>
+          <tr><th>Where</th><th>Problem</th><th>Severity</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>backend/Dockerfile</code></td>
+            <td>Never copies <code>prisma/</code> and never runs <code>prisma generate</code>, so the
+                client is missing from the built image.</td>
+            <td><span class="flag breaks">Breaks build</span></td>
+          </tr>
+          <tr>
+            <td><code>docker-compose.yaml</code></td>
+            <td>No database service at all, and <code>database/</code> is an empty directory despite
+                being a named deliverable.</td>
+            <td><span class="flag breaks">Breaks run</span></td>
+          </tr>
+          <tr>
+            <td><code>backend/src/index.ts</code></td>
+            <td>Hardcodes port <code>5000</code> and ignores the <code>PORT</code> variable that both
+                the Dockerfile and compose set.</td>
+            <td><span class="flag gap">Gap</span></td>
+          </tr>
+          <tr>
+            <td><code>backend/src/app.ts</code></td>
+            <td>The 404 catch-all is registered inside <code>create_app</code>, so every future route
+                must be mounted above it or silently 404.</td>
+            <td><span class="flag gap">Gap</span></td>
+          </tr>
+          <tr>
+            <td><code>backend/src/config</code></td>
+            <td>Does not exist. No validated environment schema, so <code>process.env</code> would be
+                read ad hoc throughout the service.</td>
+            <td><span class="flag gap">Gap</span></td>
+          </tr>
+          <tr>
+            <td><code>backend/tsconfig.json</code></td>
+            <td>No <code>paths</code> aliases, which forces relative import chains as the tree
+                deepens.</td>
+            <td><span class="flag gap">Gap</span></td>
+          </tr>
+          <tr>
+            <td><code>cors</code></td>
+            <td>Installed but never mounted. Needs an explicit origin allowlist rather than a
+                wildcard.</td>
+            <td><span class="flag gap">Gap</span></td>
+          </tr>
+          <tr>
+            <td>Error handling</td>
+            <td>No central handler. Express 5 forwards async rejections on its own, so one typed
+                handler covers the whole surface.</td>
+            <td><span class="flag gap">Gap</span></td>
+          </tr>
+          <tr>
+            <td><code>ws</code> dependency</td>
+            <td>Declared alongside <code>socket.io</code>, leaving the transport contract ambiguous
+                in the manifest.</td>
+            <td><span class="flag gap">Cleared</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Target structure</h2>
+    <p>
+      Grouped by role, one role per directory. The repository interface is what lets the service
+      layer be unit tested without mocking Prisma itself.
+    </p>
+<pre>
+shared/src/
+  schemas/trade.ts          <span class="note">one canonical zod schema, variants derived</span>
+  events/socket_events.ts   <span class="note">typed client and server event maps</span>
+
+backend/src/
+  config/env.ts             <span class="note">parsed once at bootstrap, exported typed</span>
+  interfaces/               <span class="note">trade_repository port</span>
+  repositories/             <span class="note">prisma_trade_repository</span>
+  services/                 <span class="note">status transitions, amend rules, audit write</span>
+  routes/                   <span class="note">thin: parse, call service, respond</span>
+  middleware/               <span class="note">error_handler, rate_limit, request_context</span>
+  realtime/socket_server.ts
+  lib/seed/                 <span class="note">faker generator, deterministic</span>
+  db/prisma_client.ts
+backend/prisma/schema.prisma
+database/                   <span class="note">init sql, ERD, README</span>
+
+frontend/
+  app/page.tsx              <span class="note">server component shell</span>
+  app/providers.tsx         <span class="note">'use client': query, socket, toast</span>
+  components/ui/            <span class="note">button, input, select, dialog, table, toast</span>
+  components/blotter/       <span class="note">trade_table, filters, form_dialog</span>
+  lib/hooks/                <span class="note">use_trades, use_trade_stream, mutations</span>
+  lib/stores/               <span class="note">zustand filter store</span>
+</pre>
+  </section>
+
+  <section>
+    <h2>Phase order</h2>
+    <p>
+      Numbered because the order carries real dependencies: the shared contract has to exist before
+      either side consumes it, and the service layer has to emit events before the frontend can
+      subscribe to them.
+    </p>
+    <ol class="phases">
+      <li>
+        <div class="phase_head"><h3>Foundation</h3><span class="hours">1.5 h</span></div>
+        <div class="bar"><span style="width:12%"></span></div>
+        <p class="phase_body">
+          npm workspaces, the <code>shared/</code> contract package, validated env config, Prisma
+          schema and first migration, Postgres in compose, and the scaffold defects above.
+        </p>
+      </li>
+      <li>
+        <div class="phase_head"><h3>API</h3><span class="hours">2.5 h</span></div>
+        <div class="bar"><span style="width:21%"></span></div>
+        <p class="phase_body">
+          Repository, service, routes. List with filter, sort and pagination; create; amend; cancel.
+          Central typed error handler. Seed roughly 500 trades on startup when the table is empty.
+        </p>
+      </li>
+      <li>
+        <div class="phase_head"><h3>Realtime</h3><span class="hours">1 h</span></div>
+        <div class="bar"><span style="width:8%"></span></div>
+        <p class="phase_body">
+          Typed Socket.IO server emitting <code>trade.created</code>, <code>trade.amended</code> and
+          <code>trade.cancelled</code> from the service layer, never from a route handler.
+        </p>
+      </li>
+      <li>
+        <div class="phase_head"><h3>Frontend blotter</h3><span class="hours">3.5 h</span></div>
+        <div class="bar"><span style="width:29%"></span></div>
+        <p class="phase_body">
+          TanStack Query, TanStack Table and virtualisation. Sort, filter, manual refresh, create
+          and amend dialogs, cancel confirmation, optimistic updates with rollback, and designed
+          loading, empty and error states.
+        </p>
+      </li>
+      <li>
+        <div class="phase_head"><h3>Tests</h3><span class="hours">2 h</span></div>
+        <div class="bar"><span style="width:17%"></span></div>
+        <p class="phase_body">
+          Unit on state transitions and schemas, supertest integration against a real Postgres, a
+          two-client socket broadcast test, and one Playwright pass where a trade created in one
+          tab appears in another.
+        </p>
+      </li>
+      <li>
+        <div class="phase_head"><h3>Bonus features</h3><span class="hours">1 h</span></div>
+        <div class="bar"><span style="width:8%"></span></div>
+        <p class="phase_body">
+          Audit trail written in the same transaction as the amend, and a net-position-by-symbol
+          endpoint. Both are cheap and both are visible to a reviewer.
+        </p>
+      </li>
+      <li>
+        <div class="phase_head"><h3>Documentation</h3><span class="hours">1 h</span></div>
+        <div class="bar"><span style="width:8%"></span></div>
+        <p class="phase_body">
+          README covering architecture, setup, tests, assumptions and trade-offs, plus the AI usage
+          report assembled from the prompt log.
+        </p>
+      </li>
+    </ol>
+    <div class="callout">
+      <strong>The prompt log starts in phase 00, not phase 06.</strong>
+      <p>
+        Communication is 10% of the mark and asks for a prompt log and an AI usage report. A log
+        assembled at the end reads as assembled at the end. Every agent appends its entry in the
+        turn the work happened.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Where the marks are</h2>
+    <div class="scroller">
+      <table>
+        <thead>
+          <tr><th>Criterion</th><th>Weight</th><th>What answers it</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Engineering quality</td><td>30%</td><td>Role-grouped structure, repository behind an interface, no business logic in route handlers</td></tr>
+          <tr><td>TypeScript usage</td><td>20%</td><td>Shared zod contract package, derived variants, typed socket event maps, strict compiler flags kept</td></tr>
+          <tr><td>Full stack design</td><td>20%</td><td>Decimal pricing, indexed filter columns, cache patching rather than refetching</td></tr>
+          <tr><td>User experience</td><td>10%</td><td>Optimistic updates with rollback, designed empty and error states, virtualised grid</td></tr>
+          <tr><td>Testing</td><td>10%</td><td>Integration against a real database over mock-heavy unit tests</td></tr>
+          <tr><td>Communication</td><td>10%</td><td>README trade-offs, AI usage report, and this prompt log</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Known risks</h2>
+    <ul class="plain">
+      <li>
+        <strong>Workspace plus Docker.</strong> Moving to npm workspaces means both build contexts
+        move to the repository root. Worth it for the contract package, but it is the change most
+        likely to break the image, so it lands in phase 00 while there is time to fix it.
+      </li>
+      <li>
+        <strong>Pre-existing audit findings.</strong> <code>npm audit</code> reports five high
+        severity issues, all reached through the Prisma 7 toolchain via <code>@prisma/config</code>.
+        The suggested fix downgrades Prisma to 6.x, a breaking change, and the vulnerable paths are
+        build-time rather than runtime. Documented in the README instead of downgraded.
+      </li>
+      <li>
+        <strong>Scope creep through bonus features.</strong> The exercise explicitly values
+        trade-offs over feature completeness. Audit trail and positions are in; P&amp;L, login and
+        deployment stay out unless the budget survives phase 05.
+      </li>
+    </ul>
+  </section>
+
+  <footer>
+    Written 2026-09-10T18:15Z &middot; source at <code>docs/artifacts/blotter_build_plan.html</code>
+  </footer>
+
+</div>
