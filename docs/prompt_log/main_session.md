@@ -111,3 +111,17 @@ Significant prompts only, append-only, newest at the bottom. Rules: `/CLAUDE.md`
 **Outcome:** Replaced 44 inline `rgba()` values with a 58-token palette written out per theme, because glass is a different recipe in each: translucent dark with a light edge on dark, frosted white with a dark hairline on light, which re-alpha-ing a single base cannot express. Added a three-state System/Dark/Light control, sourced the light values from Direction C rather than inverting the dark ones, and verified token parity across all three theme blocks.
 
 **Artifact:** [Fusion Blotter Prototype](../artifacts/fusion_blotter_prototype.html)
+
+---
+
+### 2026-09-11T02:30Z - confirm_type_pairing
+
+**Prompt**
+
+> by the way i forgot in case you have not used it, to use fonts Roboto and Source Sans 3 since after
+> searching via brave ai, that's the first result. but if you think there's anything better than it,
+> give me your suggestions or options.
+
+**Outcome:** Argued that Roboto and Source Sans 3 are both neutral sans at the same optical weight, so pairing them gives no contrast, and that the axis a blotter needs is proportional against monospace; offered Source Sans 3 + Source Code Pro, Source Sans 3 + Roboto Mono, and keeping IBM Plex, and the user kept IBM Plex Sans + IBM Plex Mono. Verified in the browser that Plex Mono's zero is dotted by default, which makes `0` unambiguous against `O` with no font-feature CSS, correcting an earlier claim that a slashed zero was available behind the `zero` feature.
+
+**Artifact:** [Fusion Blotter Prototype](../artifacts/fusion_blotter_prototype.html)
