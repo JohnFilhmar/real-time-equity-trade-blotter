@@ -148,3 +148,35 @@ The database-backed repository tier was written and left skipping, because no Do
 reachable to run it against.
 
 **Commits:** `c217419`
+
+---
+
+### 2026-09-11T02:05Z - verify_containerisation
+
+**Prompt:** "docker engine is up, you can proceed testing it and verifying the containerization of the system."
+
+**Outcome:** Ran the stack and verified it rather than asserting it: 28 end-to-end checks against the
+containers including two Socket.IO clients standing in for two browser tabs, the 8 database-backed
+repository tests against the containerised Postgres, a cold start on an empty volume applying the
+migration and seeding 500 trades, and runtime hardening holding as non-root with a read-only root
+filesystem. Two real defects surfaced that only running the containers could expose, both in the
+shutdown path.
+
+**Artifact:** [Container verification](../artifacts/container_verification.html)
+
+---
+
+### 2026-09-11T02:20Z - fix_graceful_shutdown_under_docker
+
+**Prompt** (answer to a question about how to fix the SIGTERM defect)
+
+> "Separate migrate from run" - CMD becomes node dist/index.js and the migration runs as its own
+> one-shot compose service that the backend depends on.
+
+**Outcome:** Moved `prisma migrate deploy` into its own compose service gated by
+`service_completed_successfully`, so node is PID 1 in the API container and actually receives
+SIGTERM, which npm had been swallowing. That exposed a second bug underneath, `io.close()` already
+closing the HTTP server so the following `http_server.close()` failed with `ERR_SERVER_NOT_RUNNING`
+and exited 1; the stop now logs `shutdown complete` and exits 0 in about a second.
+
+**Commits:** `c5611f6`
