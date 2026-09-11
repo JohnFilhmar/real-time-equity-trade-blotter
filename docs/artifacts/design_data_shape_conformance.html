@@ -1,0 +1,562 @@
+<title>Design Data Shape Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap">
+
+<style>
+  :root {
+    --ground: #f5f6f8;
+    --surface: #ffffff;
+    --surface_sunk: #eef0f4;
+    --ink: #151a21;
+    --ink_muted: #5b6675;
+    --rule: #dce0e6;
+    --rule_strong: #c3cad3;
+    --accent: #12596e;
+    --accent_soft: #dceaf0;
+    --buy: #0e7a50;
+    --sell: #a8332a;
+    --warn: #8a5a08;
+
+    --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --body: "Newsreader", Georgia, "Times New Roman", serif;
+    --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  }
+
+  :root:not([data-theme="light"]) {
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0f1319;
+      --surface: #161b22;
+      --surface_sunk: #1c222b;
+      --ink: #e6eaf0;
+      --ink_muted: #94a1b1;
+      --rule: #262d38;
+      --rule_strong: #38424f;
+      --accent: #62aec6;
+      --accent_soft: #17323d;
+      --buy: #3ac48d;
+      --sell: #e47365;
+      --warn: #d8a23d;
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0f1319;
+    --surface: #161b22;
+    --surface_sunk: #1c222b;
+    --ink: #e6eaf0;
+    --ink_muted: #94a1b1;
+    --rule: #262d38;
+    --rule_strong: #38424f;
+    --accent: #62aec6;
+    --accent_soft: #17323d;
+    --buy: #3ac48d;
+    --sell: #e47365;
+    --warn: #d8a23d;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 17px;
+    line-height: 1.65;
+    padding-inline: 20px;
+    padding-block: 56px 96px;
+  }
+
+  .wrap {
+    max-width: 74ch;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 52px;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--display);
+    text-wrap: balance;
+    margin: 0;
+    line-height: 1.15;
+  }
+
+  h1 {
+    font-size: clamp(2.1rem, 6vw, 3rem);
+    font-weight: 700;
+    letter-spacing: -0.022em;
+  }
+
+  h2 {
+    font-size: 1.42rem;
+    font-weight: 600;
+    letter-spacing: -0.012em;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--rule_strong);
+  }
+
+  h3 {
+    font-size: 1.03rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+
+  p { margin: 0; }
+
+  a {
+    color: var(--accent);
+    text-underline-offset: 3px;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink_muted);
+  }
+
+  header { display: flex; flex-direction: column; gap: 14px; }
+
+  .standfirst {
+    font-size: 1.14rem;
+    color: var(--ink_muted);
+    max-width: 60ch;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 26px;
+    font-family: var(--mono);
+    font-size: 0.79rem;
+    color: var(--ink_muted);
+    padding-top: 14px;
+    border-top: 1px solid var(--rule);
+  }
+
+  .meta b {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  section { display: flex; flex-direction: column; gap: 20px; }
+
+  .scroller {
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    background: var(--surface);
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-family: var(--display);
+    font-size: 0.87rem;
+    min-width: 560px;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 11px 15px;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+
+  th {
+    font-size: 0.71rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink_muted);
+    background: var(--surface_sunk);
+    white-space: nowrap;
+  }
+
+  tbody tr:last-child td { border-bottom: 0; }
+
+  td code, p code, li code {
+    font-family: var(--mono);
+    font-size: 0.85em;
+    background: var(--surface_sunk);
+    padding: 1px 5px;
+    border-radius: 2px;
+  }
+
+  .flag {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    padding: 2px 7px;
+    border-radius: 2px;
+    border: 1px solid currentColor;
+  }
+
+  .flag.ok { color: var(--buy); }
+  .flag.breaks { color: var(--sell); }
+  .flag.gap { color: var(--accent); }
+  .flag.defect { color: var(--warn); }
+
+  pre {
+    font-family: var(--mono);
+    font-size: 0.79rem;
+    line-height: 1.75;
+    margin: 0;
+    padding: 18px 20px;
+    overflow-x: auto;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    color: var(--ink);
+  }
+
+  pre .note { color: var(--ink_muted); }
+  pre .hit { color: var(--sell); font-weight: 600; }
+
+  ul.plain {
+    margin: 0;
+    padding-left: 1.15em;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .callout {
+    background: var(--accent_soft);
+    border-left: 3px solid var(--accent);
+    padding: 16px 20px;
+    font-size: 0.95rem;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .callout.hot { border-left-color: var(--sell); }
+
+  .cite {
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    color: var(--ink_muted);
+    display: block;
+    margin-top: 3px;
+  }
+
+  .verdict {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .verdict div {
+    flex: 1 1 140px;
+    background: var(--surface);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .verdict .num {
+    font-family: var(--mono);
+    font-size: 1.8rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .verdict .cap {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink_muted);
+  }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Fusion Blotter &middot; design review</div>
+    <h1>Design Data Shape Audit</h1>
+    <p class="standfirst">
+      Does the published design render the trade shape the take-home brief specifies, and does it
+      agree with the schema already committed to this repository? Field coverage is complete. Seven
+      divergences sit around the edges of it, one of which is a direct contradiction.
+    </p>
+    <div class="meta">
+      <span><b>Scope</b> 23 artboards</span>
+      <span><b>Against</b> take-home-assessment.md</span>
+      <span><b>And</b> shared/src/schemas/trade.ts</span>
+      <span><b>Checked</b> 2026-09-11</span>
+    </div>
+  </header>
+
+  <section>
+    <div class="verdict">
+      <div><span class="num" style="color:var(--buy)">10/10</span><span class="cap">Brief fields rendered</span></div>
+      <div><span class="num" style="color:var(--sell)">1</span><span class="cap">Contract contradiction</span></div>
+      <div><span class="num" style="color:var(--accent)">5</span><span class="cap">Unbacked by a field</span></div>
+      <div><span class="num" style="color:var(--warn)">1</span><span class="cap">Board defect</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Which shape counts as "required"</h2>
+    <p>
+      The brief states the trade model twice and the two statements disagree. It gives a minimum
+      <code>interface Trade</code> keyed on <code>id</code> and <code>tradeDate</code> with no book or
+      counterparty, then gives sample JSON, described as "the type of data consumed by the trade
+      blotter", keyed on <code>tradeId</code> and <code>tradeTimestamp</code> and carrying both. The
+      "suggested fields to randomize" list matches the JSON, not the interface.
+    </p>
+    <pre><span class="note">// take-home-assessment.md, the interface     // take-home-assessment.md, the sample data</span>
+id         <span class="note">string</span>                            tradeId         <span class="note">"TRD-100001"</span>
+symbol     <span class="note">string</span>                            symbol          <span class="note">"AAPL"</span>
+quantity   <span class="note">number</span>                            side            <span class="note">"BUY"</span>
+price      <span class="note">number</span>                            quantity        <span class="note">5000</span>
+side       <span class="note">"BUY" | "SELL"</span>                    price           <span class="note">227.45</span>
+trader     <span class="note">string</span>                            trader          <span class="note">"JSMITH"</span>
+tradeDate  <span class="note">string</span>                            book            <span class="note">"EQUITIES_UK"</span>
+status     <span class="note">"ACTIVE" | "CANCELLED"</span>            counterparty    <span class="note">"Goldman Sachs"</span>
+                                              tradeTimestamp  <span class="note">"2026-08-18T09:15:23Z"</span>
+                                              status          <span class="note">"ACTIVE"</span></pre>
+    <p>
+      This repository already resolved that: <code>trade_schema</code> follows the sample JSON, adds a
+      UUID <code>id</code> beside the business <code>tradeId</code>, and adds <code>version</code>,
+      <code>createdAt</code> and <code>updatedAt</code>. The brief permits extension. The audit below
+      therefore measures the design against the sample-JSON shape as the committed schema expresses it.
+      <span class="cite">shared/src/schemas/trade.ts:26 &middot; backend/prisma/schema.prisma model Trade</span>
+    </p>
+  </section>
+
+  <section>
+    <h2>Field coverage: complete</h2>
+    <p>
+      All three visual directions carry the same eleven grid columns, and every one of the brief's ten
+      fields has a home. <code>NOTIONAL</code> is the only addition and it is derived client-side from
+      quantity and price, so it needs no field.
+    </p>
+    <div class="scroller">
+      <table>
+        <thead>
+          <tr><th>Brief field</th><th>Rendered as</th><th>Evidence</th><th>Verdict</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>tradeId</code></td><td>TRADE ID column, <code>TRD-100049</code>&hellip;<code>TRD-100061</code></td><td>Main:153</td><td><span class="flag ok">Pass</span></td></tr>
+          <tr><td><code>symbol</code></td><td>SYMBOL column</td><td>Main:153</td><td><span class="flag ok">Pass</span></td></tr>
+          <tr><td><code>side</code></td><td>SIDE column, BUY / SELL only</td><td>Main:153</td><td><span class="flag ok">Pass</span></td></tr>
+          <tr><td><code>quantity</code></td><td>QUANTITY column, right-aligned numeric</td><td>Main:153</td><td><span class="flag ok">Pass</span></td></tr>
+          <tr><td><code>price</code></td><td>PRICE column, right-aligned numeric</td><td>Main:153</td><td><span class="flag ok">Pass</span></td></tr>
+          <tr><td><code>trader</code></td><td>TRADER column</td><td>Main:153</td><td><span class="flag ok">Pass</span></td></tr>
+          <tr><td><code>book</code></td><td>BOOK column</td><td>Main:153</td><td><span class="flag ok">Pass</span></td></tr>
+          <tr><td><code>counterparty</code></td><td>COUNTERPARTY column</td><td>Main:153</td><td><span class="flag ok">Pass</span></td></tr>
+          <tr><td><code>tradeTimestamp</code></td><td>TIME column (<code>09:40:58</code>), full ISO in detail panels</td><td>Main:154 &middot; AuditTrail:224</td><td><span class="flag ok">Pass</span></td></tr>
+          <tr><td><code>status</code></td><td>STATUS column</td><td>Main:155</td><td><span class="flag breaks">See D1</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      The same holds on the amend and create overlays for all three directions, which collect the
+      eight client-supplied fields of <code>create_trade_schema</code>: symbol, side, quantity, price,
+      trader, book, counterparty, trade timestamp.
+    </p>
+  </section>
+
+  <section>
+    <h2>Sample values: all legal under the schema</h2>
+    <p>
+      The mock data is not placeholder noise. Every value in the boards passes the Zod constraints
+      already written, which means the design can be populated from the real seed without restating it.
+    </p>
+    <div class="scroller">
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Constraint</th><th>Values used in the boards</th><th>Verdict</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>tradeId</code></td><td><code>/^TRD-\d{6,}$/</code></td><td><code>TRD-100049</code> &hellip; <code>TRD-100061</code></td><td><span class="flag ok">Pass</span></td></tr>
+          <tr><td><code>symbol</code></td><td><code>/^[A-Z][A-Z.]*$/</code>, max 12</td><td>AAPL, MSFT, TSLA, NVDA, HSBA.L, VOD.L</td><td><span class="flag ok">Pass</span></td></tr>
+          <tr><td><code>trader</code></td><td>1&ndash;32 chars</td><td>JSMITH, ABROWN, MJONES, KWONG, LDIAZ, RPATEL</td><td><span class="flag ok">Pass</span></td></tr>
+          <tr><td><code>book</code></td><td>1&ndash;64 chars</td><td>EQUITIES_UK, EQUITIES_US, TECH_GROWTH</td><td><span class="flag ok">Pass</span></td></tr>
+          <tr><td><code>counterparty</code></td><td>1&ndash;128 chars</td><td>Goldman Sachs, JP Morgan, Morgan Stanley, Barclays, UBS</td><td><span class="flag ok">Pass</span></td></tr>
+          <tr><td><code>side</code></td><td><code>BUY | SELL</code></td><td>BUY (51), SELL (52). No third value anywhere.</td><td><span class="flag ok">Pass</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      The LSE suffixes are a deliberate touch: <code>HSBA.L</code> and <code>VOD.L</code> pair with
+      <code>EQUITIES_UK</code>, and the dot survives the symbol regex. Sorting is shown as an active
+      state on TIME, cyan with a descending chevron, which is exactly
+      <code>sort_by: 'tradeTimestamp', sort_dir: 'desc'</code>, the schema's default.
+    </p>
+  </section>
+
+  <section>
+    <h2>The seven divergences</h2>
+    <div class="scroller">
+      <table>
+        <thead>
+          <tr><th>#</th><th>What the design shows</th><th>What backs it</th><th>Severity</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>D1</td>
+            <td><code>AMENDED</code> as a third status badge, 30 occurrences across 15 boards</td>
+            <td>Nothing. The enum is two-valued in both Zod and Postgres.</td>
+            <td><span class="flag breaks">Breaks</span></td>
+          </tr>
+          <tr>
+            <td>D2</td>
+            <td>Positions grid columns <code>MARK</code>, <code>UNREALISED</code>, <code>REALISED</code>; header reads "marks 1s ago"</td>
+            <td>No market-price field, no endpoint, no socket event carrying marks</td>
+            <td><span class="flag gap">Gap</span></td>
+          </tr>
+          <tr>
+            <td>D3</td>
+            <td>A required <code>CANCELLATION REASON</code> input on the cancel dialog</td>
+            <td>No <code>cancelReason</code> on <code>Trade</code> or <code>TradeAmendment</code></td>
+            <td><span class="flag gap">Gap</span></td>
+          </tr>
+          <tr>
+            <td>D4</td>
+            <td>Audit columns <code>SOURCE</code> ("Browser session", API) and <code>ACTION</code></td>
+            <td><code>TradeAmendment</code> has no source and no action column</td>
+            <td><span class="flag gap">Gap</span></td>
+          </tr>
+          <tr>
+            <td>D5</td>
+            <td>Audit KPI <code>CANCELLATIONS</code>, and cancellations listed in the event feed</td>
+            <td><code>TradeAmendment</code> is documented "one row per amendment"</td>
+            <td><span class="flag gap">Gap</span></td>
+          </tr>
+          <tr>
+            <td>D6</td>
+            <td>Filter chips <code>Trade date: Today</code> and <code>Desk: LONDON</code></td>
+            <td><code>trade_query_schema</code> has no date param; "desk" is not <code>book</code></td>
+            <td><span class="flag gap">Gap</span></td>
+          </tr>
+          <tr>
+            <td>D7</td>
+            <td>Light direction's STATUS filter reads "Today"; its BOOK filter reads "LONDON desk"</td>
+            <td>Copy-paste slip. Neither is a legal value for its field.</td>
+            <td><span class="flag defect">Defect</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>D1 is the one that needs a decision</h2>
+    <div class="callout hot">
+      <p>
+        The schema does not merely lack an <code>AMENDED</code> status. It rejects one, in a comment
+        written on purpose:
+      </p>
+      <pre style="font-size:0.76rem">/**
+ * The two states a trade can hold.
+ *
+ * Amending a trade is deliberately not a status: it increments `version` and writes an audit row,
+ * which keeps the state machine to the two values the brief specifies.
+ */
+export const trade_status_values = ['ACTIVE', 'CANCELLED'] as const;</pre>
+      <span class="cite">shared/src/schemas/trade.ts:7&ndash;12, and <code>enum TradeStatus</code> in backend/prisma/schema.prisma</span>
+    </div>
+    <p>
+      The design renders <code>AMENDED</code> in the STATUS cell of the grid row, immediately after
+      counterparty and time, in every direction and on both mobile list and detail. So one of the two
+      has to move. There is also a modelling argument against the design's reading: an amended trade is
+      still live, so <code>AMENDED</code> and <code>ACTIVE</code> are not mutually exclusive states, and
+      collapsing them into one column loses the fact that an amended trade is tradeable.
+    </p>
+    <p>
+      <b>Recommendation: the design moves.</b> Keep the two-value enum, which is what the brief
+      specifies and what the database already enforces, and render the amendment as a separate
+      affordance in the same cell: an <code>ACTIVE</code> badge with a small amber <code>v2</code>
+      version pill beside it. That preserves the amber the brief asked for, keeps the audit trail as
+      the place where amendments live, and costs one span in the markup. The alternative, widening the
+      enum to three values, means a Prisma migration, a change to
+      <code>trade_query_schema</code>'s status filter, and an answer to what happens when an amended
+      trade is then cancelled.
+    </p>
+  </section>
+
+  <section>
+    <h2>D2 is the largest piece of missing data</h2>
+    <p>
+      The P&amp;L view is a bonus item in the brief, and the design implements it fully: aggregate
+      P&amp;L by symbol and by book, a blotter P&amp;L strip, day P&amp;L, and a positions grid split
+      into realised and unrealised. Three of those columns cannot be computed from the trade table.
+    </p>
+    <ul class="plain">
+      <li><b>Unrealised P&amp;L and MARK need a current price per symbol.</b> There is no such field on
+      <code>Trade</code>, no endpoint serving it, and <code>trade_events</code> carries only
+      <code>trade.created</code>, <code>trade.amended</code> and <code>trade.cancelled</code>. The
+      board's "marks 1s ago" implies a second live channel that does not exist yet.</li>
+      <li><b>Realised P&amp;L needs a stated cost convention.</b> It is derivable from trades alone, but
+      only once FIFO or average-cost is chosen; the two give different numbers on the same data.</li>
+      <li><b>Net quantity, average price and net notional are genuinely derivable</b> from the existing
+      rows and need nothing new.</li>
+    </ul>
+    <p>
+      The cheapest honest route is a synthetic mark: seed a reference price per symbol, walk it with a
+      small random step on a server interval, and broadcast it on a new <code>mark.updated</code>
+      event. That keeps the P&amp;L view truthful about where its numbers come from, and it is the
+      moving data the design's animation depends on anyway.
+    </p>
+  </section>
+
+  <section>
+    <h2>Smaller items</h2>
+    <ul class="plain">
+      <li><b>D3, cancellation reason.</b> The dialog marks it required. Either add a nullable
+      <code>cancel_reason</code> column, or write the cancellation as a <code>TradeAmendment</code> row
+      whose <code>changes</code> JSON holds the reason, which also fixes D5.</li>
+      <li><b>D4 and D5, the audit trail.</b> Adding <code>source</code> and <code>action</code> to
+      <code>TradeAmendment</code>, and writing a row on cancel as well as on amend, makes the audit
+      board buildable as drawn and turns the model into a general trade-event log. That is a rename
+      away from being clearer: <code>TradeEvent</code> rather than <code>TradeAmendment</code>.</li>
+      <li><b>D6, the two unbacked filters.</b> "Trade date: Today" needs a date range on
+      <code>trade_query_schema</code>. "Desk: LONDON" has no field at all: the books are
+      <code>EQUITIES_UK</code>, <code>EQUITIES_US</code> and <code>TECH_GROWTH</code>, none of which is
+      a desk. Either drop the chip or make it a display alias for a book filter.</li>
+      <li><b>Mobile create form.</b> The desktop overlays collect all eight create fields; the mobile
+      one collects six, omitting trader and trade timestamp. If those are meant to come from the
+      session and the server, <code>create_trade_schema</code> should omit them too, and the desktop
+      overlays should stop asking.
+      <span class="cite">NewTradeMobile.dc.html, fields: SYMBOL SIDE QUANTITY PRICE BOOK COUNTERPARTY</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>What was checked, and what was not</h2>
+    <ul class="plain">
+      <li><b>Checked:</b> all 23 <code>*.dc.html</code> artboards, by extracting every column header,
+      form label, filter chip and status badge and comparing the set against the brief's sample JSON,
+      <code>trade_schema</code>, <code>trade_query_schema</code>, <code>trade_events</code> and the
+      Prisma models.</li>
+      <li><b>Confirmed present, not missing:</b> the version-conflict path. The amend overlay has no
+      version field, correctly, since it is an internal concurrency token, and the rejection state is
+      specified on the shared board as "Amend rejected &middot; version conflict".
+      <span class="cite">Anticipation.dc.html:260</span></li>
+      <li><b>Not checked:</b> visual rendering. Every finding here comes from reading the artboard
+      source, not from observing a browser. Arithmetic in the P&amp;L and KPI figures was reconciled in
+      an earlier pass and was not re-derived here.</li>
+    </ul>
+  </section>
+
+</div>
