@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker';
-import type { TradeSide, TradeStatus } from '@blotter/shared';
+import type { CreateTrade, TradeSide, TradeStatus } from '@blotter/shared';
 
 /** An instrument in the seeded universe, with the price level it trades around. */
 interface Instrument {
@@ -144,4 +144,67 @@ export function generate_trades(count: number, seed = 20260818): GeneratedTrade[
   });
 
   return trades.sort((a, b) => a.tradeTimestamp.getTime() - b.tradeTimestamp.getTime());
+}
+
+/**
+ * Picks a round-lot quantity skewed toward smaller tickets, the way a real blotter reads.
+ *
+ * @returns A share count that is always a multiple of 100.
+ */
+function pick_quantity(): number {
+  const lots = faker.helpers.weightedArrayElement([
+    { weight: 60, value: faker.number.int({ min: 1, max: 20 }) },
+    { weight: 30, value: faker.number.int({ min: 21, max: 100 }) },
+    { weight: 10, value: faker.number.int({ min: 101, max: 500 }) },
+  ]);
+
+  return lots * 100;
+}
+
+/**
+ * Generates one trade, timestamped now, in the shape the create endpoint accepts.
+ *
+ * This deliberately does not reseed faker. The startup seed wants a reproducible dataset so a
+ * reviewer sees the same blotter twice, whereas a live feed that repeated itself every tick would
+ * not look live. It draws from the same instrument universe as the seed, so the feed cannot
+ * introduce a symbol the rest of the dataset has never heard of.
+ *
+ * @returns A create payload ready to hand to the trade service.
+ */
+export function generate_live_trade(): CreateTrade {
+  const instrument = faker.helpers.arrayElement(instruments);
+  const drift = faker.number.float({ min: -0.04, max: 0.04 });
+
+  return {
+    symbol: instrument.symbol,
+    side: faker.helpers.arrayElement(['BUY', 'SELL']) as TradeSide,
+    quantity: pick_quantity(),
+    price: Number((instrument.base_price * (1 + drift)).toFixed(6)),
+    trader: faker.helpers.arrayElement(traders),
+    book: instrument.book,
+    counterparty: faker.helpers.arrayElement(counterparties),
+    tradeTimestamp: new Date().toISOString(),
+  };
+}
+
+/**
+ * Produces the change an amendment should apply to an existing trade.
+ *
+ * Only quantity and price move, because those are the fields a desk actually corrects after
+ * booking. Re-pointing a trade at a different symbol or counterparty would be a rebooking rather
+ * than an amendment.
+ *
+ * @param current_price - The trade's present price, so the new one drifts from it rather than
+ * jumping to an unrelated level.
+ * @returns A partial create payload carrying quantity and price.
+ */
+export function generate_live_amendment(
+  current_price: number,
+): Pick<CreateTrade, 'quantity' | 'price'> {
+  const price_drift = faker.number.float({ min: -0.01, max: 0.01 });
+
+  return {
+    quantity: pick_quantity(),
+    price: Number((current_price * (1 + price_drift)).toFixed(6)),
+  };
 }

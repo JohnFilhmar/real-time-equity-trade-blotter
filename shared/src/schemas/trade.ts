@@ -96,3 +96,32 @@ export type TradeSide = (typeof trade_side_values)[number];
 
 /** A trade status. */
 export type TradeStatus = (typeof trade_status_values)[number];
+
+/**
+ * Envelope returned by the blotter listing.
+ *
+ * The rows alone cannot tell the grid whether it is holding the last page or how many trades the
+ * current filters match, so the total and the window that produced it travel with them.
+ */
+export const trade_list_schema = z.object({
+  data: z.array(trade_schema),
+  total: z.int().nonnegative(),
+  limit: z.int().positive(),
+  offset: z.int().nonnegative(),
+});
+
+/**
+ * Inbound shape for cancelling a trade.
+ *
+ * `version` is optional: a client holding the row echoes it back and gets a conflict rather than
+ * cancelling something it has not seen, while a client cancelling blind is still allowed to.
+ */
+export const cancel_trade_schema = z.object({
+  version: z.int().positive().optional(),
+});
+
+/** A page of trades plus the count of everything matching the same filters. */
+export type TradeList = z.infer<typeof trade_list_schema>;
+
+/** Payload accepted by the cancel-trade endpoint. */
+export type CancelTrade = z.infer<typeof cancel_trade_schema>;
