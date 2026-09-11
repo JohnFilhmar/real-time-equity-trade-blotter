@@ -125,3 +125,13 @@ Significant prompts only, append-only, newest at the bottom. Rules: `/CLAUDE.md`
 **Outcome:** Argued that Roboto and Source Sans 3 are both neutral sans at the same optical weight, so pairing them gives no contrast, and that the axis a blotter needs is proportional against monospace; offered Source Sans 3 + Source Code Pro, Source Sans 3 + Roboto Mono, and keeping IBM Plex, and the user kept IBM Plex Sans + IBM Plex Mono. Verified in the browser that Plex Mono's zero is dotted by default, which makes `0` unambiguous against `O` with no font-feature CSS, correcting an earlier claim that a slashed zero was available behind the `zero` feature.
 
 **Artifact:** [Fusion Blotter Prototype](../artifacts/fusion_blotter_prototype.html)
+
+---
+
+### 2026-09-11T02:35Z - drop_cancellation_reason
+
+**Prompt:** "remove trade cancellation reason, because modern trade sites does not have that requiring users to explain the reason for the cancelation."
+
+**Outcome:** Removed the required reason field, its five canned values and every downstream reference across nine sites, leaving cancel as a plain confirm whose dialog now states what the transition does rather than asking for a justification. This closes audit divergence D3 by deleting the requirement instead of adding a `cancel_reason` column, and matches the brief's own line that a simple status transition is sufficient.
+
+**Artifact:** [Fusion Blotter Prototype](../artifacts/fusion_blotter_prototype.html)

@@ -1258,6 +1258,13 @@ select.inp option { background: var(--surface); color: var(--text); }
   border: 1px solid var(--rule);
 }
 
+.recap > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
 /* ---------- toasts ---------- */
 
 .toasts {
@@ -1482,14 +1489,6 @@ const COUNTERPARTIES = [
   "Goldman Sachs", "JP Morgan", "Morgan Stanley",
   "Barclays", "UBS", "Citadel Securities"
 ];
-const CANCEL_REASONS = [
-  "Booked in error",
-  "Duplicate booking",
-  "Client instruction",
-  "Price out of tolerance",
-  "Wrong counterparty"
-];
-
 const SYM_MAP = new Map(SYMBOLS.map(s => [s.symbol, s]));
 
 /* ============================================================
@@ -1589,7 +1588,6 @@ function seed(count) {
     if (t.status === "CANCELLED") continue;
     const before = { ...t };
     t.status = "CANCELLED";
-    t.cancelReason = pick(CANCEL_REASONS);
     t.updatedAt = new Date(Date.parse(t.tradeTimestamp) + 90000 + rand(400000)).toISOString();
     pushAudit("CANCEL", t, before, pick(TRADERS), "Browser session");
   }
@@ -1615,7 +1613,6 @@ function pushAudit(action, trade, before, actor, source) {
     version: trade.version,
     action,
     changes,
-    reason: trade.cancelReason || null,
     amendedBy: actor,
     source: source || "Browser session",
     amendedAt: trade.updatedAt || new Date().toISOString()
@@ -2050,7 +2047,6 @@ function drawerPanel() {
           <div><span class="flab">Book</span><span class="dval">${t.book}</span></div>
           <div class="wide"><span class="flab">Counterparty</span><span class="dval">${esc(t.counterparty)}</span></div>
           <div class="wide"><span class="flab">Trade timestamp</span><span class="dval mono">${t.tradeTimestamp.replace(/\.\d{3}Z$/, "Z")}</span></div>
-          ${t.cancelReason ? `<div class="wide"><span class="flab">Cancellation reason</span><span class="dval" style="color:var(--loss)">${esc(t.cancelReason)}</span></div>` : ""}
         </div>
       </div>
       <div>
@@ -2074,7 +2070,7 @@ function histRow(a) {
   return `<div class="hist_row">
     <div class="hist_dot" data-a="${a.action}"></div>
     <div class="hist_main">
-      <div class="hist_t"><b>${a.amendedBy}</b> ${verb}${a.reason ? ` &middot; ${esc(a.reason)}` : ""}</div>
+      <div class="hist_t"><b>${a.amendedBy}</b> ${verb}</div>
       ${deltas ? `<div class="delta">${deltas}</div>` : ""}
       <div class="hist_m">${clockOf(a.amendedAt)} &middot; ${esc(a.source)} &middot; v${a.version}</div>
     </div>
@@ -2170,7 +2166,6 @@ function auditView() {
                 ${{ CREATE: "booked", AMEND: "amended", CANCEL: "cancelled" }[a.action]}
                 <span class="mono" style="color:var(--brand)">${a.tradeId}</span>
                 <span style="color:var(--muted)">${a.symbol}</span>
-                ${a.reason ? `<span style="color:var(--loss)"> &middot; ${esc(a.reason)}</span>` : ""}
               </div>
               ${Object.keys(a.changes || {}).length ? `<div class="delta">${Object.entries(a.changes)
                 .map(([k, v]) => `<span>${k}</span> <s>${esc(v.from)}</s> <i>${esc(v.to)}</i>`).join(" &middot; ")}</div>` : ""}
@@ -2266,7 +2261,7 @@ function cancelOverlay() {
       <div class="modal_head">
         <div style="flex:1">
           <h2 id="cancel_title">Cancel ${t.tradeId}?</h2>
-          <p>Status moves to CANCELLED. The row stays on the blotter and the audit trail keeps the reason.</p>
+          <p>A simple status transition to CANCELLED, stamped with your trader code in the audit trail.</p>
         </div>
       </div>
       <div class="modal_body">
@@ -2276,17 +2271,9 @@ function cancelOverlay() {
           <div><span class="flab">Quantity</span><span class="dval mono">${fmtQty(t.quantity)}</span></div>
           <div><span class="flab">Price</span><span class="dval mono">${fmtPx(t.price)}</span></div>
         </div>
-        <div class="field">
-          <label class="flab" for="cancel_reason">Cancellation reason <span style="color:var(--loss)">required</span></label>
-          <select class="inp" id="cancel_reason">
-            <option value="">Choose a reason</option>
-            ${CANCEL_REASONS.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join("")}
-          </select>
-          <div class="err" id="cancel_reason_err"></div>
-        </div>
         <div class="note warn_box">
-          The reason has no column in the committed schema yet. The prototype stores it on the audit
-          row, which is the cheaper of the two fixes.
+          <b>This cannot be undone.</b> The trade is not deleted: it stays on the blotter struck
+          through, keeps its history, and drops out of positions and P&amp;L.
         </div>
       </div>
       <div class="modal_foot">
@@ -2670,23 +2657,15 @@ function submitTrade() {
 }
 
 function confirmCancel() {
-  const sel = document.getElementById("cancel_reason");
-  const box = document.getElementById("cancel_reason_err");
-  if (!sel.value) {
-    sel.setAttribute("aria-invalid", "true");
-    box.textContent = "Pick a reason before cancelling";
-    return;
-  }
   const t = state.trades.find(x => x.id === state.selected);
   if (!t) return;
   const before = { ...t };
   t.status = "CANCELLED";
-  t.cancelReason = sel.value;
   t.updatedAt = new Date().toISOString();
   pushAudit("CANCEL", t, before, state.user, "Browser session");
   state.overlay = null;
   render();
-  toast("warn", "Cancelled " + t.tradeId, sel.value);
+  toast("warn", "Cancelled " + t.tradeId, t.symbol + " " + fmtQty(t.quantity) + " @ " + fmtPx(t.price));
 }
 
 /* ============================================================
