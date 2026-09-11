@@ -7,9 +7,9 @@ Built for the TP ICAP full stack take-home exercise.
 
 ## Status
 
-Foundation complete. The API serves liveness and readiness, the database schema and migration are
-in place, the shared contract is published to both apps, and the whole stack builds and runs under
-Docker. Trade endpoints, the blotter UI and the live broadcast are the next phases; see
+The API is feature complete for the brief's five requirements: trades can be viewed, created,
+amended and cancelled, and every change is broadcast to all connected clients. A simulated desk
+feed keeps the blotter moving on its own. The React blotter UI is the remaining phase; see
 [the build plan](docs/artifacts/blotter_build_plan.html) for the sequence.
 
 | Area | State |
@@ -18,9 +18,11 @@ Docker. Trade endpoints, the blotter UI and the live broadcast are the next phas
 | Shared TypeScript contract | Done |
 | API hardening, error handling, health and readiness | Done |
 | Docker and compose | Done |
-| Trade CRUD endpoints | Next |
-| Socket broadcast | Next |
+| Trade endpoints: list, read, create, amend, cancel | Done |
+| Socket broadcast of every change | Done |
+| Simulated live trade feed | Done |
 | Blotter UI | Next |
+| Audit trail and net positions (bonus) | Deferred |
 
 ## Architecture
 
@@ -83,6 +85,63 @@ Amending is deliberately not a status. The brief allows only `ACTIVE` and `CANCE
 amendment increments `version` and writes a `trade_amendment` row rather than inventing a third
 state.
 
+## API
+
+All payloads are camelCase, matching the brief's sample data. A trade is addressed by its business
+identifier, `TRD-100001`, because that is the value a trader reads off the blotter.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/api/trades` | List, filtered, sorted and paged |
+| `GET` | `/api/trades/:trade_id` | Read one trade |
+| `POST` | `/api/trades` | Book a trade, answers 201 |
+| `PATCH` | `/api/trades/:trade_id` | Amend, requires the version last seen |
+| `POST` | `/api/trades/:trade_id/cancel` | Cancel, optional version guard |
+
+`GET /api/trades` accepts `symbol`, `trader`, `book` (case-insensitive substring), `side`,
+`status`, `sort_by`, `sort_dir`, `limit` and `offset`, and answers an envelope:
+
+```json
+{ "data": [ /* trades */ ], "total": 500, "limit": 100, "offset": 0 }
+```
+
+The total is the count before paging, so the grid can show a row count without a second call.
+
+Amend and cancel are optimistically concurrent. The client echoes back the `version` it last saw;
+if the trade has moved on, the answer is `409` naming the current version rather than a silent
+overwrite. Cancel is a named action rather than a `DELETE`, because the row is not deleted: it
+moves to `CANCELLED`. Amending is not a status, so the only two statuses are the brief's own.
+
+Errors always take one shape:
+
+```json
+{ "error": { "code": "conflict", "message": "...", "details": [ /* optional */ ] } }
+```
+
+`validation_failed` is 422 with field-level detail, `not_found` 404, `conflict` 409,
+`rate_limited` 429.
+
+### Real-time
+
+Socket.IO emits `trade.created`, `trade.amended` and `trade.cancelled`, each carrying the whole
+trade rather than a patch, so a client that missed an event still converges on the right row.
+Events are emitted from the service layer, not the route handlers, so anything that writes a trade
+broadcasts it exactly once. Clients send nothing: mutations go over HTTP so they get the same
+validation, error handling and rate limiting as any other write.
+
+### The simulated desk feed
+
+So the blotter is alive without someone clicking, the API simulates desk activity: it books new
+trades, and amends and cancels existing ones, roughly 70/20/10, on a jittered three to eight second
+interval. It writes through the same service as a human request, so it cannot drift from the real
+write path, and it broadcasts the same three events.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `LIVE_FEED_ENABLED` | `true` | Set false to silence the feed while demonstrating manually |
+| `LIVE_FEED_MIN_INTERVAL_MS` | `3000` | Shortest gap between actions |
+| `LIVE_FEED_MAX_INTERVAL_MS` | `8000` | Longest gap between actions |
+
 ## Running it
 
 ### With Docker (recommended)
@@ -134,8 +193,20 @@ doubles, so no framework internals are mocked. The seed generator is tested for 
 that make its output realistic: round lots, prices near each instrument's own level, timestamps
 inside a trading session, and determinism for a given seed.
 
-Integration tests against a real Postgres arrive with the trade endpoints, per
-[the testing stance](docs/artifacts/blotter_build_plan.html).
+The service and route tests run against `in_memory_trade_repository.ts`, a second real
+implementation of the repository port, rather than a mock. A test that passes there is asserting
+behaviour, not that a spy was called, and the same suite would pass against Postgres.
+
+The database-backed repository tier is separate, and only runs when you point it at a database:
+
+```bash
+TEST_DATABASE_URL=postgresql://blotter:blotter@localhost:5432/blotter npm run test:integration --workspace backend
+```
+
+Without `TEST_DATABASE_URL` it skips rather than fails, so a developer with no Postgres running
+still gets a green suite. It creates its rows inside a run-scoped `book` and deletes them
+afterwards. **This tier has not yet been run**: no Docker engine was reachable on the machine the
+API was built on.
 
 ## Assumptions
 

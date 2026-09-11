@@ -101,3 +101,50 @@ hardening are in place and green (32 tests, typecheck clean) while every trade e
 broadcast is still absent, so the backend is ready to plan against but serves no MVP feature yet.
 Recorded a standing rule in project memory that no agent decides anything about this system alone,
 which turned phase 01 into a set of questions for the user rather than code.
+
+---
+
+### 2026-09-11T01:30Z - mvp_shape_decisions
+
+**Prompt** (answers to four questions the agent was required to ask rather than decide)
+
+> MVP scope: "required five only + the real time socket.io to establish real-time transactions and
+> live updates. and we are going to go for a mix of the two in sample trade data, on startup there
+> will be initial seeded data, and continously, data are generated randomly with realistic trade
+> data."
+> Cancel shape: "POST /trades/:id/cancel". List shape: "Envelope: data + total + limit + offset".
+> URL id: "Business tradeId, TRD-100001".
+
+**Outcome:** Settled the API's shape before any of it was written: cancel is a named action rather
+than a DELETE because the row survives as `CANCELLED`, the listing answers an envelope so the grid
+gets a row count without a second call, and trades are addressed by the identifier a trader can
+actually read. The scope answer also added a continuously running trade generator on top of the
+startup seed, which was new work rather than a choice between options.
+
+---
+
+### 2026-09-11T01:33Z - live_feed_decisions
+
+**Prompt** (answers to three follow-up questions about the generator)
+
+> Acts: "New trades + amends + cancels". Cadence: "Jittered ~3-8s, env flag + interval". Write path:
+> "Through the trade service".
+
+**Outcome:** Fixed the feed as a caller of the trade service rather than a second write path, so a
+simulated trade takes the same validation, transitions and broadcast as a human one and the two
+cannot drift. Choosing all three actions is what makes `trade.amended` and `trade.cancelled` fire
+on their own, so the grid is seen updating rows in place rather than only growing.
+
+---
+
+### 2026-09-11T01:50Z - build_phase_01_and_02
+
+**Prompt:** Implied by the decisions above, which authorised the build.
+
+**Outcome:** Built the trade endpoints, the socket broadcast and the simulated feed behind two
+ports, with a second in-memory repository so the service and route suites test real behaviour
+instead of asserting a mock was called; tests went from 32 to 70 with typecheck and lint clean.
+The database-backed repository tier was written and left skipping, because no Docker engine was
+reachable to run it against.
+
+**Commits:** `c217419`
