@@ -82,3 +82,32 @@ Significant prompts only, append-only, newest at the bottom. Rules: `/CLAUDE.md`
 **Outcome:** Found thirteen further gaps beyond the nine already listed, among them a missing root README, a healthcheck that never touched the database, and Prisma 7 requiring a driver adapter, a generator output path and a `prisma.config.ts` that the scaffold had never installed. Closed all twenty-two by restructuring the repository into npm workspaces with a shared zod contract, adding the Postgres schema, hand-authored migration and realistic seed, hardening the API, and rebuilding both Dockerfiles, then verified it by running the stack rather than asserting it.
 
 **Commits:** `12e5a5b`
+
+---
+
+### 2026-09-11T02:05Z - build_interactive_hifi_prototype
+
+**Prompt**
+
+> i am going to choose A, but at the same time i am liking the colorization or the glass like accent
+> to B, so if possible let's fully select A while retaining the colorization only of B or its effects,
+> its either the color and effects or just effects of the glassy texture while retaining the color of A.
+> if you still need anything to verify with me, ask away, and I will answer with my opinion, if nothing
+> else, proceed creating the high fidelity designs. responsive for window views, tablet views, and
+> phone views and generally should be adapatable in size. having an interactive hi-fi output will make
+> the result even better so i can reflect on decisions on ui before its actually implemented in the
+> frontend rather than deciding after its implemented.
+
+**Outcome:** Chose Direction A's blue-slate neutrals and IBM Plex type with Direction B's glass material and semantics softened about 15% for legibility through blur, then built a working single-file prototype with sortable and filterable blotter, create/amend/cancel mutating real state, a synthetic mark feed driving positions and P&L, an accumulating audit trail and a device frame driven by container queries rather than media queries. Amendment renders as a version pill beside a two-state status badge, which settles D1 by demonstration.
+
+**Artifact:** [Fusion Blotter Prototype](../artifacts/fusion_blotter_prototype.html)
+
+---
+
+### 2026-09-11T02:20Z - add_theme_toggle_and_fix_opacity
+
+**Prompt:** "a theme toggle feature will also be better. so create a button for that too and also planning the actual colors to prevent opacity mismatch."
+
+**Outcome:** Replaced 44 inline `rgba()` values with a 58-token palette written out per theme, because glass is a different recipe in each: translucent dark with a light edge on dark, frosted white with a dark hairline on light, which re-alpha-ing a single base cannot express. Added a three-state System/Dark/Light control, sourced the light values from Direction C rather than inverting the dark ones, and verified token parity across all three theme blocks.
+
+**Artifact:** [Fusion Blotter Prototype](../artifacts/fusion_blotter_prototype.html)
