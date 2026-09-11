@@ -29,6 +29,8 @@ feed keeps the blotter moving on its own. The React blotter UI is the remaining 
 ```
 frontend/   Next.js 16 (App Router, React 19, Tailwind v4)
 backend/    Express 5 API + Socket.IO, Prisma 7 over PostgreSQL 17
+            (compose runs migrations as a separate one-shot service, so node is PID 1
+             in the API container and handles SIGTERM)
 shared/     @blotter/shared - one zod schema per model, shared by both
 database/   schema documentation
 ```
@@ -205,8 +207,40 @@ TEST_DATABASE_URL=postgresql://blotter:blotter@localhost:5432/blotter npm run te
 
 Without `TEST_DATABASE_URL` it skips rather than fails, so a developer with no Postgres running
 still gets a green suite. It creates its rows inside a run-scoped `book` and deletes them
-afterwards. **This tier has not yet been run**: no Docker engine was reachable on the machine the
-API was built on.
+afterwards.
+
+### What has been verified against the running containers
+
+On 2026-09-11, against `docker compose up`:
+
+- 70 unit and route tests pass; the 8 database-backed repository tests pass against the containerised
+  Postgres.
+- 28 end-to-end checks pass against the running API, including two Socket.IO clients standing in for
+  two browser tabs: a trade created over HTTP reaches both without a refresh, and so do the amend and
+  cancel events.
+- Optimistic concurrency holds: a stale `PATCH` is refused with 409 naming the current version, a
+  cancelled trade cannot be amended, and a second cancel is refused.
+- A cold start on an empty volume applies the migration and seeds 500 trades: 12 symbols, 8 traders,
+  4 books, 10 counterparties, 5.8% cancelled, AAPL priced 219.00 to 236.24 against the brief's 227.45
+  anchor.
+- The live feed books, amends and cancels trades on its own, and connected clients receive those
+  events.
+- Hardening holds at runtime: the backend runs as non-root `node`, the root filesystem is read-only
+  and rejects writes, all capabilities are dropped, and `no-new-privileges` is set.
+- Data survives a container restart, and the seed does not re-run when the table is populated.
+- `docker compose stop` logs `SIGTERM received, shutting down` then `shutdown complete` and exits
+  0 in about a second, rather than waiting out the SIGKILL timeout.
+
+Two defects were found by running the containers rather than reasoning about them, and both are
+fixed:
+
+- The API's graceful shutdown never ran. PID 1 was `npm run start`, and npm does not forward
+  SIGTERM to its child, so `shutdown()` in `backend/src/index.ts` was dead code inside Docker.
+  Migrations now run as their own one-shot compose service, which lets node be PID 1.
+- With the handler finally running, it exited 1 on every stop. `io.close()` also closes the HTTP
+  server it is attached to, so the following `http_server.close()` answered
+  `ERR_SERVER_NOT_RUNNING` and the shutdown reported failure. That specific code is now treated as
+  the expected path.
 
 ## Assumptions
 
