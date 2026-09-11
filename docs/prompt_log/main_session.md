@@ -82,3 +82,13 @@ Significant prompts only, append-only, newest at the bottom. Rules: `/CLAUDE.md`
 **Outcome:** Found thirteen further gaps beyond the nine already listed, among them a missing root README, a healthcheck that never touched the database, and Prisma 7 requiring a driver adapter, a generator output path and a `prisma.config.ts` that the scaffold had never installed. Closed all twenty-two by restructuring the repository into npm workspaces with a shared zod contract, adding the Postgres schema, hand-authored migration and realistic seed, hardening the API, and rebuilding both Dockerfiles, then verified it by running the stack rather than asserting it.
 
 **Commits:** `12e5a5b`
+
+---
+
+### 2026-09-11T01:09Z - verify_design_against_trade_shape
+
+**Prompt:** "continue blotter_ui_design and verify whether the design strictly follows the required data shape for the assessment markdown file in the root."
+
+**Outcome:** All ten fields of the brief's sample payload are rendered in every visual direction with values that pass the committed Zod constraints, but seven things diverge, the blocking one being `AMENDED` drawn as a third status badge against the two-value enum `shared/src/schemas/trade.ts` deliberately settled on. Fixed the single unambiguous board defect, the Light direction's STATUS filter displaying a date, and left the six contract questions open with a recommendation recorded against each.
+
+**Artifact:** [Design Data Shape Audit](../artifacts/design_data_shape_conformance.html)
