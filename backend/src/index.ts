@@ -29,6 +29,32 @@ http_server.on('request', app);
 const live_feed = create_live_feed(trade_service, trade_repository, live_feed_options);
 
 /**
+ * Closes the HTTP listener, tolerating the case where Socket.IO has already closed it.
+ *
+ * `io.close()` also closes the HTTP server it was attached to, so by the time this runs the
+ * listener is normally already down and node answers `ERR_SERVER_NOT_RUNNING`. That is the
+ * expected path rather than a failure: treating it as one made every `docker compose stop` exit
+ * the container with status 1.
+ *
+ * @returns Resolves once the listener is closed, or was already closed.
+ */
+function close_http_server(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    http_server.close((error) => {
+      const already_closed =
+        error !== undefined && 'code' in error && error.code === 'ERR_SERVER_NOT_RUNNING';
+
+      if (error === undefined || already_closed) {
+        resolve();
+        return;
+      }
+
+      reject(error);
+    });
+  });
+}
+
+/**
  * Stops the simulated feed, closes the socket server, the HTTP listener and the database pool, in
  * that order, so no request is cut mid-flight and no connection is left dangling.
  *
@@ -49,9 +75,7 @@ async function shutdown(signal: string): Promise<void> {
   try {
     live_feed.stop();
     await io.close();
-    await new Promise<void>((resolve, reject) => {
-      http_server.close((error) => (error ? reject(error) : resolve()));
-    });
+    await close_http_server();
     await prisma.$disconnect();
     console.log('shutdown complete');
     process.exit(0);

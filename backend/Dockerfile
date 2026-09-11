@@ -58,4 +58,8 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:5000/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-CMD ["npm", "run", "start"]
+# node is the entrypoint rather than `npm run start`, so it is PID 1 and receives the SIGTERM
+# docker sends on stop. npm does not forward signals to its child, which left the graceful shutdown
+# in src/index.ts dead in the container: sockets and the Prisma pool were never closed. Migrations
+# run as their own compose service, so they are not this process's job.
+CMD ["node", "dist/index.js"]
