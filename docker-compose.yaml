@@ -48,6 +48,9 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
       SEED_ON_STARTUP: "true"
       SEED_TRADE_COUNT: "500"
+      LIVE_FEED_ENABLED: ${LIVE_FEED_ENABLED:-true}
+      LIVE_FEED_MIN_INTERVAL_MS: ${LIVE_FEED_MIN_INTERVAL_MS:-3000}
+      LIVE_FEED_MAX_INTERVAL_MS: ${LIVE_FEED_MAX_INTERVAL_MS:-8000}
     ports:
       - "${BACKEND_PORT:-5000}:5000"
     depends_on:

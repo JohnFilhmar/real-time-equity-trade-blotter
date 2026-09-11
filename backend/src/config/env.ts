@@ -8,6 +8,9 @@ const env_schema = z.object({
   CORS_ORIGINS: z.string().default('http://localhost:3000'),
   SEED_ON_STARTUP: z.stringbool().default(true),
   SEED_TRADE_COUNT: z.coerce.number().int().min(0).max(5000).default(500),
+  LIVE_FEED_ENABLED: z.stringbool().default(true),
+  LIVE_FEED_MIN_INTERVAL_MS: z.coerce.number().int().min(250).max(600_000).default(3_000),
+  LIVE_FEED_MAX_INTERVAL_MS: z.coerce.number().int().min(250).max(600_000).default(8_000),
   SHUTDOWN_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
 });
 
@@ -41,3 +44,15 @@ export const cors_origins: readonly string[] = env.CORS_ORIGINS.split(',')
 
 /** True when running under `NODE_ENV=production`. */
 export const is_production = env.NODE_ENV === 'production';
+
+/**
+ * Pacing for the simulated desk activity.
+ *
+ * The two bounds are sorted rather than rejected when they arrive the wrong way round, because an
+ * inverted window is an obvious typo in a compose file and refusing to boot over it would be a
+ * worse outcome than quietly running the feed between the same two numbers.
+ */
+export const live_feed_options = {
+  min_interval_ms: Math.min(env.LIVE_FEED_MIN_INTERVAL_MS, env.LIVE_FEED_MAX_INTERVAL_MS),
+  max_interval_ms: Math.max(env.LIVE_FEED_MIN_INTERVAL_MS, env.LIVE_FEED_MAX_INTERVAL_MS),
+} as const;
