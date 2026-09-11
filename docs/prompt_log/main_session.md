@@ -82,3 +82,22 @@ Significant prompts only, append-only, newest at the bottom. Rules: `/CLAUDE.md`
 **Outcome:** Found thirteen further gaps beyond the nine already listed, among them a missing root README, a healthcheck that never touched the database, and Prisma 7 requiring a driver adapter, a generator output path and a `prisma.config.ts` that the scaffold had never installed. Closed all twenty-two by restructuring the repository into npm workspaces with a shared zod contract, adding the Postgres schema, hand-authored migration and realistic seed, hardening the API, and rebuilding both Dockerfiles, then verified it by running the stack rather than asserting it.
 
 **Commits:** `12e5a5b`
+
+---
+
+### 2026-09-11T01:13Z - readiness_audit_and_no_agent_decisions_rule
+
+**Prompt**
+
+> continue on handoff blotter_foundation, then following strictly the techstack
+> suggested/recommended per the @take-home-assessment.md is the backend and database ready for
+> planning up to implementing the plan for the sole working MVP required features of this system?
+> and modify the project memory that project decisions must never be made by agents, agent must
+> always ask the user for decisions on every decision on the system and whether it always aligns
+> with the user tailored skills and memory in best-practices.
+
+**Outcome:** Audited the foundation against the brief and confirmed the stack, schema, contracts and
+hardening are in place and green (32 tests, typecheck clean) while every trade endpoint and every
+broadcast is still absent, so the backend is ready to plan against but serves no MVP feature yet.
+Recorded a standing rule in project memory that no agent decides anything about this system alone,
+which turned phase 01 into a set of questions for the user rather than code.
