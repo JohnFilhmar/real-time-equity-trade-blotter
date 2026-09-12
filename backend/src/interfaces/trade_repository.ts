@@ -1,4 +1,4 @@
-import type { CreateTrade, Trade, TradeQuery } from '@blotter/shared';
+import type { CreateTrade, Trade, TradeAmendment, TradeQuery } from '@blotter/shared';
 
 /** A page of trades together with the total matching the same filters, before paging. */
 export interface TradePage {
@@ -48,17 +48,22 @@ export interface TradeRepository {
   create(input: CreateTrade): Promise<Trade>;
 
   /**
-   * Applies an amendment to an `ACTIVE` trade whose version still matches.
+   * Applies an amendment to an `ACTIVE` trade whose version still matches, and records what moved
+   * in the same transaction as the update, so an amendment can never exist without its audit row.
    *
    * @param trade_id - The trade to amend.
    * @param expected_version - The version the client last saw.
    * @param changes - The fields to overwrite.
+   * @param amended_by - Who to attribute the amendment to. When omitted, the trade's own trader is
+   * used, because without authentication there is no better answer and a constant would record
+   * nothing worth reading.
    * @returns The amended trade, or `null` when nothing matched.
    */
   amend(
     trade_id: string,
     expected_version: number,
     changes: TradeChanges,
+    amended_by?: string,
   ): Promise<Trade | null>;
 
   /**
@@ -69,6 +74,14 @@ export interface TradeRepository {
    * @returns The cancelled trade, or `null` when nothing matched.
    */
   cancel(trade_id: string, expected_version?: number): Promise<Trade | null>;
+
+  /**
+   * Reads the amendment history of one trade, oldest first.
+   *
+   * @param trade_id - The trade whose history to read.
+   * @returns The amendments. Empty when the trade exists but has never been amended.
+   */
+  find_amendments(trade_id: string): Promise<TradeAmendment[]>;
 
   /**
    * Picks one `ACTIVE` trade at random, used by the live feed to choose something to amend or

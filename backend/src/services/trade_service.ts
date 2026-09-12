@@ -1,4 +1,11 @@
-import type { AmendTrade, CreateTrade, Trade, TradeList, TradeQuery } from '@blotter/shared';
+import type {
+  AmendTrade,
+  CreateTrade,
+  Trade,
+  TradeAmendment,
+  TradeList,
+  TradeQuery,
+} from '@blotter/shared';
 import type { TradeBroadcaster } from '../interfaces/trade_broadcaster.js';
 import type { TradeRepository } from '../interfaces/trade_repository.js';
 import { AppError, error_codes } from '../lib/errors/app_error.js';
@@ -56,6 +63,16 @@ export interface TradeService {
    * moved on.
    */
   cancel(trade_id: string, expected_version?: number): Promise<Trade>;
+
+  /**
+   * Reads the amendment history of one trade, oldest first.
+   *
+   * @param trade_id - The trade whose history to read.
+   * @returns The amendments, empty when the trade has never been amended.
+   * @throws {AppError} 404 when the trade itself does not exist, so an empty array always means
+   * "never amended" rather than "no such trade".
+   */
+  list_amendments(trade_id: string): Promise<TradeAmendment[]>;
 }
 
 /**
@@ -105,6 +122,23 @@ export function create_trade_service(
   repository: TradeRepository,
   broadcaster: TradeBroadcaster,
 ): TradeService {
+  /**
+   * Reads a trade or fails with the 404 every caller would otherwise have to write itself.
+   *
+   * @param trade_id - The trade to read.
+   * @returns The trade.
+   * @throws {AppError} 404 when it does not exist.
+   */
+  async function require_trade(trade_id: string): Promise<Trade> {
+    const trade = await repository.find_by_trade_id(trade_id);
+
+    if (trade === null) {
+      throw AppError.not_found('trade', trade_id);
+    }
+
+    return trade;
+  }
+
   return {
     async list(query: TradeQuery): Promise<TradeList> {
       const page = await repository.list(query);
@@ -118,13 +152,7 @@ export function create_trade_service(
     },
 
     async get(trade_id: string): Promise<Trade> {
-      const trade = await repository.find_by_trade_id(trade_id);
-
-      if (trade === null) {
-        throw AppError.not_found('trade', trade_id);
-      }
-
-      return trade;
+      return require_trade(trade_id);
     },
 
     async create(input: CreateTrade): Promise<Trade> {
@@ -144,7 +172,9 @@ export function create_trade_service(
         );
       }
 
-      const amended = await repository.amend(trade_id, version, changes);
+      // With no authentication, the trader on the payload is the closest thing to an actor. When
+      // the amendment does not touch the trader, the repository attributes it to the trade's own.
+      const amended = await repository.amend(trade_id, version, changes, changes.trader);
 
       if (amended === null) {
         return explain_failed_write(repository, trade_id, 'amended');
@@ -163,6 +193,11 @@ export function create_trade_service(
 
       broadcaster.trade_cancelled(cancelled);
       return cancelled;
+    },
+
+    async list_amendments(trade_id: string): Promise<TradeAmendment[]> {
+      await require_trade(trade_id);
+      return repository.find_amendments(trade_id);
     },
   };
 }

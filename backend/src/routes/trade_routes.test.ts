@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import request from 'supertest';
 import type { Express } from 'express';
-import { trade_schema, type Trade } from '@blotter/shared';
+import {
+  trade_amendment_schema,
+  trade_schema,
+  trade_sort_columns,
+  type Trade,
+} from '@blotter/shared';
 import { create_app } from '../app.js';
 import type { HealthProbe } from '../interfaces/health_probe.js';
 import { create_in_memory_trade_repository } from '../repositories/in_memory_trade_repository.js';
@@ -196,5 +201,85 @@ describe('POST /api/trades/:trade_id/cancel', () => {
 
     expect(response.status).toBe(404);
     expect(response.body.error.code).toBe('not_found');
+  });
+});
+
+describe('GET /api/trades/:trade_id/amendments', () => {
+  it('answers an empty history for a trade that was never amended', async () => {
+    const { app } = build_app();
+    const created = await create_trade(app);
+
+    const response = await request(app).get(`/api/trades/${created.tradeId}/amendments`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([]);
+  });
+
+  it('returns each amendment with both sides of every changed field', async () => {
+    const { app } = build_app();
+    const created = await create_trade(app);
+    await request(app)
+      .patch(`/api/trades/${created.tradeId}`)
+      .send({ version: 1, quantity: 7500 });
+
+    const response = await request(app).get(`/api/trades/${created.tradeId}/amendments`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveLength(1);
+    expect(() => trade_amendment_schema.parse(response.body[0])).not.toThrow();
+    expect(response.body[0].changes).toEqual({ quantity: { from: 5000, to: 7500 } });
+    expect(response.body[0].version).toBe(2);
+  });
+
+  it('answers 404 for a trade that does not exist', async () => {
+    const { app } = build_app();
+
+    const response = await request(app).get('/api/trades/TRD-999999/amendments');
+
+    expect(response.status).toBe(404);
+    expect(response.body.error.code).toBe('not_found');
+  });
+
+  it('answers 422 for a malformed trade id', async () => {
+    const { app } = build_app();
+
+    const response = await request(app).get('/api/trades/nonsense/amendments');
+
+    expect(response.status).toBe(422);
+  });
+});
+
+describe('widened list query', () => {
+  it('filters on counterparty', async () => {
+    const { app } = build_app();
+    await request(app).post('/api/trades').send(a_trade_body);
+    await request(app)
+      .post('/api/trades')
+      .send({ ...a_trade_body, counterparty: 'JP Morgan' });
+
+    const response = await request(app).get('/api/trades?counterparty=morgan');
+
+    expect(response.status).toBe(200);
+    expect(response.body.total).toBe(1);
+    expect(response.body.data[0].counterparty).toBe('JP Morgan');
+  });
+
+  it('accepts every sort column the grid will offer', async () => {
+    const { app } = build_app();
+    await create_trade(app);
+
+    for (const column of trade_sort_columns) {
+      const response = await request(app).get(`/api/trades?sort_by=${column}`);
+
+      expect(response.status).toBe(200);
+    }
+  });
+
+  it('rejects a sort column that does not exist', async () => {
+    const { app } = build_app();
+
+    const response = await request(app).get('/api/trades?sort_by=secret');
+
+    expect(response.status).toBe(422);
   });
 });

@@ -1,0 +1,73 @@
+name: ci
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+# A second push to the same branch cancels the run still in flight, so CI reports on the head
+# commit rather than queueing behind work that has already been replaced.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: typecheck, lint and test
+    runs-on: ubuntu-latest
+
+    # The integration tier runs against a real Postgres rather than a mocked client, so CI has to
+    # provide one. Without this service those tests skip, and a green run would prove less than it
+    # appears to.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: blotter
+          POSTGRES_PASSWORD: blotter
+          POSTGRES_DB: blotter
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U blotter -d blotter"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://blotter:blotter@localhost:5432/blotter?schema=public
+      TEST_DATABASE_URL: postgresql://blotter:blotter@localhost:5432/blotter?schema=public
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      # Both apps import @blotter/shared from its build output, and the Prisma client is generated
+      # rather than committed, so neither typecheck nor tests can run until these two exist.
+      - name: Build the shared contract
+        run: npm run build:shared
+
+      - name: Generate the Prisma client
+        run: npm run prisma:generate --workspace backend
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit and route tests
+        run: npm test
+
+      - name: Apply migrations
+        run: npm run prisma:migrate --workspace backend
+
+      - name: Integration tests against Postgres
+        run: npm run test:integration --workspace backend

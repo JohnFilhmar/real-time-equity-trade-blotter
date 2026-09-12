@@ -1,5 +1,6 @@
-import type { CreateTrade, Trade, TradeQuery } from '@blotter/shared';
+import type { CreateTrade, Trade, TradeAmendment, TradeQuery } from '@blotter/shared';
 import type { TradePage, TradeChanges, TradeRepository } from '../interfaces/trade_repository.js';
+import { build_change_set } from '../lib/audit/build_change_set.js';
 
 /** Where the in-memory business identifiers start, matching the database sequence. */
 const first_trade_number = 100_001;
@@ -18,10 +19,20 @@ function compare_on(a: Trade, b: Trade, column: TradeQuery['sort_by']): number {
       return a.quantity - b.quantity;
     case 'price':
       return a.price - b.price;
+    case 'tradeId':
+      return a.tradeId.localeCompare(b.tradeId);
     case 'symbol':
       return a.symbol.localeCompare(b.symbol);
+    case 'side':
+      return a.side.localeCompare(b.side);
     case 'trader':
       return a.trader.localeCompare(b.trader);
+    case 'book':
+      return a.book.localeCompare(b.book);
+    case 'counterparty':
+      return a.counterparty.localeCompare(b.counterparty);
+    case 'status':
+      return a.status.localeCompare(b.status);
     default:
       return a.tradeTimestamp.localeCompare(b.tradeTimestamp);
   }
@@ -60,14 +71,15 @@ function drop_undefined(changes: TradeChanges): Partial<CreateTrade> {
  * It exists so the service and the routes can be tested against a real implementation of the port
  * rather than a mock asserting which methods were called, and so the API can be demonstrated
  * without a database. Its behaviour deliberately mirrors the Postgres one, including returning
- * `null` from a write that matched nothing, so a test passing here means something about
- * production.
+ * `null` from a write that matched nothing and writing an audit row alongside every amendment, so
+ * a test passing here means something about production.
  *
  * @param initial - Trades to start with. Defaults to empty.
  * @returns A repository backed by process memory.
  */
 export function create_in_memory_trade_repository(initial: Trade[] = []): TradeRepository {
   const trades = new Map<string, Trade>(initial.map((trade) => [trade.tradeId, trade]));
+  const amendments: TradeAmendment[] = [];
   let next_number = first_trade_number + trades.size;
 
   return {
@@ -77,6 +89,7 @@ export function create_in_memory_trade_repository(initial: Trade[] = []): TradeR
           matches_text(trade.symbol, query.symbol) &&
           matches_text(trade.trader, query.trader) &&
           matches_text(trade.book, query.book) &&
+          matches_text(trade.counterparty, query.counterparty) &&
           (query.side === undefined || trade.side === query.side) &&
           (query.status === undefined || trade.status === query.status),
       );
@@ -124,6 +137,7 @@ export function create_in_memory_trade_repository(initial: Trade[] = []): TradeR
       trade_id: string,
       expected_version: number,
       changes: TradeChanges,
+      amended_by?: string,
     ): Promise<Trade | null> {
       const current = trades.get(trade_id);
 
@@ -143,6 +157,16 @@ export function create_in_memory_trade_repository(initial: Trade[] = []): TradeR
       };
 
       trades.set(trade_id, amended);
+
+      amendments.push({
+        id: crypto.randomUUID(),
+        tradeId: trade_id,
+        version: amended.version,
+        changes: build_change_set(current, changes),
+        amendedBy: amended_by ?? current.trader,
+        amendedAt: amended.updatedAt,
+      });
+
       return amended;
     },
 
@@ -166,6 +190,12 @@ export function create_in_memory_trade_repository(initial: Trade[] = []): TradeR
 
       trades.set(trade_id, cancelled);
       return cancelled;
+    },
+
+    async find_amendments(trade_id: string): Promise<TradeAmendment[]> {
+      return amendments
+        .filter((amendment) => amendment.tradeId === trade_id)
+        .sort((a, b) => a.version - b.version);
     },
 
     async find_random_active(): Promise<Trade | null> {

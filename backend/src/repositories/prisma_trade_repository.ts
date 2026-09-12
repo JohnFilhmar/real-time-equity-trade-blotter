@@ -1,6 +1,8 @@
-import type { CreateTrade, Trade, TradeQuery } from '@blotter/shared';
+import type { CreateTrade, Trade, TradeAmendment, TradeQuery } from '@blotter/shared';
 import type { PrismaClient } from '../generated/prisma/client.js';
 import type { TradePage, TradeChanges, TradeRepository } from '../interfaces/trade_repository.js';
+import { build_change_set } from '../lib/audit/build_change_set.js';
+import { to_wire_amendment } from '../lib/mappers/amendment_mapper.js';
 import { to_wire_trade } from '../lib/mappers/trade_mapper.js';
 
 /** Row returned by the business-identifier sequence read. */
@@ -12,21 +14,32 @@ interface SequenceRow {
  * Builds the Prisma `orderBy` for a validated query.
  *
  * Written as a switch rather than a computed key so the sort column stays a literal Prisma knows,
- * and so an unsupported column cannot be smuggled in from the query string.
+ * and so an unsupported column cannot be smuggled in from the query string. Every column the grid
+ * displays appears here; a missing case would be a header that silently sorts by timestamp.
  *
  * @param query - The parsed query.
  * @returns An `orderBy` naming exactly one column.
  */
 function build_order_by(query: TradeQuery) {
   switch (query.sort_by) {
+    case 'tradeId':
+      return { tradeId: query.sort_dir };
     case 'symbol':
       return { symbol: query.sort_dir };
+    case 'side':
+      return { side: query.sort_dir };
     case 'quantity':
       return { quantity: query.sort_dir };
     case 'price':
       return { price: query.sort_dir };
     case 'trader':
       return { trader: query.sort_dir };
+    case 'book':
+      return { book: query.sort_dir };
+    case 'counterparty':
+      return { counterparty: query.sort_dir };
+    case 'status':
+      return { status: query.sort_dir };
     default:
       return { tradeTimestamp: query.sort_dir };
   }
@@ -35,8 +48,8 @@ function build_order_by(query: TradeQuery) {
 /**
  * Builds the Prisma `where` for a validated query.
  *
- * The three free-text filters match case-insensitively on a substring, because they sit behind
- * grid filter boxes where someone typing `equities` expects to find `EQUITIES_UK`. That forgoes the
+ * The four free-text filters match case-insensitively on a substring, because they sit behind grid
+ * filter boxes where someone typing `equities` expects to find `EQUITIES_UK`. That forgoes the
  * btree indexes on those columns, which is acceptable at the dataset size the brief describes and
  * is recorded as a trade-off in the README.
  *
@@ -54,6 +67,9 @@ function build_where(query: TradeQuery) {
     ...(query.book === undefined
       ? {}
       : { book: { contains: query.book, mode: 'insensitive' as const } }),
+    ...(query.counterparty === undefined
+      ? {}
+      : { counterparty: { contains: query.counterparty, mode: 'insensitive' as const } }),
     ...(query.side === undefined ? {} : { side: query.side }),
     ...(query.status === undefined ? {} : { status: query.status }),
   };
@@ -136,25 +152,57 @@ export function create_prisma_trade_repository(prisma: PrismaClient): TradeRepos
       trade_id: string,
       expected_version: number,
       changes: TradeChanges,
+      amended_by?: string,
     ): Promise<Trade | null> {
-      const updated = await prisma.trade.updateMany({
-        where: { tradeId: trade_id, version: expected_version, status: 'ACTIVE' },
-        data: {
-          ...(changes.symbol === undefined ? {} : { symbol: changes.symbol }),
-          ...(changes.side === undefined ? {} : { side: changes.side }),
-          ...(changes.quantity === undefined ? {} : { quantity: changes.quantity }),
-          ...(changes.price === undefined ? {} : { price: changes.price.toFixed(6) }),
-          ...(changes.trader === undefined ? {} : { trader: changes.trader }),
-          ...(changes.book === undefined ? {} : { book: changes.book }),
-          ...(changes.counterparty === undefined ? {} : { counterparty: changes.counterparty }),
-          ...(changes.tradeTimestamp === undefined
-            ? {}
-            : { tradeTimestamp: new Date(changes.tradeTimestamp) }),
-          version: { increment: 1 },
-        },
-      });
+      return prisma.$transaction(async (tx) => {
+        const existing = await tx.trade.findUnique({ where: { tradeId: trade_id } });
 
-      return updated.count === 0 ? null : read_back(trade_id);
+        if (existing === null || existing.status !== 'ACTIVE' || existing.version !== expected_version) {
+          return null;
+        }
+
+        const before = to_wire_trade(existing);
+
+        const updated = await tx.trade.updateMany({
+          where: { tradeId: trade_id, version: expected_version, status: 'ACTIVE' },
+          data: {
+            ...(changes.symbol === undefined ? {} : { symbol: changes.symbol }),
+            ...(changes.side === undefined ? {} : { side: changes.side }),
+            ...(changes.quantity === undefined ? {} : { quantity: changes.quantity }),
+            ...(changes.price === undefined ? {} : { price: changes.price.toFixed(6) }),
+            ...(changes.trader === undefined ? {} : { trader: changes.trader }),
+            ...(changes.book === undefined ? {} : { book: changes.book }),
+            ...(changes.counterparty === undefined ? {} : { counterparty: changes.counterparty }),
+            ...(changes.tradeTimestamp === undefined
+              ? {}
+              : { tradeTimestamp: new Date(changes.tradeTimestamp) }),
+            version: { increment: 1 },
+          },
+        });
+
+        // Another client amended the same trade between the read above and this write. The
+        // conditional where clause is what makes that a lost race rather than a lost update.
+        if (updated.count === 0) {
+          return null;
+        }
+
+        const after = await tx.trade.findUnique({ where: { tradeId: trade_id } });
+
+        if (after === null) {
+          return null;
+        }
+
+        await tx.tradeAmendment.create({
+          data: {
+            tradeUuid: existing.id,
+            version: after.version,
+            changes: build_change_set(before, changes),
+            amendedBy: amended_by ?? before.trader,
+          },
+        });
+
+        return to_wire_trade(after);
+      });
     },
 
     async cancel(trade_id: string, expected_version?: number): Promise<Trade | null> {
@@ -168,6 +216,15 @@ export function create_prisma_trade_repository(prisma: PrismaClient): TradeRepos
       });
 
       return updated.count === 0 ? null : read_back(trade_id);
+    },
+
+    async find_amendments(trade_id: string): Promise<TradeAmendment[]> {
+      const rows = await prisma.tradeAmendment.findMany({
+        where: { trade: { tradeId: trade_id } },
+        orderBy: { version: 'asc' },
+      });
+
+      return rows.map((row) => to_wire_amendment(row, trade_id));
     },
 
     async find_random_active(): Promise<Trade | null> {

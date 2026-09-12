@@ -47,6 +47,11 @@ export function create_trade_router(service: TradeService): Router {
     res.json(await service.get(trade_id));
   });
 
+  router.get('/:trade_id/amendments', async (req, res) => {
+    const { trade_id } = trade_params_schema.parse(req.params);
+    res.json(await service.list_amendments(trade_id));
+  });
+
   router.post('/', write_rate_limit, async (req, res) => {
     const input = create_trade_schema.parse(req.body);
     res.status(201).json(await service.create(input));
