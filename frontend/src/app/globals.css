@@ -1,26 +1,382 @@
 @import "tailwindcss";
 
+/*
+  Design tokens, ported from docs/artifacts/fusion_blotter_prototype.html.
+
+  Every translucent value is a token, and every token is written out per theme rather than derived
+  by re-alpha-ing one base. A glass surface is not the same recipe in both themes: on dark it is a
+  translucent dark panel lifted by a light edge, on light it is frosted white held down by a dark
+  hairline. Dark is the home theme, so the bare :root block is dark and light sits in the two
+  blocks beneath it. The @theme block at the end maps these onto Tailwind utilities, so a class
+  like bg-glass follows the theme at runtime without a second set of utilities.
+*/
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* opaque grounds */
+  --ground_deep: #060A12;
+  --ground:      #0B111C;
+  --surface:     #131C29;
+  --sunk:        #0E1522;
+
+  /* glass: translucent dark panel + light edge */
+  --glass:            rgba(30, 42, 61, .55);
+  --glass_soft:       rgba(30, 42, 61, .34);
+  --glass_edge:       rgba(120, 200, 220, .22);
+  --glass_edge_soft:  rgba(120, 200, 220, .11);
+  --glass_shadow:     0 18px 44px -18px rgba(3, 8, 16, .92);
+  --drawer_shadow:    -22px 0 54px -20px rgba(3, 8, 16, .95);
+
+  /* near-opaque chrome fills */
+  --bar_bg:       rgba(6, 10, 18, .72);
+  --head_bg:      rgba(14, 21, 34, .94);
+  --foot_bg:      rgba(10, 16, 26, .40);
+  --scrim:        rgba(4, 8, 15, .68);
+  --inp_focus_bg: rgba(18, 32, 46, .90);
+  --avatar_bg:    rgba(18, 48, 60, .80);
+
+  /* text ramp */
+  --text:   #DCE4EE;
+  --text_2: #9DB0CA;
+  --muted:  #61748F;
+  --faint:  #4E607A;
+
+  /* brand */
+  --brand:        #22D3EE;
+  --brand_lo:     #67E8F9;
+  --brand_hi:     #A5F3FC;
+  --brand_bg:     rgba(34, 211, 238, .10);
+  --brand_edge:   rgba(34, 211, 238, .32);
+  --brand_ring:   rgba(34, 211, 238, .09);
+  --brand_hover:  rgba(34, 211, 238, .045);
+  --brand_glow:   rgba(34, 211, 238, .055);
+  --brand_glow_2: rgba(34, 211, 238, .07);
+  --brand_grad_hi: rgba(34, 211, 238, .24);
+  --brand_grad_lo: rgba(34, 211, 238, .06);
+  --brand_btn_hi: rgba(34, 211, 238, .22);
+  --brand_btn_lo: rgba(34, 211, 238, .09);
+  --brand_btn_hi2: rgba(34, 211, 238, .32);
+  --brand_btn_lo2: rgba(34, 211, 238, .14);
+  --brand_flash:  rgba(34, 211, 238, .20);
+
+  /* semantics: softened for legibility through blur */
+  --gain:          #46D4A0;
+  --gain_bg:       rgba(70, 212, 160, .12);
+  --gain_edge:     rgba(70, 212, 160, .26);
+  --gain_edge_hi:  rgba(70, 212, 160, .38);
+  --gain_flash:    rgba(70, 212, 160, .22);
+  --gain_glow:     rgba(70, 212, 160, .045);
+
+  --loss:           #F58598;
+  --loss_hi:        #FDA4AF;
+  --loss_bg:        rgba(245, 133, 152, .12);
+  --loss_edge:      rgba(245, 133, 152, .26);
+  --loss_edge_btn:  rgba(245, 133, 152, .30);
+  --loss_edge_hi:   rgba(245, 133, 152, .38);
+  --loss_edge_hot:  rgba(245, 133, 152, .50);
+  --loss_invalid:   rgba(245, 133, 152, .55);
+  --loss_flash:     rgba(245, 133, 152, .22);
+  --loss_hot:       rgba(245, 133, 152, .20);
+
+  --warn:          #FBBF24;
+  --warn_bg:       rgba(251, 191, 36, .12);
+  --warn_edge:     rgba(251, 191, 36, .30);
+  --warn_edge_hi:  rgba(251, 191, 36, .34);
+
+  --rule:      rgba(157, 176, 202, .12);
+  --rule_soft: rgba(157, 176, 202, .07);
+
+  /* flash tints, desaturated until 12.5px text over them clears 4.5:1 (U-M4, U-M13) */
+  --flash_up:   rgba(70, 212, 160, .14);
+  --flash_down: rgba(245, 133, 152, .14);
+  --flash_new:  rgba(34, 211, 238, .14);
+
+  color-scheme: dark;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --ground_deep: #E8EDF4;
+    --ground:      #F7FAFD;
+    --surface:     #FFFFFF;
+    --sunk:        #EDF1F6;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --glass:            rgba(255, 255, 255, .72);
+    --glass_soft:       rgba(255, 255, 255, .48);
+    --glass_edge:       rgba(15, 27, 42, .11);
+    --glass_edge_soft:  rgba(15, 27, 42, .05);
+    --glass_shadow:     0 14px 34px -16px rgba(15, 27, 42, .20);
+    --drawer_shadow:    -18px 0 44px -20px rgba(15, 27, 42, .18);
+
+    --bar_bg:       rgba(247, 250, 253, .82);
+    --head_bg:      rgba(247, 250, 253, .95);
+    --foot_bg:      rgba(237, 241, 246, .55);
+    --scrim:        rgba(203, 214, 228, .68);
+    --inp_focus_bg: #FFFFFF;
+    --avatar_bg:    #E4F4F8;
+
+    --text:   #15212E;
+    --text_2: #4A5D73;
+    --muted:  #6B7A8D;
+    --faint:  #7C8CA1;
+
+    --brand:        #0891B2;
+    --brand_lo:     #0E7490;
+    --brand_hi:     #0E5A6E;
+    --brand_bg:     rgba(8, 145, 178, .10);
+    --brand_edge:   rgba(8, 145, 178, .30);
+    --brand_ring:   rgba(8, 145, 178, .14);
+    --brand_hover:  rgba(8, 145, 178, .06);
+    --brand_glow:   rgba(8, 145, 178, .05);
+    --brand_glow_2: rgba(8, 145, 178, .06);
+    --brand_grad_hi: rgba(8, 145, 178, .18);
+    --brand_grad_lo: rgba(8, 145, 178, .05);
+    --brand_btn_hi: rgba(8, 145, 178, .15);
+    --brand_btn_lo: rgba(8, 145, 178, .07);
+    --brand_btn_hi2: rgba(8, 145, 178, .24);
+    --brand_btn_lo2: rgba(8, 145, 178, .12);
+    --brand_flash:  rgba(8, 145, 178, .15);
+
+    --gain:          #047857;
+    --gain_bg:       rgba(4, 120, 87, .10);
+    --gain_edge:     rgba(4, 120, 87, .22);
+    --gain_edge_hi:  rgba(4, 120, 87, .34);
+    --gain_flash:    rgba(4, 120, 87, .16);
+    --gain_glow:     rgba(4, 120, 87, .04);
+
+    --loss:           #BE123C;
+    --loss_hi:        #9F0F32;
+    --loss_bg:        rgba(190, 18, 60, .09);
+    --loss_edge:      rgba(190, 18, 60, .20);
+    --loss_edge_btn:  rgba(190, 18, 60, .26);
+    --loss_edge_hi:   rgba(190, 18, 60, .32);
+    --loss_edge_hot:  rgba(190, 18, 60, .45);
+    --loss_invalid:   rgba(190, 18, 60, .50);
+    --loss_flash:     rgba(190, 18, 60, .15);
+    --loss_hot:       rgba(190, 18, 60, .16);
+
+    --warn:          #B45309;
+    --warn_bg:       rgba(180, 83, 9, .11);
+    --warn_edge:     rgba(180, 83, 9, .26);
+    --warn_edge_hi:  rgba(180, 83, 9, .32);
+
+    --rule:      rgba(15, 27, 42, .11);
+    --rule_soft: rgba(15, 27, 42, .06);
+
+    --flash_up:   rgba(4, 120, 87, .10);
+    --flash_down: rgba(190, 18, 60, .09);
+    --flash_new:  rgba(8, 145, 178, .10);
+
+    color-scheme: light;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+:root[data-theme="light"] {
+  --ground_deep: #E8EDF4;
+  --ground:      #F7FAFD;
+  --surface:     #FFFFFF;
+  --sunk:        #EDF1F6;
+
+  --glass:            rgba(255, 255, 255, .72);
+  --glass_soft:       rgba(255, 255, 255, .48);
+  --glass_edge:       rgba(15, 27, 42, .11);
+  --glass_edge_soft:  rgba(15, 27, 42, .05);
+  --glass_shadow:     0 14px 34px -16px rgba(15, 27, 42, .20);
+  --drawer_shadow:    -18px 0 44px -20px rgba(15, 27, 42, .18);
+
+  --bar_bg:       rgba(247, 250, 253, .82);
+  --head_bg:      rgba(247, 250, 253, .95);
+  --foot_bg:      rgba(237, 241, 246, .55);
+  --scrim:        rgba(203, 214, 228, .68);
+  --inp_focus_bg: #FFFFFF;
+  --avatar_bg:    #E4F4F8;
+
+  --text:   #15212E;
+  --text_2: #4A5D73;
+  --muted:  #6B7A8D;
+  --faint:  #7C8CA1;
+
+  --brand:        #0891B2;
+  --brand_lo:     #0E7490;
+  --brand_hi:     #0E5A6E;
+  --brand_bg:     rgba(8, 145, 178, .10);
+  --brand_edge:   rgba(8, 145, 178, .30);
+  --brand_ring:   rgba(8, 145, 178, .14);
+  --brand_hover:  rgba(8, 145, 178, .06);
+  --brand_glow:   rgba(8, 145, 178, .05);
+  --brand_glow_2: rgba(8, 145, 178, .06);
+  --brand_grad_hi: rgba(8, 145, 178, .18);
+  --brand_grad_lo: rgba(8, 145, 178, .05);
+  --brand_btn_hi: rgba(8, 145, 178, .15);
+  --brand_btn_lo: rgba(8, 145, 178, .07);
+  --brand_btn_hi2: rgba(8, 145, 178, .24);
+  --brand_btn_lo2: rgba(8, 145, 178, .12);
+  --brand_flash:  rgba(8, 145, 178, .15);
+
+  --gain:          #047857;
+  --gain_bg:       rgba(4, 120, 87, .10);
+  --gain_edge:     rgba(4, 120, 87, .22);
+  --gain_edge_hi:  rgba(4, 120, 87, .34);
+  --gain_flash:    rgba(4, 120, 87, .16);
+  --gain_glow:     rgba(4, 120, 87, .04);
+
+  --loss:           #BE123C;
+  --loss_hi:        #9F0F32;
+  --loss_bg:        rgba(190, 18, 60, .09);
+  --loss_edge:      rgba(190, 18, 60, .20);
+  --loss_edge_btn:  rgba(190, 18, 60, .26);
+  --loss_edge_hi:   rgba(190, 18, 60, .32);
+  --loss_edge_hot:  rgba(190, 18, 60, .45);
+  --loss_invalid:   rgba(190, 18, 60, .50);
+  --loss_flash:     rgba(190, 18, 60, .15);
+  --loss_hot:       rgba(190, 18, 60, .16);
+
+  --warn:          #B45309;
+  --warn_bg:       rgba(180, 83, 9, .11);
+  --warn_edge:     rgba(180, 83, 9, .26);
+  --warn_edge_hi:  rgba(180, 83, 9, .32);
+
+  --rule:      rgba(15, 27, 42, .11);
+  --rule_soft: rgba(15, 27, 42, .06);
+
+  --flash_up:   rgba(4, 120, 87, .10);
+  --flash_down: rgba(190, 18, 60, .09);
+  --flash_new:  rgba(8, 145, 178, .10);
+
+  color-scheme: light;
+}
+
+/* Explicit dark choice wins over a light OS setting. */
+:root[data-theme="dark"] { color-scheme: dark; }
+
+@theme inline {
+  --color-ground-deep: var(--ground_deep);
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-sunk: var(--sunk);
+
+  --color-glass: var(--glass);
+  --color-glass-soft: var(--glass_soft);
+  --color-glass-edge: var(--glass_edge);
+  --color-glass-edge-soft: var(--glass_edge_soft);
+
+  --color-bar: var(--bar_bg);
+  --color-head: var(--head_bg);
+  --color-foot: var(--foot_bg);
+  --color-scrim: var(--scrim);
+  --color-inp-focus: var(--inp_focus_bg);
+  --color-avatar: var(--avatar_bg);
+
+  --color-text: var(--text);
+  --color-text-2: var(--text_2);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+
+  --color-brand: var(--brand);
+  --color-brand-lo: var(--brand_lo);
+  --color-brand-hi: var(--brand_hi);
+  --color-brand-bg: var(--brand_bg);
+  --color-brand-edge: var(--brand_edge);
+  --color-brand-ring: var(--brand_ring);
+  --color-brand-hover: var(--brand_hover);
+  --color-brand-glow: var(--brand_glow);
+  --color-brand-glow-2: var(--brand_glow_2);
+  --color-brand-grad-hi: var(--brand_grad_hi);
+  --color-brand-grad-lo: var(--brand_grad_lo);
+  --color-brand-btn-hi: var(--brand_btn_hi);
+  --color-brand-btn-lo: var(--brand_btn_lo);
+  --color-brand-btn-hi2: var(--brand_btn_hi2);
+  --color-brand-btn-lo2: var(--brand_btn_lo2);
+  --color-brand-flash: var(--brand_flash);
+
+  --color-gain: var(--gain);
+  --color-gain-bg: var(--gain_bg);
+  --color-gain-edge: var(--gain_edge);
+  --color-gain-edge-hi: var(--gain_edge_hi);
+  --color-gain-flash: var(--gain_flash);
+  --color-gain-glow: var(--gain_glow);
+
+  --color-loss: var(--loss);
+  --color-loss-hi: var(--loss_hi);
+  --color-loss-bg: var(--loss_bg);
+  --color-loss-edge: var(--loss_edge);
+  --color-loss-edge-btn: var(--loss_edge_btn);
+  --color-loss-edge-hi: var(--loss_edge_hi);
+  --color-loss-edge-hot: var(--loss_edge_hot);
+  --color-loss-invalid: var(--loss_invalid);
+  --color-loss-flash: var(--loss_flash);
+  --color-loss-hot: var(--loss_hot);
+
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn_bg);
+  --color-warn-edge: var(--warn_edge);
+  --color-warn-edge-hi: var(--warn_edge_hi);
+
+  --color-rule: var(--rule);
+  --color-rule-soft: var(--rule_soft);
+
+  --color-flash-up: var(--flash_up);
+  --color-flash-down: var(--flash_down);
+  --color-flash-new: var(--flash_new);
+
+  --shadow-glass: var(--glass_shadow);
+  --shadow-drawer: var(--drawer_shadow);
+
+  --font-sans: var(--font-plex-sans), "Segoe UI", system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), "SFMono-Regular", Consolas, monospace;
+
+  --radius-r: 7px;
+  --spacing-row: 32px;
+
+  --animate-flash-up: flash_up 1.1s ease-out;
+  --animate-flash-down: flash_down 1.1s ease-out;
+  --animate-flash-new: flash_new 1.5s ease-out;
+  --animate-rise: rise .22s cubic-bezier(.2, .8, .3, 1);
+  --animate-fade: fade .18s ease-out;
+  --animate-slide-in: slide_in .22s cubic-bezier(.2, .8, .3, 1);
+  --animate-pulse-dot: pulse 2.4s ease-in-out infinite;
+  --animate-breathe: breathe 1.1s ease-in-out infinite;
+
+  @keyframes flash_up   { from { background-color: var(--flash_up); }   to { background-color: transparent; } }
+  @keyframes flash_down { from { background-color: var(--flash_down); } to { background-color: transparent; } }
+  @keyframes flash_new  { from { background-color: var(--flash_new); }  to { background-color: transparent; } }
+  @keyframes rise  { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: none; } }
+  @keyframes fade  { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slide_in { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .34; } }
+  @keyframes breathe { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .3; transform: scale(.7); } }
+}
+
+@layer base {
+  html, body { height: 100%; }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 620px at 14% -12%, var(--brand_glow_2), transparent 62%),
+      radial-gradient(900px 520px at 88% 4%, var(--gain_glow), transparent 58%),
+      var(--ground_deep);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button, input, select, textarea { font: inherit; color: inherit; }
+
+  :focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  /* Option lists inherit the page colours, which the OS default does not do in dark mode. */
+  select option { background: var(--surface); color: var(--text); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .001ms !important;
+    }
+  }
 }
