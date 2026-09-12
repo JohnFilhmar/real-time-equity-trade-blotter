@@ -436,3 +436,17 @@ including the nine API behaviours most likely to surprise an interface, every de
 taken so none is re-opened, and the gotchas that cost time. Deliberately breaks the usual rule
 against handoffs in a repository, because this one is being handed to a different agent rather than
 to a later session.
+
+---
+
+### 2026-09-12T04:49Z - reverify_gap_analysis_against_merged_code
+
+**Prompt**
+
+> can you verify whether the gaps are fixed and update the mvp requirements and gaps analysis
+> accordingly based on what has been updated and changed etc. so i can read it directly as a basis
+> on decisions and the next step in proceeding.
+
+**Outcome:** Merged `main` at `c20b857`, installed, built and ran the suite rather than trusting the handoffs: 188 tests pass and typecheck is clean, so 22 of 23 server musts and 10 of 11 shoulds are now closed and all ten decisions are settled, leaving the unbuilt interface as the only real gap. Rewrote the artifact as a current-state document and corrected two of my own revision-1 findings, including U-M4, where I had searched for JavaScript escapes and missed the prototype's HTML-entity tick arrows.
+
+**Artifact:** [Blotter MVP Requirements](../artifacts/mvp_requirements_and_gap_analysis.html)
