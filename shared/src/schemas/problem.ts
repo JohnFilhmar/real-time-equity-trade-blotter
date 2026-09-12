@@ -3,6 +3,8 @@ import { z } from 'zod';
 /** Machine-readable error codes the API returns, carried as a problem extension member. */
 export const problem_codes = {
   validation_failed: 'validation_failed',
+  unauthenticated: 'unauthenticated',
+  forbidden: 'forbidden',
   not_found: 'not_found',
   conflict: 'conflict',
   rate_limited: 'rate_limited',
@@ -52,6 +54,8 @@ export const problem_schema = z.object({
   instance: z.string().optional(),
   code: z.enum([
     problem_codes.validation_failed,
+    problem_codes.unauthenticated,
+    problem_codes.forbidden,
     problem_codes.not_found,
     problem_codes.conflict,
     problem_codes.rate_limited,

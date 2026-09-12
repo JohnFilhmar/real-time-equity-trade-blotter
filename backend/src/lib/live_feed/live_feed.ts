@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 import type { TradeRepository } from '../../interfaces/trade_repository.js';
-import type { TradeService } from '../../services/trade_service.js';
+import type { TradeActor, TradeService } from '../../services/trade_service.js';
 import { AppError } from '../errors/app_error.js';
 import { logger } from '../logging/logger.js';
 import { generate_live_amendment, generate_live_trade } from '../seed/generate_trades.js';
@@ -57,10 +57,25 @@ export function create_live_feed(
   let running = false;
 
   /**
+   * Builds the actor the feed writes as.
+   *
+   * ADMIN because the feed acts on trades belonging to every desk, so it needs the permission that
+   * covers somebody else's trade. It is not an account and cannot sign in: the elevation exists
+   * only inside this process, and `source` is what tells the audit trail these were simulated.
+   *
+   * @param trader_code - The desk code to attribute this action to.
+   * @returns The actor.
+   */
+  function actor_for(trader_code: string): TradeActor {
+    return { trader_code, role: 'ADMIN', source: 'LIVE_FEED' };
+  }
+
+  /**
    * Books a brand new trade.
    */
   async function do_create(): Promise<void> {
-    await service.create(generate_live_trade());
+    const generated = generate_live_trade();
+    await service.create(generated.payload, actor_for(generated.trader));
   }
 
   /**
@@ -77,7 +92,7 @@ export function create_live_feed(
     await service.amend(
       target.tradeId,
       { version: target.version, ...generate_live_amendment(target.price) },
-      'LIVE_FEED',
+      actor_for(target.trader),
     );
   }
 
@@ -92,7 +107,7 @@ export function create_live_feed(
       return;
     }
 
-    await service.cancel(target.tradeId, target.version, 'LIVE_FEED');
+    await service.cancel(target.tradeId, target.version, actor_for(target.trader));
   }
 
   /**

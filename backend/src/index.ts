@@ -2,13 +2,19 @@ import { createServer } from 'node:http';
 import { create_app } from './app.js';
 import { cors_origins, env, live_feed_options } from './config/env.js';
 import { prisma } from './db/prisma_client.js';
+import { close_redis, get_redis } from './db/redis_client.js';
+import { create_login_attempts } from './lib/auth/login_attempts.js';
+import { create_refresh_store } from './lib/auth/refresh_store.js';
 import { create_live_feed } from './lib/live_feed/live_feed.js';
 import { logger } from './lib/logging/logger.js';
 import { seed_trades_if_empty } from './lib/seed/seed_trades.js';
+import { seed_users_if_empty } from './lib/seed/seed_users.js';
 import { create_socket_broadcaster } from './realtime/socket_broadcaster.js';
 import { create_socket_server } from './realtime/socket_server.js';
 import { create_prisma_health_probe } from './repositories/prisma_health_probe.js';
 import { create_prisma_trade_repository } from './repositories/prisma_trade_repository.js';
+import { create_prisma_user_repository } from './repositories/prisma_user_repository.js';
+import { create_auth_service } from './services/auth_service.js';
 import { create_trade_service } from './services/trade_service.js';
 
 // The HTTP server is created empty and the app attached afterwards, because the socket server
@@ -18,11 +24,20 @@ const http_server = createServer();
 const io = create_socket_server(http_server);
 
 const trade_repository = create_prisma_trade_repository(prisma);
+const user_repository = create_prisma_user_repository(prisma);
+
 const trade_service = create_trade_service(trade_repository, create_socket_broadcaster(io));
+const redis = get_redis();
+const auth_service = create_auth_service(
+  user_repository,
+  create_refresh_store(redis),
+  create_login_attempts(redis),
+);
 
 const app = create_app({
   health_probe: create_prisma_health_probe(prisma),
   trade_service,
+  auth_service,
   cors_origins,
 });
 http_server.on('request', app);
@@ -56,8 +71,8 @@ function close_http_server(): Promise<void> {
 }
 
 /**
- * Stops the simulated feed, closes the socket server, the HTTP listener and the database pool, in
- * that order, so no request is cut mid-flight and no connection is left dangling.
+ * Stops the simulated feed, closes the socket server, the HTTP listener, Redis and the database
+ * pool, in that order, so no request is cut mid-flight and no connection is left dangling.
  *
  * Without this, Docker's SIGTERM kills the process outright and `docker compose down` waits the
  * full ten seconds for SIGKILL on every stop.
@@ -77,6 +92,7 @@ async function shutdown(signal: string): Promise<void> {
     live_feed.stop();
     await io.close();
     await close_http_server();
+    await close_redis();
     await prisma.$disconnect();
     logger.info('shutdown_complete');
     process.exit(0);
@@ -88,6 +104,11 @@ async function shutdown(signal: string): Promise<void> {
 
 async function main(): Promise<void> {
   if (env.SEED_ON_STARTUP) {
+    const accounts = await seed_users_if_empty(user_repository);
+    if (accounts > 0) {
+      logger.info({ accounts }, 'seeded_users');
+    }
+
     const inserted = await seed_trades_if_empty(prisma, env.SEED_TRADE_COUNT);
     if (inserted > 0) {
       logger.info({ inserted }, 'seeded_trades');

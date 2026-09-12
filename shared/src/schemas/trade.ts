@@ -56,12 +56,18 @@ export const trade_schema = z.object({
  * The server owns `id`, `tradeId`, `status`, `version` and the row timestamps, so a client cannot
  * set them. `currency` is server-owned too: it is a property of the instrument, not of the ticket,
  * so letting a client send it would allow a trade whose currency disagrees with its own symbol.
+ *
+ * `trader` is server-owned for the same reason once there is authentication: you book as yourself.
+ * It comes from the access token, so a client cannot book under another desk code, and the trade's
+ * trader and its audit actor are guaranteed to agree. This is a deliberate divergence from the
+ * brief's sample payload, which shows trader as a client field.
  */
 export const create_trade_schema = trade_schema
   .omit({
     id: true,
     tradeId: true,
     currency: true,
+    trader: true,
     status: true,
     version: true,
     createdAt: true,

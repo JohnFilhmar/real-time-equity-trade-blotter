@@ -14,6 +14,17 @@ export default defineConfig({
       // Request logging is the feature, not the test output. Silenced here so a failing assertion
       // is visible rather than buried under one JSON line per request.
       LOG_LEVEL: 'silent',
+      JWT_ACCESS_SECRET: 'test-access-secret-0123456789abcdefghijkl',
+      JWT_REFRESH_SECRET: 'test-refresh-secret-0123456789abcdefghijkl',
+      REDIS_URL: 'redis://localhost:6379',
+      // The lowest cost bcrypt accepts. Real strength is a production concern; here it is the
+      // difference between a suite that runs in a second and one that runs in a minute.
+      BCRYPT_ROUNDS: '10',
+      // High enough that a module-level limiter is never the thing a test trips over. The
+      // per-account lockout, which is the security-relevant control, is tested directly.
+      AUTH_RATE_LIMIT: '100000',
+      READ_RATE_LIMIT: '100000',
+      WRITE_RATE_LIMIT: '100000',
       CORS_ORIGINS: 'http://localhost:3000',
       SEED_ON_STARTUP: 'false',
     },

@@ -43,6 +43,24 @@ export type {
 } from './schemas/trade_event.js';
 
 export {
+  login_request_schema,
+  auth_user_schema,
+  auth_session_schema,
+} from './schemas/auth.js';
+
+export type { LoginRequest, AuthUser, AuthSession } from './schemas/auth.js';
+
+export {
+  role_values,
+  permission_values,
+  role_permissions,
+  permissions_for,
+  role_has,
+} from './reference/roles.js';
+
+export type { Role, Permission } from './reference/roles.js';
+
+export {
   problem_schema,
   problem_field_error_schema,
   problem_codes,
@@ -56,7 +74,12 @@ export { broadcast_envelope_schema } from './schemas/broadcast.js';
 
 export type { BroadcastEnvelope } from './schemas/broadcast.js';
 
-export { instruments, instrument_symbols, currency_values, find_instrument } from './reference/instruments.js';
+export {
+  instruments,
+  instrument_symbols,
+  currency_values,
+  find_instrument,
+} from './reference/instruments.js';
 
 export type { Instrument, Currency } from './reference/instruments.js';
 
