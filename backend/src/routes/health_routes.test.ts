@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import request from 'supertest';
+import { problem_schema } from '@blotter/shared';
 import { create_app } from '../app.js';
 import type { HealthProbe } from '../interfaces/health_probe.js';
 import { create_in_memory_trade_repository } from '../repositories/in_memory_trade_repository.js';
@@ -60,16 +61,39 @@ describe('health routes', () => {
     expect(JSON.stringify(response.body)).not.toContain('hunter2');
     expect(JSON.stringify(response.body)).not.toContain('ECONNREFUSED');
   });
+
+  it('is reachable without the versioned prefix, because a probe is not an API client', async () => {
+    const app = create_app({ health_probe: reachable, trade_service, cors_origins });
+
+    expect((await request(app).get('/health')).status).toBe(200);
+    expect((await request(app).get('/api/v1/health')).status).toBe(404);
+  });
+});
+
+describe('metrics route', () => {
+  it('exposes the Prometheus text format', async () => {
+    const response = await request(
+      create_app({ health_probe: reachable, trade_service, cors_origins }),
+    ).get('/metrics');
+
+    expect(response.status).toBe(200);
+    expect(response.headers['content-type']).toContain('text/plain');
+    expect(response.text).toContain('blotter_socket_clients_connected');
+    expect(response.text).toContain('blotter_broadcast_lag_seconds');
+  });
 });
 
 describe('unmatched routes', () => {
-  it('returns the standard error shape rather than a bare 404', async () => {
+  it('answers a problem document rather than a bare 404', async () => {
     const response = await request(
       create_app({ health_probe: reachable, trade_service, cors_origins }),
     ).get('/does-not-exist');
 
     expect(response.status).toBe(404);
-    expect(response.body.error.code).toBe('not_found');
-    expect(response.body.error.message).toContain('/does-not-exist');
+    expect(response.headers['content-type']).toContain('application/problem+json');
+    expect(() => problem_schema.parse(response.body)).not.toThrow();
+    expect(response.body.code).toBe('not_found');
+    expect(response.body.detail).toContain('/does-not-exist');
+    expect(response.body.instance).toBe('/does-not-exist');
   });
 });

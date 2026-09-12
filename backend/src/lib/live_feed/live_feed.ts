@@ -2,6 +2,7 @@ import { faker } from '@faker-js/faker';
 import type { TradeRepository } from '../../interfaces/trade_repository.js';
 import type { TradeService } from '../../services/trade_service.js';
 import { AppError } from '../errors/app_error.js';
+import { logger } from '../logging/logger.js';
 import { generate_live_amendment, generate_live_trade } from '../seed/generate_trades.js';
 
 /** How the feed paces itself. */
@@ -73,10 +74,11 @@ export function create_live_feed(
       return;
     }
 
-    await service.amend(target.tradeId, {
-      version: target.version,
-      ...generate_live_amendment(target.price),
-    });
+    await service.amend(
+      target.tradeId,
+      { version: target.version, ...generate_live_amendment(target.price) },
+      'LIVE_FEED',
+    );
   }
 
   /**
@@ -90,7 +92,7 @@ export function create_live_feed(
       return;
     }
 
-    await service.cancel(target.tradeId, target.version);
+    await service.cancel(target.tradeId, target.version, 'LIVE_FEED');
   }
 
   /**
@@ -111,7 +113,7 @@ export function create_live_feed(
       if (error instanceof AppError && (error.status === 409 || error.status === 404)) {
         return;
       }
-      console.warn('live_feed_action_failed', error);
+      logger.warn({ err: error }, 'live_feed_action_failed');
     }
   }
 

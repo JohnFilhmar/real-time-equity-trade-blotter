@@ -1,4 +1,4 @@
-import type { Trade, TradeSide, TradeStatus } from '@blotter/shared';
+import type { Currency, Trade, TradeSide, TradeStatus } from '@blotter/shared';
 
 /**
  * A trade row as the database hands it back.
@@ -15,6 +15,7 @@ export interface TradeRow {
   side: TradeSide;
   quantity: number;
   price: { toNumber(): number };
+  currency: Currency;
   trader: string;
   book: string;
   counterparty: string;
@@ -34,6 +35,10 @@ export interface TradeRow {
  * sample payload. Dates become ISO strings for the same reason: `trade_schema` says
  * `z.iso.datetime()`, and a `Date` would satisfy Express but not the client's parse.
  *
+ * The symbol is widened to the enum by the caller's own schema rather than checked here: the
+ * column is populated only through `create_trade_schema`, which already restricts it to the known
+ * universe.
+ *
  * @param row - The row as read from the database.
  * @returns The trade in wire shape, valid against `trade_schema`.
  */
@@ -45,6 +50,7 @@ export function to_wire_trade(row: TradeRow): Trade {
     side: row.side,
     quantity: row.quantity,
     price: row.price.toNumber(),
+    currency: row.currency,
     trader: row.trader,
     book: row.book,
     counterparty: row.counterparty,

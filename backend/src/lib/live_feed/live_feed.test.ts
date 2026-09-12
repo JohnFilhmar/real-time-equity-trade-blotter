@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Trade } from '@blotter/shared';
 import { create_in_memory_trade_repository } from '../../repositories/in_memory_trade_repository.js';
 import { create_trade_service } from '../../services/trade_service.js';
+import { logger } from '../logging/logger.js';
 import type { TradeRepository } from '../../interfaces/trade_repository.js';
 import { create_live_feed } from './live_feed.js';
 
@@ -78,7 +79,7 @@ describe('live feed', () => {
   });
 
   it('keeps running after an unexpected failure', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
     const failing: TradeRepository = {
       ...create_in_memory_trade_repository(),
       create: async () => {
