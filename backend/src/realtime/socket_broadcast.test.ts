@@ -3,13 +3,26 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { io as connect, type Socket } from 'socket.io-client';
 import { broadcast_envelope_schema, type BroadcastEnvelope } from '@blotter/shared';
 import { api_prefix, create_app } from '../app.js';
+import {
+  create_in_memory_login_attempts,
+  create_in_memory_refresh_store,
+} from '../lib/auth/in_memory_auth_stores.js';
+import { bearer, token_for } from '../lib/testing/test_app.js';
 import { create_in_memory_trade_repository } from '../repositories/in_memory_trade_repository.js';
+import { create_in_memory_user_repository } from '../repositories/in_memory_user_repository.js';
+import { create_auth_service } from '../services/auth_service.js';
 import { create_trade_service } from '../services/trade_service.js';
 import { create_socket_broadcaster } from './socket_broadcaster.js';
 import { create_socket_server } from './socket_server.js';
 
 /** The origin the server is configured to accept, per the test environment's CORS_ORIGINS. */
 const allowed_origin = 'http://localhost:3000';
+
+/** The desk code every request in this suite is made under. */
+const own_desk = 'JSMITH';
+
+/** One access token, reused, because the subject here is the broadcast rather than the login. */
+const access_token = token_for(own_desk);
 
 /** A client standing in for one browser tab. */
 interface Tab {
@@ -27,10 +40,11 @@ const open_sockets: Socket[] = [];
  * @param origin - The Origin header to present, so the rejection path can be exercised too.
  * @returns The connected tab.
  */
-async function open_tab(origin = allowed_origin): Promise<Tab> {
+async function open_tab(origin = allowed_origin, token: string | null = access_token): Promise<Tab> {
   const socket = connect(base_url, {
     transports: ['websocket'],
     extraHeaders: { Origin: origin },
+    ...(token === null ? {} : { auth: { token } }),
     reconnection: false,
   });
   open_sockets.push(socket);
@@ -102,7 +116,11 @@ async function call(
 ): Promise<{ status: number; body: Record<string, unknown> }> {
   const response = await fetch(`${base_url}${api_prefix}${path}`, {
     method,
-    headers: { 'content-type': 'application/json', origin: allowed_origin },
+    headers: {
+      'content-type': 'application/json',
+      origin: allowed_origin,
+      authorization: bearer(access_token),
+    },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
 
@@ -118,7 +136,6 @@ const a_trade_body = {
   side: 'BUY',
   quantity: 5000,
   price: 227.45,
-  trader: 'JSMITH',
   book: 'EQUITIES_UK',
   counterparty: 'Goldman Sachs',
   tradeTimestamp: '2026-08-18T09:15:23.000Z',
@@ -140,6 +157,11 @@ beforeAll(async () => {
     create_app({
       health_probe: { check_connection: async () => undefined },
       trade_service: service,
+      auth_service: create_auth_service(
+        create_in_memory_user_repository(),
+        create_in_memory_refresh_store(),
+        create_in_memory_login_attempts(),
+      ),
       cors_origins: [allowed_origin],
     }),
   );
@@ -256,8 +278,24 @@ describe('a change made by one client reaches every other client', () => {
   });
 });
 
-describe('socket origin check', () => {
+describe('socket handshake', () => {
   it('refuses a websocket from an origin that is not on the allowlist', async () => {
     await expect(open_tab('http://evil.example')).rejects.toThrow();
+  });
+
+  it('refuses a socket with no token', async () => {
+    // Broadcasts carry whole trades, so an unauthenticated socket would stream the blotter to
+    // anyone who opened one and make the authorisation on the read endpoints decorative.
+    await expect(open_tab(allowed_origin, null)).rejects.toThrow();
+  });
+
+  it('refuses a socket whose token is not ours', async () => {
+    await expect(open_tab(allowed_origin, 'not-a-real-token')).rejects.toThrow();
+  });
+
+  it('accepts a viewer, who is allowed to read', async () => {
+    const tab = await open_tab(allowed_origin, token_for('VIEWER', 'VIEWER'));
+
+    expect(tab.socket.connected).toBe(true);
   });
 });

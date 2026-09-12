@@ -30,6 +30,34 @@ services:
           cpus: "1.0"
           memory: 512M
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # No persistence. Redis holds sessions and rate-limit counters, both of which are allowed to be
+    # lost on a restart: everyone signs in again. Persisting them would mean a disk full of
+    # credentials-adjacent state for no gain.
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - blotter
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 5
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
   # Migrations run once, to completion, before the API starts. Keeping them out of the API's own
   # start command is what lets node be PID 1 there and handle SIGTERM, and it means a failed
   # migration stops the rollout instead of crash-looping the API.
@@ -74,6 +102,13 @@ services:
       PORT: "5000"
       DATABASE_URL: postgresql://${POSTGRES_USER:-blotter}:${POSTGRES_PASSWORD:-blotter}@database:5432/${POSTGRES_DB:-blotter}?schema=public
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      REDIS_URL: redis://redis:6379
+      # Development secrets, and obviously so. A real deployment supplies these from a secret store
+      # and never from a compose file; the env schema refuses anything under 32 characters, which is
+      # what stops a placeholder from quietly becoming the production key.
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-access-secret-change-me-0123456789abcdef}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret-change-me-0123456789abcdef}
+      SEED_USER_PASSWORD: ${SEED_USER_PASSWORD:-blotter-demo-2026}
       SEED_ON_STARTUP: "true"
       SEED_TRADE_COUNT: "500"
       LIVE_FEED_ENABLED: ${LIVE_FEED_ENABLED:-true}
@@ -83,6 +118,8 @@ services:
       - "${BACKEND_PORT:-5000}:5000"
     depends_on:
       database:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully

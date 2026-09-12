@@ -333,6 +333,24 @@ sixteen choices to the user across four rounds instead of taking any of them.
 
 ---
 
+### 2026-09-12T03:05Z - merge_branches_and_settle_auth_model
+
+**Prompt**
+
+> merge all three branches to main, then discuss the worktree-feature-flow so i can review it.
+> implementation plan will be done by another agent post-merged to default branch of all review and
+> spec branches.
+> correct me if im wrong and give me suggestions with the query/question, my view: no roles and
+> permissions, user signs up/registers and logs in and have control over their account and actions,
+> guests/no account views only with login/register button shown in the ui for authentication and
+> actions
+
+**Outcome:** Merged all three branches to `main` at `b71eafd`, resolving three prompt-log conflicts append-style with every entry kept in timestamp order, then reviewed `worktree-feature-flow` and found it never states how a merge happens, that the one-file-per-agent log rule caused the very collisions it exists to prevent when one agent ran three worktrees, and that its CI section describes a pipeline this repo does not have. The user's no-roles model was confirmed correct and removed the `role` claim entirely, but his condition for locking out guests rested on a premise the research does not contain, so it went back to him and he chose full auth with README demo credentials on the confidentiality argument alone.
+
+**Artifact:** [Trade API design](../superpowers/specs/2026-09-12-trade-api-design.md)
+
+---
+
 ### 2026-09-12T03:20Z - close_the_server_gap_list
 
 **Prompt** (answers to sixteen questions across four rounds)
@@ -354,24 +372,6 @@ append-only trigger and the currency migration in CI.
 
 ---
 
-### 2026-09-12T03:05Z - merge_branches_and_settle_auth_model
-
-**Prompt**
-
-> merge all three branches to main, then discuss the worktree-feature-flow so i can review it.
-> implementation plan will be done by another agent post-merged to default branch of all review and
-> spec branches.
-> correct me if im wrong and give me suggestions with the query/question, my view: no roles and
-> permissions, user signs up/registers and logs in and have control over their account and actions,
-> guests/no account views only with login/register button shown in the ui for authentication and
-> actions
-
-**Outcome:** Merged all three branches to `main` at `b71eafd`, resolving three prompt-log conflicts append-style with every entry kept in timestamp order, then reviewed `worktree-feature-flow` and found it never states how a merge happens, that the one-file-per-agent log rule caused the very collisions it exists to prevent when one agent ran three worktrees, and that its CI section describes a pipeline this repo does not have. The user's no-roles model was confirmed correct and removed the `role` claim entirely, but his condition for locking out guests rested on a premise the research does not contain, so it went back to him and he chose full auth with README demo credentials on the confidentiality argument alone.
-
-**Artifact:** [Trade API design](../superpowers/specs/2026-09-12-trade-api-design.md)
-
----
-
 ### 2026-09-12T03:25Z - reinstate_roles_and_permissions
 
 **Prompt**
@@ -388,6 +388,28 @@ append-only trigger and the currency migration in CI.
 
 ---
 
+### 2026-09-12T03:40Z - build_authentication_before_handoff
+
+**Prompt**
+
+> we are going to handoff your session to a more reliable model for both the wiring and
+> implementation of the ui/ux, so i am going to need you to write your /context-handoff to a
+> markdownfile inside the repository then merge it to the default branch for that new agent to
+> continue on as a new context.
+
+Followed by, on being asked who should own the remaining work: "I build it now, before handing off",
+"Full baseline including Redis", and "Build real authentication" for D3.
+
+**Outcome:** Built authentication to the full `backend-security-baseline` shape rather than
+recording it as work for the incoming agent: rotating refresh tokens with replay detection in
+Redis, three roles mapped to named permissions, an authenticated socket handshake, and per-account
+lockout alongside Redis-backed tiered rate limiting. Tests went from 152 to 221, and a trade's
+trader now comes from the access token rather than the request body.
+
+**Commits:** `45b8315`
+
+---
+
 ### 2026-09-12T04:10Z - write_ui_ux_handoff_into_the_repo
 
 **Prompt**
@@ -401,3 +423,16 @@ append-only trigger and the currency migration in CI.
 **Outcome:** Wrote the UI/UX planning handoff to `docs/handoff/ui_ux_planning.md` and merged it to `main`, deliberately inside the repository rather than under `~/.claude/handoff/` as the global rule requires, because the agent picking it up starts from a clone and cannot read a local path. Scoped to the interface: the A-plus-B-glass direction, the per-theme token architecture, the settled reversals that must not be re-litigated, the two MVP gap-analysis claims that were disproved, and the environment traps that cost time.
 
 **Artifact:** [UI/UX planning handoff](../handoff/ui_ux_planning.md)
+
+---
+
+### 2026-09-12T04:25Z - write_the_backend_handoff_into_the_repository
+
+**Prompt:** The same prompt as above, for its first half: write the context handoff to a markdown
+file inside the repository and merge it to the default branch.
+
+**Outcome:** Wrote `docs/handoff/backend_server.md` describing the server as built and verified,
+including the nine API behaviours most likely to surprise an interface, every decision already
+taken so none is re-opened, and the gotchas that cost time. Deliberately breaks the usual rule
+against handoffs in a repository, because this one is being handed to a different agent rather than
+to a later session.

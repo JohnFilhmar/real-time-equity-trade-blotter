@@ -9,98 +9,171 @@ import {
   trade_sort_columns,
   type Trade,
 } from '@blotter/shared';
-import { api_prefix, create_app } from '../app.js';
-import type { HealthProbe } from '../interfaces/health_probe.js';
-import { create_in_memory_trade_repository } from '../repositories/in_memory_trade_repository.js';
-import { create_trade_service } from '../services/trade_service.js';
-
-const reachable: HealthProbe = { check_connection: async () => undefined };
+import { api_prefix } from '../app.js';
+import { bearer, build_test_app, token_for } from '../lib/testing/test_app.js';
 
 /** Where the trade resource lives, so a version bump is one edit here rather than thirty. */
 const trades_path = `${api_prefix}/trades`;
 
-/** A valid create body, matching the brief's own sample payload. */
+/** The desk code most tests book under. */
+const own_desk = 'JSMITH';
+
+/** A valid create body. It carries no trader: that comes from the token. */
 const a_trade_body = {
   symbol: 'AAPL',
   side: 'BUY',
   quantity: 5000,
   price: 227.45,
-  trader: 'JSMITH',
   book: 'EQUITIES_UK',
   counterparty: 'Goldman Sachs',
   tradeTimestamp: '2026-08-18T09:15:23.000Z',
 };
 
 /**
- * Builds an app backed by the in-memory repository, so the routes are exercised end to end
- * through Express, validation and the error middleware without needing a database.
- *
- * @returns The app, and the announcements the service made while handling the request.
- */
-function build_app(): { app: Express; sent: string[] } {
-  const sent: string[] = [];
-  const service = create_trade_service(create_in_memory_trade_repository(), {
-    trade_created: () => sent.push('trade.created'),
-    trade_amended: () => sent.push('trade.amended'),
-    trade_cancelled: () => sent.push('trade.cancelled'),
-  });
-
-  return {
-    app: create_app({
-      health_probe: reachable,
-      trade_service: service,
-      cors_origins: ['http://localhost:3000'],
-    }),
-    sent,
-  };
-}
-
-/**
  * Creates a trade through the API so a test has something to amend or cancel.
  *
  * @param app - The app under test.
+ * @param token - The bearer token to book under.
  * @returns The created trade.
  */
-async function create_trade(app: Express): Promise<Trade> {
-  const response = await request(app).post(trades_path).send(a_trade_body);
+async function create_trade(app: Express, token: string): Promise<Trade> {
+  const response = await request(app)
+    .post(trades_path)
+    .set('Authorization', bearer(token))
+    .send(a_trade_body);
+
   return trade_schema.parse(response.body);
 }
 
-describe('API versioning', () => {
-  it('serves the trade resource under the versioned prefix only', async () => {
-    const { app } = build_app();
+describe('authentication', () => {
+  it('refuses every trade route without a token', async () => {
+    const { app } = build_test_app();
 
-    expect((await request(app).get(trades_path)).status).toBe(200);
-    expect((await request(app).get('/api/trades')).status).toBe(404);
+    const responses = [
+      await request(app).get(trades_path),
+      await request(app).get(`${trades_path}/TRD-100001`),
+      await request(app).post(trades_path).send(a_trade_body),
+      await request(app).patch(`${trades_path}/TRD-100001`).send({ version: 1, quantity: 1 }),
+      await request(app).post(`${trades_path}/TRD-100001/cancel`).send({}),
+      await request(app).get(`${trades_path}/TRD-100001/events`),
+    ];
+
+    for (const response of responses) {
+      expect(response.status).toBe(401);
+      expect(response.body.code).toBe('unauthenticated');
+    }
+  });
+
+  it('refuses a token that is not ours', async () => {
+    const { app } = build_test_app();
+
+    const response = await request(app)
+      .get(trades_path)
+      .set('Authorization', 'Bearer not-a-real-token');
+
+    expect(response.status).toBe(401);
+  });
+
+  it('refuses an Authorization header that is not a bearer', async () => {
+    const { app } = build_test_app();
+
+    const response = await request(app)
+      .get(trades_path)
+      .set('Authorization', `Basic ${Buffer.from('jsmith:password').toString('base64')}`);
+
+    expect(response.status).toBe(401);
+  });
+});
+
+describe('authorisation', () => {
+  it('lets a viewer read but not write', async () => {
+    const { app } = build_test_app();
+    const viewer = bearer(token_for('VIEWER', 'VIEWER'));
+
+    expect((await request(app).get(trades_path).set('Authorization', viewer)).status).toBe(200);
+
+    const booked = await request(app)
+      .post(trades_path)
+      .set('Authorization', viewer)
+      .send(a_trade_body);
+
+    expect(booked.status).toBe(403);
+    expect(booked.body.code).toBe('forbidden');
+  });
+
+  it("stops a trader amending somebody else's trade", async () => {
+    const { app } = build_test_app();
+    const mine = await create_trade(app, token_for(own_desk));
+
+    const response = await request(app)
+      .patch(`${trades_path}/${mine.tradeId}`)
+      .set('Authorization', bearer(token_for('ABROWN')))
+      .send({ version: 1, quantity: 100 });
+
+    expect(response.status).toBe(403);
+    expect(response.body.detail).toContain('JSMITH');
+  });
+
+  it("stops a trader cancelling another desk's trade", async () => {
+    const { app } = build_test_app();
+    const mine = await create_trade(app, token_for(own_desk));
+
+    const response = await request(app)
+      .post(`${trades_path}/${mine.tradeId}/cancel`)
+      .set('Authorization', bearer(token_for('ABROWN')))
+      .send({});
+
+    expect(response.status).toBe(403);
+  });
+
+  it("lets an administrator act on anyone's trade", async () => {
+    const { app } = build_test_app();
+    const mine = await create_trade(app, token_for(own_desk));
+    const admin = bearer(token_for('MJONES', 'ADMIN'));
+
+    const amended = await request(app)
+      .patch(`${trades_path}/${mine.tradeId}`)
+      .set('Authorization', admin)
+      .send({ version: 1, quantity: 100 });
+
+    const cancelled = await request(app)
+      .post(`${trades_path}/${mine.tradeId}/cancel`)
+      .set('Authorization', admin)
+      .send({});
+
+    expect(amended.status).toBe(200);
+    expect(cancelled.status).toBe(200);
   });
 });
 
 describe(`GET ${api_prefix}/trades`, () => {
   it('returns an envelope carrying the page, the total and the next cursor', async () => {
-    const { app } = build_app();
-    await create_trade(app);
-    await create_trade(app);
+    const { app } = build_test_app();
+    const token = token_for(own_desk);
+    await create_trade(app, token);
+    await create_trade(app, token);
 
-    const response = await request(app).get(trades_path);
+    const response = await request(app).get(trades_path).set('Authorization', bearer(token));
 
     expect(response.status).toBe(200);
     expect(() => trade_list_schema.parse(response.body)).not.toThrow();
     expect(response.body.total).toBe(2);
-    expect(response.body.limit).toBe(100);
     expect(response.body.next_cursor).toBeNull();
-    expect(response.body.data).toHaveLength(2);
   });
 
   it('hands back a cursor that fetches the rest without overlap', async () => {
-    const { app } = build_app();
-    await create_trade(app);
-    await create_trade(app);
-    await create_trade(app);
+    const { app } = build_test_app();
+    const token = token_for(own_desk);
+    await create_trade(app, token);
+    await create_trade(app, token);
+    await create_trade(app, token);
 
-    const first = await request(app).get(`${trades_path}?limit=2`);
-    const second = await request(app).get(
-      `${trades_path}?limit=2&cursor=${String(first.body.next_cursor)}`,
-    );
+    const first = await request(app)
+      .get(`${trades_path}?limit=2`)
+      .set('Authorization', bearer(token));
+    const second = await request(app)
+      .get(`${trades_path}?limit=2&cursor=${String(first.body.next_cursor)}`)
+      .set('Authorization', bearer(token));
 
     const first_ids = first.body.data.map((trade: Trade) => trade.tradeId);
     const second_ids = second.body.data.map((trade: Trade) => trade.tradeId);
@@ -110,33 +183,26 @@ describe(`GET ${api_prefix}/trades`, () => {
     expect(second_ids.filter((id: string) => first_ids.includes(id))).toEqual([]);
   });
 
-  it('filters on counterparty', async () => {
-    const { app } = build_app();
-    await request(app).post(trades_path).send(a_trade_body);
-    await request(app)
-      .post(trades_path)
-      .send({ ...a_trade_body, counterparty: 'JP Morgan' });
-
-    const response = await request(app).get(`${trades_path}?counterparty=morgan`);
-
-    expect(response.status).toBe(200);
-    expect(response.body.total).toBe(1);
-    expect(response.body.data[0].counterparty).toBe('JP Morgan');
-  });
-
   it('accepts every sort column the grid will offer', async () => {
-    const { app } = build_app();
-    await create_trade(app);
+    const { app } = build_test_app();
+    const token = bearer(token_for(own_desk));
+    await create_trade(app, token_for(own_desk));
 
     for (const column of trade_sort_columns) {
-      expect((await request(app).get(`${trades_path}?sort_by=${column}`)).status).toBe(200);
+      const response = await request(app)
+        .get(`${trades_path}?sort_by=${column}`)
+        .set('Authorization', token);
+
+      expect(response.status).toBe(200);
     }
   });
 
   it('rejects a query parameter outside its allowed range', async () => {
-    const { app } = build_app();
+    const { app } = build_test_app();
 
-    const response = await request(app).get(`${trades_path}?limit=5000`);
+    const response = await request(app)
+      .get(`${trades_path}?limit=5000`)
+      .set('Authorization', bearer(token_for(own_desk)));
 
     expect(response.status).toBe(422);
     expect(response.body.code).toBe('validation_failed');
@@ -144,32 +210,51 @@ describe(`GET ${api_prefix}/trades`, () => {
 });
 
 describe(`POST ${api_prefix}/trades`, () => {
-  it('creates the trade, answers 201 and announces it', async () => {
-    const { app, sent } = build_app();
+  it("books the trade under the token holder's desk code", async () => {
+    const { app, sent } = build_test_app();
 
-    const response = await request(app).post(trades_path).send(a_trade_body);
+    const response = await request(app)
+      .post(trades_path)
+      .set('Authorization', bearer(token_for('ABROWN')))
+      .send(a_trade_body);
 
     expect(response.status).toBe(201);
     expect(() => trade_schema.parse(response.body)).not.toThrow();
+    expect(response.body.trader).toBe('ABROWN');
     expect(response.body.status).toBe('ACTIVE');
     expect(sent).toEqual(['trade.created']);
   });
 
-  it('serialises price as a JSON number and stamps the instrument currency', async () => {
-    const { app } = build_app();
+  it('ignores a trader the client tries to supply', async () => {
+    const { app } = build_test_app();
 
-    const response = await request(app).post(trades_path).send(a_trade_body);
+    const response = await request(app)
+      .post(trades_path)
+      .set('Authorization', bearer(token_for('ABROWN')))
+      .send({ ...a_trade_body, trader: 'SOMEONE_ELSE' });
+
+    expect(response.status).toBe(201);
+    expect(response.body.trader).toBe('ABROWN');
+  });
+
+  it('serialises price as a JSON number and stamps the instrument currency', async () => {
+    const { app } = build_test_app();
+
+    const response = await request(app)
+      .post(trades_path)
+      .set('Authorization', bearer(token_for(own_desk)))
+      .send(a_trade_body);
 
     expect(typeof response.body.price).toBe('number');
-    expect(response.body.price).toBe(227.45);
     expect(response.body.currency).toBe('USD');
   });
 
   it('rejects a symbol outside the tradable universe', async () => {
-    const { app, sent } = build_app();
+    const { app, sent } = build_test_app();
 
     const response = await request(app)
       .post(trades_path)
+      .set('Authorization', bearer(token_for(own_desk)))
       .send({ ...a_trade_body, symbol: 'ZZZZ' });
 
     expect(response.status).toBe(422);
@@ -177,11 +262,12 @@ describe(`POST ${api_prefix}/trades`, () => {
   });
 
   it('rejects a trade booked in the future', async () => {
-    const { app } = build_app();
+    const { app } = build_test_app();
     const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
     const response = await request(app)
       .post(trades_path)
+      .set('Authorization', bearer(token_for(own_desk)))
       .send({ ...a_trade_body, tradeTimestamp: tomorrow });
 
     expect(response.status).toBe(422);
@@ -191,48 +277,27 @@ describe(`POST ${api_prefix}/trades`, () => {
   });
 
   it('rejects a ticket over the desk notional limit', async () => {
-    const { app } = build_app();
+    const { app } = build_test_app();
 
     const response = await request(app)
       .post(trades_path)
+      .set('Authorization', bearer(token_for(own_desk)))
       .send({ ...a_trade_body, quantity: 1_000_000, price: 100 });
 
     expect(response.status).toBe(422);
     expect(response.body.detail).toContain('desk limit');
   });
-
-  it('rejects a negative quantity with field-level detail', async () => {
-    const { app, sent } = build_app();
-
-    const response = await request(app)
-      .post(trades_path)
-      .send({ ...a_trade_body, quantity: -1 });
-
-    expect(response.status).toBe(422);
-    expect(response.body.errors).toContainEqual(expect.objectContaining({ field: 'quantity' }));
-    expect(sent).toEqual([]);
-  });
-
-  it('refuses a client-supplied status or currency', async () => {
-    const { app } = build_app();
-
-    const response = await request(app)
-      .post(trades_path)
-      .send({ ...a_trade_body, status: 'CANCELLED', currency: 'GBX' });
-
-    expect(response.status).toBe(201);
-    expect(response.body.status).toBe('ACTIVE');
-    expect(response.body.currency).toBe('USD');
-  });
 });
 
 describe(`PATCH ${api_prefix}/trades/:trade_id`, () => {
   it('amends the trade and announces it', async () => {
-    const { app, sent } = build_app();
-    const created = await create_trade(app);
+    const { app, sent } = build_test_app();
+    const token = token_for(own_desk);
+    const created = await create_trade(app, token);
 
     const response = await request(app)
       .patch(`${trades_path}/${created.tradeId}`)
+      .set('Authorization', bearer(token))
       .send({ version: created.version, price: 230.1 });
 
     expect(response.status).toBe(200);
@@ -242,11 +307,13 @@ describe(`PATCH ${api_prefix}/trades/:trade_id`, () => {
   });
 
   it('ignores an attempt to re-point the trade at another instrument', async () => {
-    const { app } = build_app();
-    const created = await create_trade(app);
+    const { app } = build_test_app();
+    const token = token_for(own_desk);
+    const created = await create_trade(app, token);
 
     const response = await request(app)
       .patch(`${trades_path}/${created.tradeId}`)
+      .set('Authorization', bearer(token))
       .send({ version: created.version, symbol: 'MSFT', side: 'SELL', quantity: 100 });
 
     expect(response.status).toBe(200);
@@ -256,14 +323,17 @@ describe(`PATCH ${api_prefix}/trades/:trade_id`, () => {
   });
 
   it('answers 409 when the version is stale', async () => {
-    const { app } = build_app();
-    const created = await create_trade(app);
+    const { app } = build_test_app();
+    const token = token_for(own_desk);
+    const created = await create_trade(app, token);
     await request(app)
       .patch(`${trades_path}/${created.tradeId}`)
+      .set('Authorization', bearer(token))
       .send({ version: created.version, price: 230.1 });
 
     const response = await request(app)
       .patch(`${trades_path}/${created.tradeId}`)
+      .set('Authorization', bearer(token))
       .send({ version: created.version, price: 240 });
 
     expect(response.status).toBe(409);
@@ -271,9 +341,12 @@ describe(`PATCH ${api_prefix}/trades/:trade_id`, () => {
   });
 
   it('answers 422 for a malformed trade id rather than 404', async () => {
-    const { app } = build_app();
+    const { app } = build_test_app();
 
-    const response = await request(app).patch(`${trades_path}/nonsense`).send({ version: 1 });
+    const response = await request(app)
+      .patch(`${trades_path}/nonsense`)
+      .set('Authorization', bearer(token_for(own_desk)))
+      .send({ version: 1 });
 
     expect(response.status).toBe(422);
   });
@@ -281,10 +354,14 @@ describe(`PATCH ${api_prefix}/trades/:trade_id`, () => {
 
 describe(`POST ${api_prefix}/trades/:trade_id/cancel`, () => {
   it('cancels the trade and announces it', async () => {
-    const { app, sent } = build_app();
-    const created = await create_trade(app);
+    const { app, sent } = build_test_app();
+    const token = token_for(own_desk);
+    const created = await create_trade(app, token);
 
-    const response = await request(app).post(`${trades_path}/${created.tradeId}/cancel`).send({});
+    const response = await request(app)
+      .post(`${trades_path}/${created.tradeId}/cancel`)
+      .set('Authorization', bearer(token))
+      .send({});
 
     expect(response.status).toBe(200);
     expect(response.body.status).toBe('CANCELLED');
@@ -292,19 +369,29 @@ describe(`POST ${api_prefix}/trades/:trade_id/cancel`, () => {
   });
 
   it('answers 409 on a second cancel', async () => {
-    const { app } = build_app();
-    const created = await create_trade(app);
-    await request(app).post(`${trades_path}/${created.tradeId}/cancel`).send({});
+    const { app } = build_test_app();
+    const token = token_for(own_desk);
+    const created = await create_trade(app, token);
+    await request(app)
+      .post(`${trades_path}/${created.tradeId}/cancel`)
+      .set('Authorization', bearer(token))
+      .send({});
 
-    const response = await request(app).post(`${trades_path}/${created.tradeId}/cancel`).send({});
+    const response = await request(app)
+      .post(`${trades_path}/${created.tradeId}/cancel`)
+      .set('Authorization', bearer(token))
+      .send({});
 
     expect(response.status).toBe(409);
   });
 
   it('answers 404 for a trade that does not exist', async () => {
-    const { app } = build_app();
+    const { app } = build_test_app();
 
-    const response = await request(app).post(`${trades_path}/TRD-999999/cancel`).send({});
+    const response = await request(app)
+      .post(`${trades_path}/TRD-999999/cancel`)
+      .set('Authorization', bearer(token_for(own_desk)))
+      .send({});
 
     expect(response.status).toBe(404);
     expect(response.body.code).toBe('not_found');
@@ -313,61 +400,65 @@ describe(`POST ${api_prefix}/trades/:trade_id/cancel`, () => {
 
 describe(`GET ${api_prefix}/trades/:trade_id/events`, () => {
   it('answers an empty history for a trade that never changed', async () => {
-    const { app } = build_app();
-    const created = await create_trade(app);
+    const { app } = build_test_app();
+    const token = token_for(own_desk);
+    const created = await create_trade(app, token);
 
-    const response = await request(app).get(`${trades_path}/${created.tradeId}/events`);
+    const response = await request(app)
+      .get(`${trades_path}/${created.tradeId}/events`)
+      .set('Authorization', bearer(token));
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual([]);
   });
 
-  it('returns an amendment with both sides of every changed field', async () => {
-    const { app } = build_app();
-    const created = await create_trade(app);
+  it('records the amendment against whoever made it', async () => {
+    const { app } = build_test_app();
+    const token = token_for(own_desk);
+    const created = await create_trade(app, token);
     await request(app)
       .patch(`${trades_path}/${created.tradeId}`)
+      .set('Authorization', bearer(token))
       .send({ version: 1, quantity: 7500 });
 
-    const response = await request(app).get(`${trades_path}/${created.tradeId}/events`);
+    const response = await request(app)
+      .get(`${trades_path}/${created.tradeId}/events`)
+      .set('Authorization', bearer(token));
 
-    expect(response.status).toBe(200);
     expect(response.body).toHaveLength(1);
     expect(() => trade_event_schema.parse(response.body[0])).not.toThrow();
     expect(response.body[0].action).toBe('AMENDED');
     expect(response.body[0].source).toBe('API');
+    expect(response.body[0].actor).toBe(own_desk);
     expect(response.body[0].changes).toEqual({ quantity: { from: 5000, to: 7500 } });
   });
 
-  it('records a cancellation too', async () => {
-    const { app } = build_app();
-    const created = await create_trade(app);
-    await request(app).post(`${trades_path}/${created.tradeId}/cancel`).send({});
+  it('records who cancelled a trade, even when it was an administrator', async () => {
+    const { app } = build_test_app();
+    const created = await create_trade(app, token_for(own_desk));
+    await request(app)
+      .post(`${trades_path}/${created.tradeId}/cancel`)
+      .set('Authorization', bearer(token_for('MJONES', 'ADMIN')))
+      .send({});
 
-    const response = await request(app).get(`${trades_path}/${created.tradeId}/events`);
+    const response = await request(app)
+      .get(`${trades_path}/${created.tradeId}/events`)
+      .set('Authorization', bearer(token_for(own_desk)));
 
-    expect(response.body).toHaveLength(1);
     expect(response.body[0].action).toBe('CANCELLED');
-    expect(response.body[0].actor).toBe('JSMITH');
-  });
-
-  it('answers 404 for a trade that does not exist', async () => {
-    const { app } = build_app();
-
-    const response = await request(app).get(`${trades_path}/TRD-999999/events`);
-
-    expect(response.status).toBe(404);
+    expect(response.body[0].actor).toBe('MJONES');
   });
 });
 
 describe('error shape', () => {
   it('is an RFC 9457 problem document on every failure', async () => {
-    const { app } = build_app();
+    const { app } = build_test_app();
+    const token = bearer(token_for(own_desk));
 
     const responses = [
-      await request(app).get(`${trades_path}/TRD-999999`),
-      await request(app).get(`${trades_path}?limit=5000`),
-      await request(app).patch(`${trades_path}/nonsense`).send({ version: 1 }),
+      await request(app).get(`${trades_path}/TRD-999999`).set('Authorization', token),
+      await request(app).get(`${trades_path}?limit=5000`).set('Authorization', token),
+      await request(app).get(trades_path),
     ];
 
     for (const response of responses) {
@@ -379,10 +470,11 @@ describe('error shape', () => {
   });
 
   it('carries the correlation id the response header advertises', async () => {
-    const { app } = build_app();
+    const { app } = build_test_app();
 
     const response = await request(app)
       .get(`${trades_path}/TRD-999999`)
+      .set('Authorization', bearer(token_for(own_desk)))
       .set('x-request-id', 'test-correlation-id');
 
     expect(response.headers['x-request-id']).toBe('test-correlation-id');

@@ -23,6 +23,7 @@ feed keeps the blotter moving on its own. The React blotter UI is the remaining 
 | Simulated live trade feed | Done |
 | Audit trail on an append-only table (bonus) | Done |
 | Keyset paging, currency, pre-trade limits, request logging, metrics | Done |
+| Authentication, roles and permissions | Done |
 | CI on push and pull request | Done |
 | Blotter UI | Next |
 | Net positions and P&L (bonus) | Deferred |
@@ -104,6 +105,16 @@ because that is the value a trader reads off the blotter.
 | `PATCH` | `/api/v1/trades/:trade_id` | Amend, requires the version last seen |
 | `POST` | `/api/v1/trades/:trade_id/cancel` | Cancel, optional version guard |
 | `GET` | `/api/v1/trades/:trade_id/events` | Full history, oldest first |
+| `POST` | `/api/v1/auth/login` | Exchange credentials for a session |
+| `POST` | `/api/v1/auth/refresh` | Rotate the refresh cookie for a new session |
+| `GET` | `/api/v1/auth/me` | The signed-in user and their permissions |
+| `POST` | `/api/v1/auth/logout` | End the session |
+
+Everything except login and refresh needs a bearer token. Protection is the default rather than an
+opt-in: the guard is mounted across the whole prefix and the only public routes are the two mounted
+above it, so a route added later is authenticated without anyone remembering to say so. An
+unauthenticated request to a path that does not exist answers 401 rather than 404, so the API
+cannot be enumerated without credentials.
 
 `/health`, `/ready` and `/metrics` sit outside the prefix on purpose. They are operational
 surfaces for a probe and a scraper, not part of the contract a client depends on, and versioning
@@ -151,6 +162,68 @@ Three pre-trade rules run server-side:
 | Symbol allowlist | Only the twelve names in the shared instrument universe book. A regex would let `ZZZZ` through |
 | Future trade date | Refused, with a minute of tolerance for a client clock running fast |
 | Notional ceiling | `quantity x price` above the desk limit for that currency is refused |
+
+### Authentication
+
+Sign in with `POST /api/v1/auth/login`. The response carries a short-lived access token for the
+`Authorization` header and the signed-in user; the long-lived refresh token goes into an httpOnly
+cookie scoped to `/api/v1/auth`, so no script on the page can read the credential that matters and
+it never rides along with an ordinary trade request.
+
+**Refresh rotates on every use.** A refresh token is spent the moment it is exchanged. If a spent
+token comes back, the entire session family is destroyed and both the thief and the legitimate
+holder are signed out. That is the intended outcome: a replay is evidence the token was copied, and
+the only safe response is to burn the session. The compare and the write are one Lua script in
+Redis, because a read followed by a write would let two requests carrying the same token both be
+told they rotated cleanly.
+
+Passwords are bcrypt at cost 12. A login for an account that does not exist is still compared
+against a dummy hash, so response time does not reveal which usernames are real, and the message is
+identical either way. Failures are counted per account in Redis and lock it out, which sits
+alongside the per-address rate limit rather than replacing it: an attacker spreading attempts across
+many addresses still runs into a wall on the account they are attacking.
+
+### Roles and permissions
+
+Three roles, mapped to named permissions. Routes require the permission, never the role, so a route
+states what it needs and the mapping lives in one place.
+
+| Role | Can |
+|---|---|
+| `VIEWER` | Read trades |
+| `TRADER` | Read, book, and amend or cancel **their own** trades |
+| `ADMIN` | All of the above, plus amend or cancel **anyone's** trade |
+
+The ownership rule is the one middleware cannot enforce, because it depends on the row rather than
+the request, so it lives in the service. A trader holds `trade.amend`; only an administrator holds
+`trade.amend.any`. The interface receives the permission list so it can hide what the person
+cannot do, and the server re-checks every time regardless.
+
+The socket handshake verifies the same access token and refuses anyone without `trade.read`.
+Broadcasts carry whole trades, so an unauthenticated socket would stream the blotter to anyone who
+opened one and make the authorisation on the read endpoints decorative.
+
+**A trade's trader comes from the token, not the payload.** You book as yourself, so a client cannot
+book under another desk code and the trade's trader can never disagree with its audit actor. This is
+a deliberate divergence from the brief's sample payload, which shows `trader` as a client field.
+
+### Demo accounts
+
+An empty database is seeded with four accounts across the three roles, so the difference between
+them can be seen rather than described. They share a password, which is configuration
+(`SEED_USER_PASSWORD`, default `blotter-demo-2026`) rather than source, and the startup log says
+plainly that demo accounts were created. This is a property of a throwaway local stack and would be
+indefensible anywhere else.
+
+| Username | Role | Desk |
+|---|---|---|
+| `jsmith` | TRADER | JSMITH |
+| `abrown` | TRADER | ABROWN |
+| `mjones` | ADMIN | MJONES |
+| `viewer` | VIEWER | VIEWER |
+
+Sign in as `jsmith`, then try to cancel one of `abrown`'s trades: the answer is 403. Sign in as
+`mjones` and the same call succeeds, and the audit trail records who did it.
 
 ### Currency
 
@@ -253,6 +326,13 @@ write path, and its rows are marked `LIVE_FEED` in the audit trail.
 | `MAX_NOTIONAL_USD` | `50000000` | Desk notional ceiling for USD names |
 | `MAX_NOTIONAL_GBX` | `4000000000` | Desk notional ceiling for GBX names |
 | `LOG_LEVEL` | `info` | pino level |
+| `JWT_ACCESS_SECRET` | none, required | Signing key, refused under 32 characters |
+| `JWT_REFRESH_SECRET` | none, required | Signing key, refused under 32 characters |
+| `ACCESS_TOKEN_TTL_SECONDS` | `900` | Access token lifetime |
+| `REFRESH_TOKEN_TTL_SECONDS` | `604800` | Refresh token lifetime |
+| `SEED_USER_PASSWORD` | `blotter-demo-2026` | Password given to the demo accounts |
+| `AUTH_RATE_LIMIT` | `10` | Requests a minute on the credential endpoints |
+| `LOGIN_MAX_ATTEMPTS` | `5` | Failures before an account locks |
 
 ## Running it
 
@@ -359,10 +439,12 @@ On 2026-09-11, against `docker compose up`:
   0 in about a second, rather than waiting out the SIGKILL timeout.
 
 Since that run the API gained keyset paging, currency, the trade event log, problem+json errors,
-request logging, metrics and the Origin check, on a machine with no Docker engine available. CI
-covers the gap: 152 tests pass there, 23 of them against a real Postgres service container,
-including the append-only trigger and the currency migration. The compose stack itself has not been
-re-run since, so one `docker compose up -d --wait` is worth doing before the UI work.
+request logging, metrics, the socket Origin check and the whole of authentication, all on a machine
+with no Docker engine available. CI covers the gap: 221 tests pass there, 33 of them against real
+Postgres and Redis service containers, including the append-only trigger, the currency migration and
+the refresh-token replay detection. **The compose stack has not been run since any of it**, and it
+now has a fourth service and a native build stage, so one `docker compose up -d --wait` is the first
+thing to do before the interface work.
 
 The audit trail and the widened query surface were added after that run, on a machine with no
 Docker engine available. CI covered the gap: its Postgres service container ran all 15
@@ -401,6 +483,14 @@ fixed:
   spans two.
 - The event sequence on broadcasts restarts when the process does. A client cannot tell a restart
   from a gap on sequence alone, which is why the client needs a resync path rather than a promise.
+- Sessions live in Redis with no persistence, so a Redis restart signs everybody out. For a service
+  whose sessions are worth minutes rather than money, that is an acceptable failure mode and not
+  data loss.
+- The demo accounts share a documented password. They exist so a reviewer can sign in to a
+  throwaway local stack, and nothing about that arrangement should survive contact with a real
+  deployment.
+- The refresh cookie uses `SameSite=Lax`, which is enough while the interface and the API share a
+  site, as they do on localhost. Splitting them across domains would need `None` with `Secure`.
 - All prices are quoted in the instrument's own currency. There is no currency column, because the
   brief's payload has none, and a single-currency blotter is the smaller lie than an unpopulated
   field.
