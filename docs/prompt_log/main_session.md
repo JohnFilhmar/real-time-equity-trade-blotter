@@ -174,3 +174,13 @@ Significant prompts only, append-only, newest at the bottom. Rules: `/CLAUDE.md`
 **Outcome:** Four parallel research passes produced a sourced must/should/won't requirement list for the server and the interface, each line then checked against the code on the three unmerged branches rather than against the handoff notes. Found seventeen of twenty-three server musts already built, thirteen ranked gaps, five places where the backend and design plans disagree, and two verified data defects: a Saturday trade date in the seed and London names priced in pounds where the market quotes pence.
 
 **Artifact:** [Blotter MVP Requirements](../artifacts/mvp_requirements_and_gap_analysis.html)
+
+---
+
+### 2026-09-12T02:10Z - plan_frontend_implementation
+
+**Prompt:** "can we start the implementation of the frontend properly within frontend using all skills necessary?"
+
+**Outcome:** Found that `backend/src/app.ts` mounts only the health router, so there was no API for a frontend to call, and put that plus seven further forks to the user as explicit questions rather than deciding any of them. He chose backend-first, a business-id URL shape with cancel as a named action, all four optional features, `TradeEvent` replacing `TradeAmendment`, in-memory marks, his full auth baseline with Postgres standing in for Redis, server-computed positions with client-side unrealised P&L, and the compose Postgres for the integration tier.
+
+**Artifact:** [Trade API design](../superpowers/specs/2026-09-12-trade-api-design.md)
