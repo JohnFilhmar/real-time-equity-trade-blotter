@@ -35,13 +35,20 @@ export function Dialog({ title, description, size = 'md', onClose, footer, child
     first?.focus();
   }, []);
 
-  const on_key_down = (event: React.KeyboardEvent<HTMLDivElement>): void => {
-    if (event.key === 'Escape') {
-      event.stopPropagation();
-      onClose();
-      return;
-    }
+  // Escape closes the dialog wherever focus sits. Focus can fall to the body when the control that
+  // held it becomes disabled, and a modal that then ignores Escape is a trap.
+  useEffect(() => {
+    const on_document_key = (event: globalThis.KeyboardEvent): void => {
+      if (event.key === 'Escape') {
+        event.stopPropagation();
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', on_document_key);
+    return () => document.removeEventListener('keydown', on_document_key);
+  }, [onClose]);
 
+  const on_key_down = (event: React.KeyboardEvent<HTMLDivElement>): void => {
     if (event.key !== 'Tab' || panel.current === null) {
       return;
     }

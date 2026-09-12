@@ -147,3 +147,9 @@ vite.config.ts.timestamp-*
 
 # Prisma generated client
 backend/src/generated/
+
+# Browser test and audit output
+frontend/test-results/
+frontend/playwright-report/
+frontend/lighthouse/
+load-testing/results/

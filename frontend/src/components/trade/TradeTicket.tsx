@@ -49,7 +49,9 @@ const known_books = Array.from(new Set(instruments.map((instrument) => instrumen
  * @returns The dialog.
  */
 export function TradeTicket({ mode, onClose, onBooked }: TradeTicketProps): ReactNode {
-  const base = mode.kind === 'amend' ? mode.trade : null;
+  // The ticket edits its own copy, taken when it opened. A broadcast that changes the trade mid-edit
+  // must not silently become the version this form sends; the server's 409 is the right answer.
+  const [base] = useState<Trade | null>(() => (mode.kind === 'amend' ? mode.trade : null));
   const [values, set_values] = useState<TicketValues>(() => initial_values(base));
   const [errors, set_errors] = useState<TicketErrors>({});
   const [conflict, set_conflict] = useState<{ current: Trade; lines: string[] } | null>(null);

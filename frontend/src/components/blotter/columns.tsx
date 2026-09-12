@@ -9,10 +9,10 @@ import { format_notional, format_price, format_quantity } from '@/lib/format/mon
  * at that width, so a hidden cell never leaves an empty track behind.
  */
 export const grid_template_classes =
-  'grid-cols-[92px_72px_48px_88px_96px_82px_68px_110px] lg:grid-cols-[96px_76px_50px_96px_100px_86px_152px_70px_110px] xl:grid-cols-[96px_76px_50px_96px_100px_112px_86px_120px_152px_70px_110px]';
+  'grid-cols-[92px_72px_48px_88px_96px_82px_86px_110px] lg:grid-cols-[96px_76px_50px_96px_100px_86px_152px_88px_110px] xl:grid-cols-[96px_76px_50px_96px_100px_112px_86px_120px_152px_88px_110px]';
 
 /** Minimum grid width per breakpoint, so the tracks above never collapse. */
-export const grid_min_width_classes = 'min-w-[680px] lg:min-w-[900px] xl:min-w-[1100px]';
+export const grid_min_width_classes = 'min-w-[700px] lg:min-w-[920px] xl:min-w-[1120px]';
 
 /** Height of one row, matching the `row` spacing token. */
 export const row_height = 32;

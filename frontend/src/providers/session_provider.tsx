@@ -75,10 +75,16 @@ export function SessionProvider({ children }: { children: ReactNode }): ReactNod
     adopt_ref.current = adopt;
   }, [adopt]);
 
+  // One restore per mount, even when React runs the effect twice in development. Both runs share
+  // the same in-flight request rather than each sending one, which matters because the credential
+  // endpoints are rate limited.
+  const restore = useRef<Promise<AuthSession> | null>(null);
+
   useEffect(() => {
     let cancelled = false;
+    restore.current ??= refresh();
 
-    refresh()
+    restore.current
       .then((established) => {
         if (!cancelled) {
           adopt(established);

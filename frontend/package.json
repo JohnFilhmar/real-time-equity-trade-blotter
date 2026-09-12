@@ -9,7 +9,10 @@
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:lighthouse": "node scripts/lighthouse.mjs",
+    "capture:readme": "node scripts/capture_readme_image.mjs"
   },
   "dependencies": {
     "@blotter/shared": "*",
