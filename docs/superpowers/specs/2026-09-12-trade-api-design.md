@@ -27,6 +27,11 @@ named with the decision.
 | 6 | Auth | Access plus rotated refresh, families in Postgres | `backend-security-baseline` |
 | 7 | Positions | Server computes, client recomputes unrealised from marks | `project-structure-conventions` |
 | 8 | Test datastore | The docker-compose Postgres, separate `blotter_test` database | `testing-stance` |
+| 9 | Roles and permissions | VIEWER, TRADER, ADMIN, as data in three tables | `backend-security-baseline`, RBAC plus PBAC in full |
+| 10 | Guest access | None. Only `/health` and `/auth/login` are public | domain confidentiality, against the research's ranking |
+| 11 | Registration | None. Six seeded desk accounts | a trader code is issued, never self-claimed |
+| 12 | Trade ownership | A TRADER touches only its own; ADMIN touches anyone's | `ProfileMobile.html`, "amend another trader's book, DESK HEAD ONLY" |
+| 13 | Account control | Password change only | deletion would break audit attribution |
 
 Two deviations are deliberate and named rather than silent:
 
@@ -79,11 +84,67 @@ model Trader {
   code         String   @unique @db.VarChar(32)
   displayName  String   @map("display_name") @db.VarChar(64)
   passwordHash String   @map("password_hash") @db.VarChar(97)
+  roleId       String   @map("role_id") @db.Uuid
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@index([roleId], map: "trader_role_idx")
   @@map("trader")
 }
 ```
+
+### Roles and permissions as data
+
+Permissions are rows rather than a constant, so a capability can move between roles without a
+deploy.
+
+```prisma
+model Role {
+  id          String @id @default(uuid()) @db.Uuid
+  code        String @unique @db.VarChar(16)
+  description String @db.VarChar(128)
+
+  permissions RolePermission[]
+  traders     Trader[]
+
+  @@map("role")
+}
+
+model Permission {
+  id          String @id @default(uuid()) @db.Uuid
+  code        String @unique @db.VarChar(32)
+  description String @db.VarChar(128)
+
+  roles RolePermission[]
+
+  @@map("permission")
+}
+
+model RolePermission {
+  roleId       String @map("role_id") @db.Uuid
+  permissionId String @map("permission_id") @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permission")
+}
+```
+
+Seeded: three roles, six permissions, twelve `role_permission` rows. The permission codes are
+`trade.read`, `trade.create`, `trade.amend`, `trade.cancel`, `trade.amend.any` and
+`trade.cancel.any`.
+
+The access token carries `{ sub: trader_code, role: role_code }`. The guard resolves that role to its
+permission set per request.
+
+**One implementation detail left open rather than decided here.** A per-request join for a twelve-row
+table is wasteful, and the obvious fix is an in-process cache of the role-to-permission map. Whether
+that cache is loaded once at boot, or refreshed on a TTL, changes how quickly a permission edit takes
+effect, which is the whole reason these are tables rather than a constant. That trade-off is the
+repository owner's and is not settled in this document.
 
 `code` is the `JSMITH` form already used across the seed and the design. `Trade.trader` stays a
 plain string rather than a foreign key, so a trade booked by a trader who is later removed keeps its
@@ -133,6 +194,21 @@ shape.
 | POST | `/auth/login` | `{ trader, password }` | 200 `{ access, refresh }` | 401 |
 | POST | `/auth/refresh` | `{ refresh }` | 200 `{ access, refresh }` | 401 |
 | POST | `/auth/logout` | `{ refresh }` | 204 | |
+| POST | `/auth/password` | `{ current, next }` | 204 | 400, 401 |
+
+Only `/health` and `/auth/login` are public. Every other route requires a valid access token and a
+named permission:
+
+| Route | Permission |
+|---|---|
+| `GET /trades`, `GET /trades/:trade_id`, `GET /positions` | `trade.read` |
+| `POST /trades` | `trade.create` |
+| `PATCH /trades/:trade_id` | `trade.amend`, scoped to own unless `trade.amend.any` |
+| `POST /trades/:trade_id/cancel` | `trade.cancel`, scoped to own unless `trade.cancel.any` |
+| `POST /auth/refresh`, `/auth/logout`, `/auth/password` | none beyond a valid token |
+
+A `VIEWER` therefore reads the blotter, the positions and the audit trail, and is refused on every
+write with a 403. A `TRADER` writing another trader's row gets a 404, per the leak rule above.
 
 The path parameter is `:trade_id` in snake_case per the global naming rule, and binds to the
 `tradeId` field, which stays camelCase because `shared/src/schemas/trade.ts:20` documents that the
@@ -188,26 +264,86 @@ sides import it, which is what keeps the duplication honest.
 
 ## Auth
 
-- Access token: 15 minutes, `{ sub: trader, role }`.
+Settled 2026-09-12. Six decisions, all taken by the repository owner.
+
+### Roles and permissions
+
+Reversed on 2026-09-12, having first been specced as no roles at all. Three roles, six permissions,
+and routes that require a permission rather than a role, which is the RBAC plus PBAC split
+`backend-security-baseline` asks for: `require_permission('trade.cancel')`, never
+`role === 'admin'`.
+
+| Role | Permissions |
+|---|---|
+| `VIEWER` | `trade.read` |
+| `TRADER` | `trade.read`, `trade.create`, `trade.amend`, `trade.cancel` |
+| `ADMIN` | all of the above plus `trade.amend.any`, `trade.cancel.any` |
+
+The role boundaries are not invented. `docs/artifacts/fusion_blotter/ProfileMobile.html` has carried
+a booking rights panel since the design phase reading "amend own trades, allowed", "cancel own
+trades, allowed", "amend another trader's book, desk head only", and the Login board says read-only
+users see the blotter and the audit trail while book, amend and cancel stay hidden. ADMIN is the
+desk head. Without that distinction ADMIN would hold the same permission set as TRADER and mean
+nothing.
+
+A `VIEWER` who cannot cancel is the demonstrable case: it can be shown working in the UI and proven
+in a test, which is what makes the split worth building rather than describing.
+
+### Everything is behind auth
+
+The public list holds exactly two routes: `/health` and `/auth/login`. Nothing else, including
+`GET /trades`, is readable without a token. Guests do not read the blotter.
+
+The reason is domain correctness, not the rubric. A blotter carries counterparty names, sizes and
+prices, which is precisely the data a firm does not publish, and no desk serves one to anonymous
+readers. The MVP research does not make this argument: it ranks authentication 27th of 28 and scores
+it 1.5 out of 10, and its stated reason every time is that the rubric has no security line. It cites
+17 CFR 240.17a-3 and 17a-4 only for what a blotter is as a record and how long it is kept, which is
+retention rather than access control. The confidentiality argument stands on its own and was the
+owner's, taken with the research's contrary ranking in view.
+
+The README publishes a working trader code and password, which is normal for a take-home and removes
+the only real cost of locking the app down: a reviewer can still open it and watch it run.
+
+### No registration
+
+Accounts are the six trader codes the seed already uses, created with hashed passwords. There is no
+sign-up endpoint and no sign-up button. A trader code is issued by the desk, never self-claimed, and
+a "Sign up" control on a blotter reads as a misunderstanding of who uses one.
+
+### Tokens
+
+- Access token: 15 minutes, `{ sub: trader_code }`. No role claim.
 - Refresh token: 7 days, rotated on every use, stored as a SHA-256 hash.
 - Reuse of a consumed refresh token revokes the whole family.
-- `middleware/require_auth.ts` is mounted before the trade router so routes are protected by
-  default, with an explicit public list holding only `/health` and `/auth/login`. Never an opt-in
-  allowlist of guarded routes.
-- Login gets a strict `express-rate-limit` tier, separate from the existing read and write tiers.
+- `middleware/require_auth.ts` is mounted before every router but the public two, so routes are
+  protected by default. Never an opt-in allowlist of guarded routes.
+- Login and password change each get a strict `express-rate-limit` tier, separate from the existing
+  read and write tiers.
 - Failures return one message. No distinction between an unknown trader and a wrong password.
+- Passwords are hashed with argon2id.
 
-Passwords are hashed with argon2id. There is no registration endpoint, because the brief asks for
-login and nothing more.
+### Trade ownership
 
-**One simplification to confirm.** Your baseline asks for RBAC for coarse gates and PBAC for the
-actual decision, so a permission check reads `require_permission('trade.amend')` rather than
-`role === 'admin'`. This app has one role. Every authenticated trader may book, amend and cancel,
-and there is no second role for a permission to distinguish. The design therefore carries a `role`
-claim of `TRADER` and a single `require_auth` middleware, with no permission matrix behind it.
-Building a matrix with one row in it would be ceremony rather than security. Say if you would rather
-have the PBAC scaffolding in place anyway, for instance a read-only `VIEWER` role that the design's
-own Login board already hints at with its "read-only users see the blotter" line.
+A `TRADER` amends and cancels only the trades it booked. An `ADMIN` amends and cancels anyone's.
+
+The guard checks `trade.amend` or `trade.cancel` and stops there. The ownership decision lives in the
+repository layer: the update is scoped to `trader = <caller>` unless the caller also holds
+`trade.amend.any` or `trade.cancel.any`, in which case the scope is dropped.
+
+Both halves are required on purpose. `backend-security-baseline` puts tenant scope in the repository
+rather than only in the guard so a missed guard cannot leak, and ownership is the same shape of
+problem. A route that forgets its guard still cannot write another trader's row.
+
+A scoped-out trade returns 404, not 403. Telling an unauthorised caller that a trade exists but is
+not theirs leaks the existence of another desk's booking, and the baseline's closing check is that
+error responses leak nothing.
+
+### Account control
+
+Password change and nothing else. No profile edit, no deletion. Deleting a trader whose code is
+stamped on historical trades would break attribution, which is the one thing an audit trail may
+never do, and the brief's bonus asks only for simple login capability.
 
 ## Module layout
 
@@ -219,14 +355,19 @@ backend/src/
   routes/        trade_routes.ts  position_routes.ts  auth_routes.ts
   services/      trade_service.ts  position_service.ts  auth_service.ts
   interfaces/    trade_repository.ts  trade_event_repository.ts
-                 refresh_token_repository.ts
+                 refresh_token_repository.ts  permission_repository.ts
   repositories/  prisma_trade_repository.ts  prisma_trade_event_repository.ts
                  prisma_refresh_token_repository.ts
+                 prisma_permission_repository.ts
   realtime/      broadcast.ts
   lib/marks/     mark_feed.ts
   lib/auth/      tokens.ts  passwords.ts
-  middleware/    require_auth.ts
+  middleware/    require_auth.ts  require_permission.ts
 ```
+
+`require_auth` establishes who the caller is; `require_permission('trade.cancel')` decides whether
+they may act. They are separate files because they answer separate questions, and only the second
+one takes an argument.
 
 Every file stays under the split thresholds: about 3 exported functions or 250 lines.
 
@@ -247,8 +388,16 @@ vitest, colocated `<subject>.test.ts`, one test file per source file. Integratio
 | New service method with branching | One case per branch that can produce a wrong answer |
 | New route | supertest: auth, happy path, one rejection |
 | `require_auth` middleware | Unit, allow and deny |
+| `require_permission` middleware | Unit, allow and deny |
+| Every write route | supertest as VIEWER, expecting 403 |
+| Amend and cancel | supertest as a TRADER against another trader's row, expecting 404 |
+| Amend and cancel | supertest as ADMIN against another trader's row, expecting 200 |
 | Position maths in `shared/` | Unit, including a position that flips long to short |
 | New DTO or pass-through mapper | Nothing |
+
+Role fixtures are part of the test setup: `blotter_test` seeds one VIEWER, two TRADERs and one
+ADMIN, because the ownership rule cannot be tested with a single trader. The two-trader pair is what
+proves the 404 rather than a 403.
 
 The integration tier needs the compose Postgres up and a migrated `blotter_test` database. The
 script says so rather than failing with a connection error.
