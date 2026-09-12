@@ -511,3 +511,25 @@ to a later session.
 > `docs/handoff/ui_build_agent_prompt.txt`.]
 
 **Outcome:** Read the brief, the gap analysis, both handoffs, both specs and the prototype, then verified the starting point in a fresh worktree: 188 tests pass and typecheck and lint are clean across the three workspaces. Bringing the compose stack up for the first time since Redis landed found a defect the suite cannot see, a redis container that crash-loops because `cap_drop: ALL` strips the SETUID capability its entrypoint uses to drop root, so that fix and every other open choice went to the owner as a batch of questions before any code was written.
+
+---
+
+### 2026-09-12T06:52Z - answer_the_submission_decision_batch
+
+**Prompt**
+
+> 1a
+> 2all recommended
+> use docker compose instead of npm run dev
+> 3a
+> 4a
+> 5-a-a-b(add zustand)-b-theme=a&b(3 options system, dark, light)-a
+> 6Aa,Bb,Ca,Da,Ea
+> 7AAC
+> 8AB(if it already seeds at startup, there's no need to create a new seeder, and new fake data are generated in real time already)
+> 9A
+> 10A
+> 11A
+> 12A
+
+**Outcome:** Settled the twelve open choices in one reply: the redis container runs as the `redis` user, the frontend gets the recommended dependency set minus `concurrently` because development runs through docker compose, the source moves under `src/` with the proposed component tree and an in-app design system, the list is server-sorted and keyset-paged through an infinite query with socket events patched into the cache, sessions stay in memory and restore from the refresh cookie, connection state lives in a zustand store, filters and sort live in the URL, and the theme toggle offers system, dark and light. Scope grew on the server side by two endpoints, positions by symbol and a global event feed with an audit view, the phone layout and KPI strip stay in, the tooling is Lighthouse on two pages with no gate, k6 at four users inside the rate limits, and Playwright with the two-context journeys plus a 409 conflict, and there is no standalone seed script because the API already seeds an empty database and the feed keeps generating.
