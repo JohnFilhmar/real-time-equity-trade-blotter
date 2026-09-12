@@ -460,3 +460,54 @@ to a later session.
 **Outcome:** Audited the prototype against every decision taken after its last commit and found fifteen missing, including roles, the login gate, all ARIA grid semantics and the RESYNCING state, which also made a line in the freshly merged handoff actively misleading. The user chose to scope the file honestly rather than rebuild it, so it gained a source comment and a visible banner listing what it does and does not demonstrate, and the handoff now states that the specs win wherever the two disagree.
 
 **Artifact:** [Fusion Blotter Prototype](../artifacts/fusion_blotter_prototype.html)
+
+---
+
+### 2026-09-12T06:28Z - take_the_exercise_to_submission
+
+**Prompt**
+
+> You are picking up a nearly-finished take-home exercise and taking it to submission. Read before
+> you build: most of this system already exists, and the fastest way to fail here is to rebuild
+> something that is already done and tested.
+>
+> REPOSITORY
+>
+>   D:\My Folder\tp-icap-take-home-assessment
+>   Default branch `main`, currently at b885b4e. Work in your own git worktree, branched from
+>   origin/main. Do not work in the shared checkout.
+>
+> CATCH UP FIRST. Read these six, in this order, before writing any code.
+>
+>   1. take-home-assessment.md                                    the brief you are graded against
+>   2. docs/artifacts/mvp_requirements_and_gap_analysis.html       current state, verified by running
+>                                                                 the code. Start here: it tells you
+>                                                                 what is done, what is left, and
+>                                                                 which decisions are closed
+>   3. docs/handoff/backend_server.md                             the backend agent's handover
+>   4. docs/handoff/ui_ux_planning.md                             the design agent's handover
+>   5. docs/superpowers/specs/2026-09-12-trade-api-design.md       the API contract
+>   6. docs/superpowers/specs/2026-09-12-interface-behaviour-design.md
+>                                                                 every interface behaviour, already
+>                                                                 decided: conflation, connection
+>                                                                 lifecycle, ARIA, keyboard, flash
+>                                                                 contrast, table states
+>
+>   Then skim docs/artifacts/fusion_blotter_prototype.html. It is a working reference implementation
+>   of the UI, not a mockup, and it carries a scope note. Where it and the specs disagree, the specs
+>   win. Also read the root CLAUDE.md and frontend/CLAUDE.md for repo conventions.
+>
+> THE STANDING RULE. Read this before anything else, and apply it to everything below.
+>
+>   YOU DECIDE NOTHING.
+>
+>   Any choice that is not already written down in the specs, the gap analysis, or the repo
+>   CLAUDE.md files stops and goes to the user as an explicit question, with the options, the cost
+>   of each, and your recommendation. Then you wait for the answer.
+>
+> [... truncated, ~9,700 characters omitted: the list of what is already built, the five work items
+> (blotter UI, wiring through Docker, test tooling, README and scripts, final verification), the
+> ground rules, the setup traps and the definition of done. The full prompt is committed verbatim at
+> `docs/handoff/ui_build_agent_prompt.txt`.]
+
+**Outcome:** Read the brief, the gap analysis, both handoffs, both specs and the prototype, then verified the starting point in a fresh worktree: 188 tests pass and typecheck and lint are clean across the three workspaces. Bringing the compose stack up for the first time since Redis landed found a defect the suite cannot see, a redis container that crash-loops because `cap_drop: ALL` strips the SETUID capability its entrypoint uses to drop root, so that fix and every other open choice went to the owner as a batch of questions before any code was written.
