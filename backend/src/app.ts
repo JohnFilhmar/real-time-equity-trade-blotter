@@ -4,7 +4,7 @@ import cors from 'cors';
 import cookie_parser from 'cookie-parser';
 import type { HealthProbe } from './interfaces/health_probe.js';
 import type { AuthService } from './services/auth_service.js';
-import type { TradeService } from './services/trade_service.js';
+import type { TradeService } from './services/trade_service/index.js';
 import { create_auth_router, create_public_auth_router } from './routes/auth_routes.js';
 import { create_health_router } from './routes/health_routes.js';
 import { create_metrics_router } from './routes/metrics_routes.js';

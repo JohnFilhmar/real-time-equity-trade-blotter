@@ -1,6 +1,5 @@
 import type {
   AmendableTrade,
-  Currency,
   Position,
   Trade,
   TradeEvent,
@@ -14,142 +13,18 @@ import type {
   TradeChanges,
   TradeRepository,
   TradeWriteContext,
-} from '../interfaces/trade_repository.js';
+} from '../../interfaces/trade_repository.js';
 import {
   build_cancellation_change_set,
   build_change_set,
-} from '../lib/audit/build_change_set.js';
-import { decode_cursor, encode_cursor } from '../lib/paging/cursor.js';
+} from '../../lib/audit/build_change_set.js';
+import { decode_cursor, encode_cursor } from '../../lib/paging/cursor.js';
+import { find_events, list_events } from './events.js';
+import { compare_on, matches_text, within_range } from './filtering.js';
+import { aggregate_positions } from './positions.js';
 
 /** Where the in-memory business identifiers start, matching the database sequence. */
 const first_trade_number = 100_001;
-
-/**
- * Compares two trades on the requested column, falling back to the row id.
- *
- * The id tiebreaker is what makes cursor paging work: two trades with the same timestamp must not
- * swap places between requests, or "everything after this row" stops meaning anything.
- *
- * @param a - Left trade.
- * @param b - Right trade.
- * @param column - The column to compare on.
- * @returns Negative, zero or positive, as a comparator.
- */
-function compare_on(a: Trade, b: Trade, column: TradeQuery['sort_by']): number {
-  const primary = compare_column(a, b, column);
-  return primary === 0 ? a.id.localeCompare(b.id) : primary;
-}
-
-/**
- * Compares two trades on one column.
- *
- * @param a - Left trade.
- * @param b - Right trade.
- * @param column - The column to compare on.
- * @returns Negative, zero or positive.
- */
-function compare_column(a: Trade, b: Trade, column: TradeQuery['sort_by']): number {
-  switch (column) {
-    case 'quantity':
-      return a.quantity - b.quantity;
-    case 'price':
-      return a.price - b.price;
-    case 'tradeId':
-      return a.tradeId.localeCompare(b.tradeId);
-    case 'symbol':
-      return a.symbol.localeCompare(b.symbol);
-    case 'side':
-      return a.side.localeCompare(b.side);
-    case 'trader':
-      return a.trader.localeCompare(b.trader);
-    case 'book':
-      return a.book.localeCompare(b.book);
-    case 'counterparty':
-      return a.counterparty.localeCompare(b.counterparty);
-    case 'status':
-      return a.status.localeCompare(b.status);
-    default:
-      return a.tradeTimestamp.localeCompare(b.tradeTimestamp);
-  }
-}
-
-/**
- * Checks a trade against a free-text filter the same way the Postgres repository does.
- *
- * @param value - The field being filtered.
- * @param filter - The filter, or `undefined` when it was not supplied.
- * @returns True when the filter is absent or matches case-insensitively.
- */
-function matches_text(value: string, filter?: string): boolean {
-  return filter === undefined || value.toLowerCase().includes(filter.toLowerCase());
-}
-
-/**
- * Checks a trade's execution time against the requested range.
- *
- * @param timestamp - The trade's execution time, as an ISO string.
- * @param query - The parsed query, which may carry either bound or neither.
- * @returns True when the trade sits inside the range.
- */
-function within_range(timestamp: string, query: TradeQuery): boolean {
-  const at = Date.parse(timestamp);
-  const after = query.date_from === undefined || at >= Date.parse(query.date_from);
-  const before = query.date_to === undefined || at <= Date.parse(query.date_to);
-  return after && before;
-}
-
-/**
- * Orders events newest first, falling back to the row id so two events written in the same
- * millisecond keep one order between requests, which is what cursor paging depends on.
- *
- * @param a - Left event.
- * @param b - Right event.
- * @returns Negative when `a` is newer, positive when `b` is, as a comparator.
- */
-function newest_first(a: TradeEvent, b: TradeEvent): number {
-  const by_time = b.occurredAt.localeCompare(a.occurredAt);
-  return by_time === 0 ? b.id.localeCompare(a.id) : by_time;
-}
-
-/**
- * The position an instrument holds before any trade is counted.
- *
- * @param symbol - The instrument.
- * @param currency - Its quote currency.
- * @returns A position with every figure at zero.
- */
-function empty_position(symbol: string, currency: Currency): Position {
-  return {
-    symbol,
-    currency,
-    netQuantity: 0,
-    buyQuantity: 0,
-    sellQuantity: 0,
-    grossNotional: 0,
-    tradeCount: 0,
-  };
-}
-
-/**
- * Folds one active trade into the running position for its instrument.
- *
- * @param position - The position so far.
- * @param trade - The trade to count.
- * @returns The position with the trade added.
- */
-function add_to_position(position: Position, trade: Trade): Position {
-  const bought = trade.side === 'BUY' ? trade.quantity : 0;
-  const sold = trade.side === 'SELL' ? trade.quantity : 0;
-
-  return {
-    ...position,
-    netQuantity: position.netQuantity + bought - sold,
-    buyQuantity: position.buyQuantity + bought,
-    sellQuantity: position.sellQuantity + sold,
-    grossNotional: position.grossNotional + trade.quantity * trade.price,
-    tradeCount: position.tradeCount + 1,
-  };
-}
 
 /**
  * Strips keys whose value is explicitly `undefined`.
@@ -332,43 +207,15 @@ export function create_in_memory_trade_repository(initial: Trade[] = []): TradeR
     },
 
     async find_events(trade_id: string): Promise<TradeEvent[]> {
-      return events
-        .filter((event) => event.tradeId === trade_id)
-        .sort((a, b) => a.version - b.version);
+      return find_events(events, trade_id);
     },
 
     async list_events(query: TradeEventQuery): Promise<TradeEventPage> {
-      const ordered = [...events].sort(newest_first);
-
-      const cursor_id = decode_cursor(query.cursor);
-      const start =
-        cursor_id === undefined ? 0 : ordered.findIndex((event) => event.id === cursor_id) + 1;
-
-      const page = ordered.slice(start, start + query.limit);
-      const last = page.at(-1);
-
-      return {
-        events: page,
-        total: ordered.length,
-        next_cursor:
-          page.length === query.limit && last !== undefined ? encode_cursor(last.id) : null,
-      };
+      return list_events(events, query);
     },
 
     async aggregate_positions(): Promise<Position[]> {
-      const positions = new Map<string, Position>();
-
-      for (const trade of trades.values()) {
-        if (trade.status !== 'ACTIVE') {
-          continue;
-        }
-
-        const key = `${trade.symbol}|${trade.currency}`;
-        const so_far = positions.get(key) ?? empty_position(trade.symbol, trade.currency);
-        positions.set(key, add_to_position(so_far, trade));
-      }
-
-      return [...positions.values()].sort((a, b) => a.symbol.localeCompare(b.symbol));
+      return aggregate_positions(trades);
     },
 
     async find_random_active(): Promise<Trade | null> {

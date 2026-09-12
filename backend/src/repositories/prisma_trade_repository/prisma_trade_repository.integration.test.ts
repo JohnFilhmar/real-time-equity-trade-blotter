@@ -8,9 +8,9 @@ import {
   type Position,
   type TradeEvent,
 } from '@blotter/shared';
-import { PrismaClient } from '../generated/prisma/client.js';
-import type { NewTrade, TradeRepository } from '../interfaces/trade_repository.js';
-import { create_prisma_trade_repository } from './prisma_trade_repository.js';
+import { PrismaClient } from '../../generated/prisma/client.js';
+import type { NewTrade, TradeRepository } from '../../interfaces/trade_repository.js';
+import { create_prisma_trade_repository } from './index.js';
 
 /**
  * The database this tier runs against.

@@ -2,10 +2,10 @@ import { randomUUID } from 'node:crypto';
 import type { Express } from 'express';
 import type { Role } from '@blotter/shared';
 import { create_app } from '../../app.js';
-import { create_in_memory_trade_repository } from '../../repositories/in_memory_trade_repository.js';
+import { create_in_memory_trade_repository } from '../../repositories/in_memory_trade_repository/index.js';
 import { create_in_memory_user_repository } from '../../repositories/in_memory_user_repository.js';
 import { create_auth_service } from '../../services/auth_service.js';
-import { create_trade_service } from '../../services/trade_service.js';
+import { create_trade_service } from '../../services/trade_service/index.js';
 import type { UserRepository } from '../../interfaces/user_repository.js';
 import {
   create_in_memory_login_attempts,

@@ -6,10 +6,10 @@ import {
   type Trade,
   type TradeList,
 } from '@blotter/shared';
-import type { TradeBroadcaster } from '../interfaces/trade_broadcaster.js';
-import { create_in_memory_trade_repository } from '../repositories/in_memory_trade_repository.js';
-import { AppError } from '../lib/errors/app_error.js';
-import { create_trade_service, type TradeActor, type TradeService } from './trade_service.js';
+import type { TradeBroadcaster } from '../../interfaces/trade_broadcaster.js';
+import { create_in_memory_trade_repository } from '../../repositories/in_memory_trade_repository/index.js';
+import { AppError } from '../../lib/errors/app_error.js';
+import { create_trade_service, type TradeActor, type TradeService } from './index.js';
 
 /** A broadcaster that remembers what it was asked to announce. */
 interface RecordingBroadcaster extends TradeBroadcaster {

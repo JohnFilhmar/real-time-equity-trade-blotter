@@ -90,3 +90,28 @@ repository `CLAUDE.md` fallback puts the entry on the dispatcher in that case.
 > [... truncated, ~8,500 characters omitted: the file-size and shell-guard rules, the read-first list, the three specified changes (positions by symbol at GET /api/v1/positions, the global event feed at GET /api/v1/trades/events with keyset paging and a new index migration, and two-decimal rounding of live-feed prices), the verification commands to run and report verbatim, the by-hand check against the running API, and this prompt log obligation.]
 
 **Outcome:** Added `GET /api/v1/positions` and `GET /api/v1/trades/events` with their shared schemas, both repository implementations, a keyset index migration and two-decimal rounding of live-feed prices; the unit tier went from 188 to 200 passing and the integration tier passed 35 against the compose Postgres, with both routes answering by hand from a local run of the changed code. The migration is written but not applied, because the permission classifier refused the deploy, and the frontend workspace typecheck fails inside in-progress UI work that imports nothing from this change.
+
+---
+
+### 2026-09-12T12:19Z - split_repositories_and_trade_service_into_directories
+
+**Prompt**
+
+> You are a backend subagent on a TypeScript trade blotter (Express 5, Prisma 7, zod 4, vitest 5, ESM with nodenext module resolution, so every relative import ends in `.js`). Work ONLY inside this git worktree and never cd out of it:
+>
+>   D:\My Folder\tp-icap-take-home-assessment\.claude\worktrees\submission
+>
+> THE STANDING RULE, verbatim from the repository owner: YOU DECIDE NOTHING. This task is a pure mechanical refactor whose layout is specified exactly below. No behaviour changes, no renamed exports, no changed signatures, no changed JSDoc content, no new features, no "while I am here" cleanups. If anything below turns out to be impossible as written, stop that part, finish the rest, and return the question with options and a recommendation.
+>
+> Ground rules (non-negotiable):
+> - Do NOT commit, push, stash or switch branches. I review the diff and commit.
+> - Do NOT touch backend/src/lib/seed/** (another change is in flight there), README.md, docs/**, docker-compose.yaml, frontend/**, shared/**, or any .env file.
+> - Use `git mv` for moves so history follows. Plain single shell commands only: the worktree guard refuses compound commands it cannot verify and heredocs containing backticks. Use the Read/Edit/Write tools for file contents.
+> - Keep snake_case file names and the existing JSDoc on every exported symbol. Each new file gets a short JSDoc or comment at the top only where the file's purpose is not obvious from its name; do not narrate.
+> - Match the existing code style exactly.
+>
+> THE TASK. Three files exceed the house limit of about 250 lines or 3 exported functions. Turn each into a directory as follows.
+>
+> [... truncated, ~4,500 characters omitted: the three directory layouts (prisma_trade_repository into index, query, reads and writes; in_memory_trade_repository into index, filtering, positions and events; trade_service into interfaces/trade_service.ts plus index and rules), moving the two colocated tests with them, the importer list to repoint under nodenext, the 250-line and three-export limit, the verification commands to run and report verbatim, and this prompt log obligation.]
+
+**Outcome:** Split the three files into directories with `git mv` (`prisma_trade_repository/` with query, reads and writes; `in_memory_trade_repository/` with filtering, positions and events; `trade_service/` with rules, and the `TradeActor` and `TradeService` contracts moved to `interfaces/trade_service.ts`), moved the two colocated tests with them and repointed the nine importers, with every resulting file under 250 lines. Verified typecheck clean on all three workspaces, the unit tier at shared 30, backend 170 and frontend 38, and the integration tier at 35 passing against the compose Postgres; nothing committed.

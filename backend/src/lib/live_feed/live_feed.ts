@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 import type { TradeRepository } from '../../interfaces/trade_repository.js';
-import type { TradeActor, TradeService } from '../../services/trade_service.js';
+import type { TradeActor, TradeService } from '../../services/trade_service/index.js';
 import { AppError } from '../errors/app_error.js';
 import { logger } from '../logging/logger.js';
 import { generate_live_amendment, generate_live_trade } from '../seed/generate_trades.js';

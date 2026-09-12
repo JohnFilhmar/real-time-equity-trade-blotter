@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { require_permission } from '../middleware/require_auth.js';
-import type { TradeService } from '../services/trade_service.js';
+import type { TradeService } from '../services/trade_service/index.js';
 
 /**
  * Builds the position routes.

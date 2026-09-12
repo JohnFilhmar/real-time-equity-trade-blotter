@@ -8,10 +8,10 @@ import {
   create_in_memory_login_attempts,
   create_in_memory_refresh_store,
 } from '../lib/auth/in_memory_auth_stores.js';
-import { create_in_memory_trade_repository } from '../repositories/in_memory_trade_repository.js';
+import { create_in_memory_trade_repository } from '../repositories/in_memory_trade_repository/index.js';
 import { create_in_memory_user_repository } from '../repositories/in_memory_user_repository.js';
 import { create_auth_service } from '../services/auth_service.js';
-import { create_trade_service } from '../services/trade_service.js';
+import { create_trade_service } from '../services/trade_service/index.js';
 
 const cors_origins = ['http://localhost:3000'];
 

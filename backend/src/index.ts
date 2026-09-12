@@ -12,10 +12,10 @@ import { seed_users_if_empty } from './lib/seed/seed_users.js';
 import { create_socket_broadcaster } from './realtime/socket_broadcaster.js';
 import { create_socket_server } from './realtime/socket_server.js';
 import { create_prisma_health_probe } from './repositories/prisma_health_probe.js';
-import { create_prisma_trade_repository } from './repositories/prisma_trade_repository.js';
+import { create_prisma_trade_repository } from './repositories/prisma_trade_repository/index.js';
 import { create_prisma_user_repository } from './repositories/prisma_user_repository.js';
 import { create_auth_service } from './services/auth_service.js';
-import { create_trade_service } from './services/trade_service.js';
+import { create_trade_service } from './services/trade_service/index.js';
 
 // The HTTP server is created empty and the app attached afterwards, because the socket server
 // needs the HTTP server, the broadcaster needs the socket server, the service needs the

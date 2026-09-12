@@ -11,7 +11,7 @@ import {
 } from '@blotter/shared';
 import { write_rate_limit } from '../middleware/rate_limit.js';
 import { require_claims, require_permission } from '../middleware/require_auth.js';
-import type { TradeActor, TradeService } from '../services/trade_service.js';
+import type { TradeActor, TradeService } from '../services/trade_service/index.js';
 
 /**
  * The path parameter every single-trade route takes.
