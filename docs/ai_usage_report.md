@@ -2,98 +2,164 @@
 
 ## Tools used
 
-**Claude Code (Opus 5)** was the only AI tool used, run from the terminal with direct access to the
-repository, the shell, Docker, and the project's own convention files.
+Claude Code, run from the terminal with access to the repository, the shell, Docker and my own
+convention files. Three models were used across the project: Opus 5 for the backend and the
+design phase, a design agent for the artboards and the interactive prototype, and Fable 5.1 for
+the interface build, the wiring, the test tooling and this submission pass. Research subagents ran
+web searches for the domain, real-time grid UX and grading signals. The prototype was checked in a
+real browser through Playwright rather than by reading its source.
 
-Two capabilities mattered more than the model itself:
-
-- **Documentation lookup (Context7).** Used to read the current Prisma 7 documentation rather than
-  rely on recalled API shapes. This caught four breaking changes in one pass; see below.
-- **Real command execution.** Every claim in this repository about something building, passing or
-  running was produced by running it, not by inference.
+Two things mattered more than the model. Every claim about something building, passing or running
+was produced by running it, and the agents were not allowed to decide anything.
 
 ## How it was used
 
-Work ran in git worktrees, one per unit of work, merged to `master` only after typecheck and tests
-passed. Each phase followed the same loop: read the brief and the existing code, state the
-decisions and their rejected alternatives, implement, verify by running, then record the outcome.
+One rule governed every session, recorded in the project memory on 2026-09-11: no agent decides
+anything about this system. A library, a schema, an endpoint shape, a file layout, a scope cut, a
+threshold, a name. Each stops and comes to me as a question with the options, the cost of each,
+the agent's recommendation, and whether each option agrees with my own conventions. I answer, the
+answer is logged, and only then is the code written.
 
-A project rule in [`CLAUDE.md`](../CLAUDE.md) requires every agent working in this repository to
-log its significant prompts as the work happens rather than reconstructing them afterwards. The
-result is [`docs/prompt_log/`](prompt_log/index.md), which is the raw material for this report.
+That produced a particular shape of work. The prompt log holds forty entries across three agents
+and most of them are me answering batches of questions: four questions on the MVP shape, three on the live feed,
+sixteen on the server gap list across four rounds, thirteen on interface behaviour, twelve on the
+submission pass. The agents did the research, the drafting and the verification. The decisions
+are mine, and the log shows which ones.
+
+Work ran in git worktrees, one per unit of work, merged to `main` after typecheck and tests
+passed. Each phase read the brief and the existing code, put the choices to me, implemented,
+verified by running, then recorded the outcome in [`docs/prompt_log/`](prompt_log/index.md) in
+the same turn.
 
 ## Prompts
 
-Representative prompts are in [the prompt log](prompt_log/index.md), verbatim. A sample:
+The prompts are in [the prompt log](prompt_log/index.md), verbatim, typos included. A sample of
+the ones that shaped the system:
 
 > can you check skills tailored to me as my best practices, after that read carefully the markdown
 > file take-home-assessment, then tell me what you think what should be the approach in executing
 > and developing the app in fullstack starting from this bare frameworks i have setted up.
 
-> uninstall the ws since it will conflict with socket.io
-
 > is the blotter build plan properly aligned with the models in the markdown
 
-> what are the remaining gaps besides the two that you have given a red banner BREAKS BUILD/RUN
-> and other gaps listed?
+> remove trade cancellation reason, because modern trade sites does not have that requiring users
+> to explain the reason for the cancelation.
 
-The pattern is worth noting: the most useful prompts were narrow and adversarial. Asking whether
-the plan actually matched the brief's model found a real omission that a broader "review this"
-would not have.
+> i want you to perform a deep research for what is needed for this application accordingly for
+> what the user should see. [...] goal is to have a list of both ui/ux and server requirements to
+> achieve a viable true MVP of this system.
+
+> i might pull back 1 decision which is the role and permissions decision.
+
+> 1a 2all recommended use docker compose instead of npm run dev 3a 4a
+> 5-a-a-b(add zustand)-b-theme=a&b(3 options system, dark, light)-a 6Aa,Bb,Ca,Da,Ea 7AAC 8AB [...]
+
+The last one is what most of my prompts looked like by the end: a line of answers to a numbered
+list of questions. The narrow, adversarial prompts were the productive ones. Asking whether the
+plan matched the brief's model found that the plan had no model in it at all.
 
 ## Decisions influenced by AI
 
-**Verified against documentation, and changed as a result.** The initial Prisma schema was written
-from recalled Prisma 6 conventions and would not have built. Reading the Prisma 7 documentation
-first surfaced four breaking changes: `provider` is now `prisma-client` with a mandatory `output`,
-the client is imported from the generated path rather than `@prisma/client`, a driver adapter
-(`@prisma/adapter-pg`) is required, and datasource URLs move to a `prisma.config.ts`. None of that
-was installed in the scaffold.
+**The shared contract package.** Proposed as the structural choice that would pay for itself most: one zod
+schema per model in `shared/`, every inbound shape derived from it, every type inferred from it.
+Accepted at the start and never revisited. It is the reason the API, the socket payload and the
+grid cannot disagree about a field.
 
-**Decimal prices.** Proposed and adopted immediately. A float price column on a trading system is
-the kind of detail that undermines everything built on top of it.
-
-**Separate liveness and readiness endpoints.** Proposed after noticing that the scaffold's
+**Decimal prices, a separate readiness endpoint, Postgres over SQLite.** Proposed in the first
+review of the scaffold and accepted. The readiness one came from noticing that the scaffold's
 healthcheck would report a container healthy while its database was unreachable, and that the
-frontend gated its startup on that signal.
+frontend gated its own start on that signal.
 
-**The shared contract package.** Proposed as the highest-leverage structural decision available,
-on the grounds that "TypeScript usage" and "API contracts" are 20% of the assessment and a single
-derived schema demonstrates both better than any amount of hand-written types.
+**Keyset paging.** The first answer I gave was "data + total + limit + offset". The agent came
+back later with the argument that an offset computed on one request points somewhere else on the
+next when rows insert all day, so page two re-serves and skips rows. I changed the answer to a
+cursor. The blotter now has over three thousand rows after a few hours of the simulated feed, and
+the grid pages through them without a duplicate.
 
-## Accepted
+**Prisma 7 breaking changes.** The first schema was written from Prisma 6 memory and would not
+have built. Reading the Prisma 7 documentation first found four changes: a mandatory `output`,
+a driver adapter, a generated-path import and a `prisma.config.ts`.
 
-- Postgres over SQLite, once the read-only container filesystem made the trade-off concrete.
-- The npm workspace restructure, despite it being the change most likely to break the Docker
-  build, because doing it later would have meant rewriting both Dockerfiles twice.
-- Injecting the health probe behind a small interface. It removed a type cast from the test and
-  made the readiness test honest.
+**The two-client broadcast test.** The research subagent ranked "a test proves a broadcast reached
+a second, uninvolved client" as the single highest-value open item. It was built at the transport
+level with two Socket.IO clients, and then again in Playwright with two browser contexts, which is
+the brief's literal acceptance criterion.
 
-## Rejected, and why
+**What the interface does while the link is down.** Every behaviour in
+[the interface spec](superpowers/specs/2026-09-12-interface-behaviour-design.md) was put to me as
+a choice with a recommendation. I took the recommendation on each: mutations blocked with a reason
+rather than queued, three connection states with green only after the refetch completes, a per-row
+flash throttle as the WCAG 2.3.1 control, row-level keyboard focus, seven table states with copy.
 
-**"Every prompt gets a log entry."** The first version of the logging rule required an entry for
-every prompt. The brief says the opposite in as many words: it is not interested in exhaustive
-logs. The rule was rewritten to significant prompts only.
+## Where I overruled the AI
 
-**Publishing artifacts only as hosted pages.** Convenient during development, but a published
-artifact URL is private to the author's account, and the assessor receives a git repository and
-nothing else. Every artifact is committed under `docs/artifacts/`.
+**Authentication and P&L.** The research ranked authentication twenty-seventh of twenty-eight
+candidate items and P&L last, on the grounds that the rubric has no security line and P&L needs a
+mark price the brief never supplies. I kept both. A blotter carries counterparty names, sizes and
+prices, which is precisely what a firm does not serve to anonymous readers, and that argument
+stands without the rubric. P&L was later narrowed to notional by symbol, labelled as such, because
+inventing a mark would be inventing a financial convention.
 
-**`npm audit fix --force`.** It resolves five high-severity findings by downgrading Prisma from 7
-to 6, a breaking change, when the vulnerable paths are build-time only. Documented in the README
-instead.
+**Roles and permissions.** My first model was no roles at all: sign up, log in, act. The agent
+confirmed it was internally consistent and removed the role claim. I then pulled that decision
+back, because a viewer who cannot cancel is something that can be shown working, and an
+administrator who can act on anyone's trade gives the ownership rule a reason to exist. The agent
+recommended holding the role-to-permission map as a constant; I chose three tables, so a
+capability can move without a deploy.
 
-**A generated boilerplate `.env`.** Writing to `.env` files was refused by policy throughout, so
-`DATABASE_URL` is supplied by compose and documented in the README rather than injected into a
-file the repository does not own.
+**Typeface.** I suggested Roboto and Source Sans 3 from a search result. The agent argued both are
+neutral sans at the same optical weight, so the pairing carries no contrast, and that a dense
+numeric grid needs proportional against monospace. I kept its IBM Plex Sans and Plex Mono.
 
-**Path aliases in the backend.** The house convention prefers them, but under ESM with `nodenext`
-TypeScript does not rewrite them at emit, so they break at runtime without an extra build step.
-The deviation is recorded in the README rather than papered over with another tool.
+**Cancellation reason.** The design carried a required reason with five canned values. I removed
+it: a trader is not asked to justify a cancellation, and the brief says a simple status transition
+is sufficient.
+
+**Positions and the audit trail on the server.** For the submission pass the agent recommended
+computing positions on the client from the loaded rows, and showing history per trade only. I chose
+a server aggregate and a global event feed instead, because a figure computed from one page of a
+paged list is wrong the moment there is a second page.
+
+**Connection state and filters.** The agent recommended Context for connection state and
+component state for filters. I chose a zustand store and the URL respectively: many components
+subscribe to the link state, and a filtered blotter should be linkable.
+
+## Where the AI was wrong, and caught
+
+**U-M4 in the gap analysis.** The first revision claimed the prototype had no up or down tick
+glyph and carried direction by colour alone. The design agent counted three occurrences of
+`tickMark()` in the prototype source. The analysis was corrected, and the real WCAG 1.4.1 gap
+turned out to be narrower: the row flash differed only in hue. That is what the direction arrow on
+the flash now fixes.
+
+**The container defects.** Two of the three real defects on this project were invisible to the
+test suite and appeared only when containers ran: npm as PID 1 swallowing SIGTERM, and `io.close()`
+already closing the HTTP server. A third appeared in the submission pass: the redis container
+crash-looped because `cap_drop: ALL` removed the capability its entrypoint used to drop root. All
+three were found by running the stack rather than reasoning about it.
+
+**Feed price precision.** The live feed booked prices with six decimals, which the domain research
+lists as a tell that data is generated. Found by reading a real row from the running API.
+
+## Rejected suggestions
+
+- "Every prompt gets a log entry." The brief says it is not interested in exhaustive logs. The
+  rule was rewritten to significant prompts only.
+- `npm audit fix --force`, which resolves five high-severity findings by downgrading Prisma from 7
+  to 6. The vulnerable paths are build-time only. Documented instead.
+- A generated `.env`. Writing to `.env` files is refused by policy in every project of mine, so
+  configuration comes from compose and is documented in the README.
+- Path aliases in the backend. My house style prefers them, but under ESM with `nodenext`
+  TypeScript does not rewrite them at emit. The deviation is recorded rather than papered over.
+- `concurrently` for a root `npm run dev`. Development runs through docker compose instead, so
+  there is one way to run the system rather than two.
+- A standalone seed script. The API already seeds an empty database on start and the feed keeps
+  generating, so a second seeder would be a second thing to keep correct.
 
 ## Where AI was not relied on
 
 Every "it works" claim was checked by running the thing: `tsc --noEmit` across all three
-workspaces, `vitest` for the test suites, `prisma validate` for the schema, and `docker compose
-build` for the images. Test counts and build results quoted in this repository are observed
-output, not estimates.
+workspaces, `vitest` for the unit and integration suites, Playwright for the browser journeys,
+`docker compose up --build` for the images, and a browser for the interface. Test counts and
+scores quoted in the README are observed output. Where something was not run, the README and the
+verification table say `NOT RUN` rather than assuming.

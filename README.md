@@ -1,518 +1,245 @@
 # Real-time equity trade blotter
 
-A trade blotter for a broker: view, create, amend and cancel equity trades, with changes made by
-one client appearing on every other connected client without a refresh.
+A trade blotter for a broker: view, create, amend and cancel equity trades, with a change made in
+one window appearing in every other connected window without a refresh.
 
-Built for the TP ICAP full stack take-home exercise.
+![Two windows: a trade booked on the left arrives on the right without a refresh](docs/readme/two_windows.png)
 
-## Status
+Built for the TP ICAP full stack take-home exercise. Next.js 16 and React 19 on the front,
+Express 5 and Socket.IO on the back, Prisma 7 over PostgreSQL 17, Redis for sessions, one shared
+zod contract between them, and Docker Compose to run it all.
 
-The API is feature complete for the brief's five requirements: trades can be viewed, created,
-amended and cancelled, and every change is broadcast to all connected clients. A simulated desk
-feed keeps the blotter moving on its own. The React blotter UI is the remaining phase; see
-[the build plan](docs/artifacts/blotter_build_plan.html) for the sequence.
-
-| Area | State |
-|---|---|
-| Database schema, migration, seed generator | Done |
-| Shared TypeScript contract | Done |
-| API hardening, error handling, health and readiness | Done |
-| Docker and compose | Done |
-| Trade endpoints: list, read, create, amend, cancel | Done |
-| Socket broadcast of every change | Done |
-| Simulated live trade feed | Done |
-| Audit trail on an append-only table (bonus) | Done |
-| Keyset paging, currency, pre-trade limits, request logging, metrics | Done |
-| Authentication, roles and permissions | Done |
-| CI on push and pull request | Done |
-| Blotter UI | Next |
-| Net positions and P&L (bonus) | Deferred |
-
-## Architecture
+## Architecture decisions
 
 ```
-frontend/   Next.js 16 (App Router, React 19, Tailwind v4)
-backend/    Express 5 API + Socket.IO, Prisma 7 over PostgreSQL 17
-            (compose runs migrations as a separate one-shot service, so node is PID 1
-             in the API container and handles SIGTERM)
-shared/     @blotter/shared - one zod schema per model, shared by both
-database/   schema documentation
+frontend/   Next.js 16 App Router, React 19, Tailwind v4, TanStack Query and Table, socket.io-client
+backend/    Express 5 + Socket.IO, Prisma 7 over PostgreSQL 17, Redis for sessions and rate limits
+shared/     @blotter/shared: one zod schema per model, every other shape derived from it
+database/   schema documentation; the migrations are hand-written under backend/prisma
+docs/       specs, prompt log, AI usage report, verification table
 ```
 
-### Decisions, and what was rejected
-
-**PostgreSQL over SQLite.** The API container runs with a read-only root filesystem, which a
-SQLite file cannot survive. Postgres also lets the schema carry real enum types, a decimal price
-column and indexes chosen for the blotter's actual queries.
-
-**`DECIMAL(18,6)` for price, not a float.** Binary floating point cannot represent a price
-exactly. On a trading system that is the first thing worth getting right. Prisma returns a
-`Decimal`, which is converted to a JSON number at the boundary so responses match the payload
-shape in the brief.
-
-**One shared contract package.** `@blotter/shared` holds a single canonical zod schema per model.
-Every other shape is derived from it with `.omit()`, `.partial()` and `.pick()`, and every
-TypeScript type is inferred from it with `z.infer`. Nothing is hand-written twice, so the request
-shape, the response type and the socket payload cannot drift apart. This is why the repository is
-an npm workspace.
-
-**Socket.IO over raw WebSocket or SSE.** Reconnection with backoff comes for free, rooms leave
-room for per-book scoping later, and the event map is typed through
-`Server<ClientToServerEvents, ServerToClientEvents>`, so emitting an unknown event will not
-compile. Raw `ws` would have meant hand-rolling reconnection; SSE is one-way and would still have
-needed HTTP for every mutation.
-
-**Mutations travel over HTTP, not over the socket.** They get the same validation, error handling
-and rate limiting as any other write. The socket carries broadcasts only, which is why
-`ClientToServerEvents` is deliberately empty.
-
-**Liveness and readiness are separate endpoints.** `/health` reports that the process is up.
-`/ready` reports that it can serve traffic, which requires the database. Collapsing them is how a
-container reports healthy while every request fails, and compose gates the frontend on `/ready`
-for exactly that reason.
-
-**camelCase on the wire, snake_case everywhere else.** The brief supplies the payload in camelCase
-and a reviewer comparing a response against their own sample should see identical keys. Database
-columns, filenames and variables stay snake_case, bridged once by Prisma's `@map`.
-
-### The trade model
-
-The brief states the model twice and the statements disagree: the `Trade` interface has `id` and
-`tradeDate`, while the sample payload has `tradeId` and `tradeTimestamp` plus `book` and
-`counterparty`. Since the interface is described as a minimum and the sample as the data the
-blotter consumes, the model carries every field from both. Full table in
-[`database/README.md`](database/README.md).
-
-Two fields go beyond the brief: `version`, for optimistic concurrency so two traders amending at
-once cannot silently overwrite each other, and `createdAt`/`updatedAt`, which record when the row
-was written as distinct from when the trade happened.
-
-Amending is deliberately not a status. The brief allows only `ACTIVE` and `CANCELLED`, so an
-amendment increments `version` and writes a `trade_event` row rather than inventing a third
-state.
-
-## API
-
-Everything lives under `/api/v1`. Payloads are camelCase, matching the brief's sample data, while
-query parameters are snake_case. A trade is addressed by its business identifier, `TRD-100001`,
-because that is the value a trader reads off the blotter.
-
-| Method | Path | Purpose |
-|---|---|---|
-| `GET` | `/api/v1/trades` | List, filtered, sorted and cursor-paged |
-| `GET` | `/api/v1/trades/:trade_id` | Read one trade |
-| `POST` | `/api/v1/trades` | Book a trade, answers 201 |
-| `PATCH` | `/api/v1/trades/:trade_id` | Amend, requires the version last seen |
-| `POST` | `/api/v1/trades/:trade_id/cancel` | Cancel, optional version guard |
-| `GET` | `/api/v1/trades/:trade_id/events` | Full history, oldest first |
-| `POST` | `/api/v1/auth/login` | Exchange credentials for a session |
-| `POST` | `/api/v1/auth/refresh` | Rotate the refresh cookie for a new session |
-| `GET` | `/api/v1/auth/me` | The signed-in user and their permissions |
-| `POST` | `/api/v1/auth/logout` | End the session |
-
-Everything except login and refresh needs a bearer token. Protection is the default rather than an
-opt-in: the guard is mounted across the whole prefix and the only public routes are the two mounted
-above it, so a route added later is authenticated without anyone remembering to say so. An
-unauthenticated request to a path that does not exist answers 401 rather than 404, so the API
-cannot be enumerated without credentials.
-
-`/health`, `/ready` and `/metrics` sit outside the prefix on purpose. They are operational
-surfaces for a probe and a scraper, not part of the contract a client depends on, and versioning
-them would tie an orchestrator's configuration to an API lifecycle it has nothing to do with.
-
-### Listing
-
-`GET /api/v1/trades` accepts `symbol`, `trader`, `book` and `counterparty` (case-insensitive
-substring), `side`, `status`, `date_from`, `date_to`, `sort_by`, `sort_dir`, `limit` and
-`cursor`, and answers an envelope:
-
-```json
-{ "data": [ /* trades */ ], "total": 500, "limit": 100, "next_cursor": "M2YyNTA0ZTAt..." }
-```
-
-The total is the count before paging, so the grid can show a row count without a second call.
-`next_cursor` is `null` on the last page.
-
-**Paging is keyset, not offset.** A blotter inserts rows all day, so an offset computed on one
-request no longer points at the same place on the next: page two re-serves rows already seen and
-skips others. That is a correctness problem rather than a performance one. A cursor names a row, and
-every sort carries `id` as its tiebreaker so the row stays put, which means inserts above it change
-nothing. A cursor that does not decode is treated as absent and returns the first page, so a stale
-one degrades rather than failing.
-
-`sort_by` accepts every column the blotter displays, not a subset. A header that looks sortable and
-is rejected by the API is worse than no sorting at all, so `trade_sort_columns` in the shared
-package is the single list both sides read.
-
-### Writing
-
-Amend and cancel are optimistically concurrent. The client echoes back the `version` it last saw;
-if the trade has moved on, the answer is `409` naming the current version rather than a silent
-overwrite. Cancel is a named action rather than a `DELETE`, because the row is not deleted: it
-moves to `CANCELLED`. Amending is not a status, so the only two statuses are the brief's own.
-
-**An amendment may change quantity, price, counterparty and book, and nothing else.** Re-pointing a
-trade at another symbol, flipping its side, or rewriting when it executed are rebookings rather than
-corrections, so the amend schema omits them. The simulated feed restricts itself to the same set.
-
-Three pre-trade rules run server-side:
-
-| Rule | Behaviour |
-|---|---|
-| Symbol allowlist | Only the twelve names in the shared instrument universe book. A regex would let `ZZZZ` through |
-| Future trade date | Refused, with a minute of tolerance for a client clock running fast |
-| Notional ceiling | `quantity x price` above the desk limit for that currency is refused |
-
-### Authentication
-
-Sign in with `POST /api/v1/auth/login`. The response carries a short-lived access token for the
-`Authorization` header and the signed-in user; the long-lived refresh token goes into an httpOnly
-cookie scoped to `/api/v1/auth`, so no script on the page can read the credential that matters and
-it never rides along with an ordinary trade request.
-
-**Refresh rotates on every use.** A refresh token is spent the moment it is exchanged. If a spent
-token comes back, the entire session family is destroyed and both the thief and the legitimate
-holder are signed out. That is the intended outcome: a replay is evidence the token was copied, and
-the only safe response is to burn the session. The compare and the write are one Lua script in
-Redis, because a read followed by a write would let two requests carrying the same token both be
-told they rotated cleanly.
-
-Passwords are bcrypt at cost 12. A login for an account that does not exist is still compared
-against a dummy hash, so response time does not reveal which usernames are real, and the message is
-identical either way. Failures are counted per account in Redis and lock it out, which sits
-alongside the per-address rate limit rather than replacing it: an attacker spreading attempts across
-many addresses still runs into a wall on the account they are attacking.
-
-### Roles and permissions
-
-Three roles, mapped to named permissions. Routes require the permission, never the role, so a route
-states what it needs and the mapping lives in one place.
-
-| Role | Can |
-|---|---|
-| `VIEWER` | Read trades |
-| `TRADER` | Read, book, and amend or cancel **their own** trades |
-| `ADMIN` | All of the above, plus amend or cancel **anyone's** trade |
-
-The ownership rule is the one middleware cannot enforce, because it depends on the row rather than
-the request, so it lives in the service. A trader holds `trade.amend`; only an administrator holds
-`trade.amend.any`. The interface receives the permission list so it can hide what the person
-cannot do, and the server re-checks every time regardless.
-
-The socket handshake verifies the same access token and refuses anyone without `trade.read`.
-Broadcasts carry whole trades, so an unauthenticated socket would stream the blotter to anyone who
-opened one and make the authorisation on the read endpoints decorative.
-
-**A trade's trader comes from the token, not the payload.** You book as yourself, so a client cannot
-book under another desk code and the trade's trader can never disagree with its audit actor. This is
-a deliberate divergence from the brief's sample payload, which shows `trader` as a client field.
-
-### Demo accounts
-
-An empty database is seeded with four accounts across the three roles, so the difference between
-them can be seen rather than described. They share a password, which is configuration
-(`SEED_USER_PASSWORD`, default `blotter-demo-2026`) rather than source, and the startup log says
-plainly that demo accounts were created. This is a property of a throwaway local stack and would be
-indefensible anywhere else.
-
-| Username | Role | Desk |
-|---|---|---|
-| `jsmith` | TRADER | JSMITH |
-| `abrown` | TRADER | ABROWN |
-| `mjones` | ADMIN | MJONES |
-| `viewer` | VIEWER | VIEWER |
-
-Sign in as `jsmith`, then try to cancel one of `abrown`'s trades: the answer is 403. Sign in as
-`mjones` and the same call succeeds, and the audit trail records who did it.
-
-### Currency
-
-The blotter quotes in two currencies and says which. The London names are priced in GBX, pence
-sterling, because that is what the London Stock Exchange quotes: HSBA.L prints around 982, not 9.82.
-Currency belongs to the instrument rather than the ticket, so a client cannot send one, and a trade
-whose currency disagrees with its own symbol cannot exist.
-
-The notional ceiling is therefore per currency. Normalising through an FX rate is the real answer
-and is deliberately out of scope: inventing a rate would be inventing a financial convention.
-
-### Errors
-
-Every failure is an RFC 9457 problem document on `application/problem+json`:
-
-```json
-{
-  "type": "/problems/conflict",
-  "title": "Conflict",
-  "status": 409,
-  "detail": "Trade TRD-100001 has changed since you loaded it...",
-  "instance": "/api/v1/trades/TRD-100001",
-  "code": "conflict",
-  "request_id": "70a13d66-cb49-4a73-8823-65ca2bbcc950"
-}
-```
-
-`code`, `errors` and `request_id` are extension members, which the RFC permits: `code` keeps a
-stable value clients branch on without parsing a URI, `errors` carries field-level detail on a
-validation failure, and `request_id` matches the log line, so a user can quote one string and have
-it found. `validation_failed` is 422, `not_found` 404, `conflict` 409, `rate_limited` 429.
-
-### Real-time
-
-Socket.IO emits `trade.created`, `trade.amended` and `trade.cancelled`, each carrying an envelope:
-
-```json
-{ "seq": 42, "emitted_at": "2026-09-12T03:19:47.881Z", "trade": { /* the whole trade */ } }
-```
-
-`seq` is monotonic for the life of the process, so a client that sees 41 then 43 knows it missed
-one and can refetch instead of silently diverging. The sequence restarts when the process does, and
-that is why the client needs a resync path rather than a guarantee. The whole row travels rather
-than a patch, so a client that did miss an event still converges once it refetches. Events are
-emitted from the service layer, not the route handlers, so anything that writes a trade broadcasts
-it exactly once. Clients send nothing: mutations go over HTTP so they get the same validation, error
-handling and rate limiting as any other write.
-
-Origin is checked twice, because the two checks cover different things. The `cors` option governs
-the HTTP long-polling handshake, which is a normal cross-origin request. A connection middleware
-governs the WebSocket upgrade, which is not subject to CORS at all: a browser will open a WebSocket
-to any host, so without that check the allowlist protects only the transport nobody ends up using.
-
-### Audit trail
-
-Every amendment and every cancellation writes a row to `trade_event` in the same transaction as the
-change, so a change cannot exist without its record and a failed version check leaves nothing
-behind. Each row carries what happened (`action`), where it came from (`source`, so a simulated
-trade is distinguishable from a human one even though both go through the same service), who did it
-(`actor`) and what moved:
-
-```json
-{ "quantity": { "from": 5000, "to": 7500 } }
-```
-
-A field resent at the value it already held is not recorded, so a one-field amendment never produces
-a row claiming it touched four. A cancellation records its status transition in the same shape, so
-reading the history needs one shape rather than two.
-
-**The table is append-only, enforced rather than documented.** A trigger raises on `UPDATE` and on
-`DELETE`, which holds whichever role connects, including the one that runs migrations. An audit
-trail the application can rewrite is not an audit trail. Deleting a trade cascades to its events and
-is therefore also refused, which matches the rule that a trade is never hard deleted.
-
-There is no authentication, so `actor` is the trade's own trader. That is an assumption, recorded
-below rather than hidden: a real system would use the authenticated user.
-
-### Logging and metrics
-
-One structured JSON line per request, carrying a correlation id taken from an incoming
-`x-request-id` or generated, echoed on the response header and included in every error body.
-
-`GET /metrics` exposes Prometheus text. Three numbers say whether the blotter is actually
-real-time rather than merely claiming to be: `blotter_socket_clients_connected`,
-`blotter_broadcasts_emitted_total`, and `blotter_broadcast_lag_seconds`, which measures the
-distance between a change committing and its broadcast leaving the server.
-
-### The simulated desk feed
-
-So the blotter is alive without someone clicking, the API simulates desk activity: it books new
-trades, and amends and cancels existing ones, roughly 70/20/10, on a jittered three to eight second
-interval. It writes through the same service as a human request, so it cannot drift from the real
-write path, and its rows are marked `LIVE_FEED` in the audit trail.
-
-| Variable | Default | Purpose |
-|---|---|---|
-| `LIVE_FEED_ENABLED` | `true` | Set false to silence the feed while demonstrating manually |
-| `LIVE_FEED_MIN_INTERVAL_MS` | `3000` | Shortest gap between actions |
-| `LIVE_FEED_MAX_INTERVAL_MS` | `8000` | Longest gap between actions |
-| `MAX_NOTIONAL_USD` | `50000000` | Desk notional ceiling for USD names |
-| `MAX_NOTIONAL_GBX` | `4000000000` | Desk notional ceiling for GBX names |
-| `LOG_LEVEL` | `info` | pino level |
-| `JWT_ACCESS_SECRET` | none, required | Signing key, refused under 32 characters |
-| `JWT_REFRESH_SECRET` | none, required | Signing key, refused under 32 characters |
-| `ACCESS_TOKEN_TTL_SECONDS` | `900` | Access token lifetime |
-| `REFRESH_TOKEN_TTL_SECONDS` | `604800` | Refresh token lifetime |
-| `SEED_USER_PASSWORD` | `blotter-demo-2026` | Password given to the demo accounts |
-| `AUTH_RATE_LIMIT` | `10` | Requests a minute on the credential endpoints |
-| `LOGIN_MAX_ATTEMPTS` | `5` | Failures before an account locks |
-
-## Running it
-
-### With Docker (recommended)
-
-Requires Docker with Compose v2. Nothing else, and no `.env` file.
+Each decision below: what was chosen, what it was chosen over, why, and what would change it.
+
+**One shared contract package.** Over hand-written types on each side. A field added to
+`trade_schema` reaches the API validation, the client types and the socket payload together, so
+the three cannot drift. Would change if the client were not TypeScript.
+
+**PostgreSQL.** Over SQLite. The API container runs on a read-only root filesystem, which a
+SQLite file cannot survive, and Postgres carries real enums, a `DECIMAL(18,6)` price and an
+append-only trigger. Would change if the brief asked for zero infrastructure.
+
+**Socket.IO, broadcasts only.** Over raw WebSocket or SSE, and over mutations on the socket.
+Reconnection with backoff comes for free and the event map is typed. Mutations stay on HTTP so
+they get the same validation, error handling and rate limiting as any other write. Would change if
+the client had to work behind a proxy that blocks upgrades and long-polling.
+
+**Keyset paging.** Over offset. The blotter inserts rows all day, so an offset computed on one
+request points somewhere else on the next: page two re-serves and skips rows. A cursor names a
+row. Would change if the list were static.
+
+**Cache patching, not refetching.** Every broadcast is applied to the cached list in place through
+one `apply_trade` function shared with the client's own mutations; a refetch happens only on a
+sequence gap or a reconnect. Over invalidating on every event, which would cost a request per
+broadcast and reset scroll. Would change if broadcasts carried patches instead of whole rows.
+
+**TanStack Table, headless.** Over AG Grid. AG Grid brings its own theme and DOM, which would mean
+the design tokens overriding a third-party stylesheet. Headless ships no styling, so the in-house
+primitives own the look, with react-virtual for the rows. Would change if the grid needed pivoting
+or grouping.
+
+**Real authentication, three roles.** Over none. A blotter carries counterparty names, sizes and
+prices, which is what a firm does not serve to anonymous readers. `VIEWER`, `TRADER` and `ADMIN`
+map to named permissions; routes require the permission, never the role, and a trader may only
+act on their own trades. Would change if the brief's guests-only reading were a requirement.
+
+**Amendment is a version, not a status.** Over an `AMENDED` status. The brief allows `ACTIVE` and
+`CANCELLED`; an amendment increments `version`, writes an audit row, and the grid shows a `v2`
+pill. Would change if the brief's status enum were widened.
+
+**Append-only audit enforced by a trigger.** Over a convention. An audit trail the application can
+rewrite is not an audit trail. Would change only for a database without triggers.
+
+**Mutations blocked while disconnected, never queued.** Over an offline queue. A confirmation for
+a trade the server has not accepted is a worse failure on a desk than a disabled button. The
+button says why it is disabled. Would change for a field app with intermittent connectivity.
+
+**Notional by symbol, not P&L.** Over a P&L board. A P&L needs a mark price and a cost-basis
+convention, and the brief supplies neither; inventing a mark would be inventing a financial
+convention. The positions page and the KPI strip are labelled notional. Would change the moment a
+market data feed existed.
+
+**Filters and sort in the URL.** Over component state. A filtered blotter is linkable, survives a
+reload, and the back button undoes a filter. Selection stays in memory. Would change if the grid
+were embedded in another page.
+
+**Prices in the instrument's currency, notional in its display currency.** London names are quoted
+in GBX (pence), as the exchange quotes them, and the notional column shows pounds by dividing by a
+hundred. No FX normalisation, so the desk notional limit is per currency. Would change with an FX
+source.
+
+The two design specs hold the rest: [the API](docs/superpowers/specs/2026-09-12-trade-api-design.md)
+and [the interface behaviour](docs/superpowers/specs/2026-09-12-interface-behaviour-design.md),
+each recording the options every decision was chosen from. The endpoints, payloads, errors and
+configuration are in [`docs/api_reference.md`](docs/api_reference.md).
+
+## Installation
+
+Requires Docker with Compose v2. Nothing else, and no `.env` file: compose carries development
+values and the API refuses a signing secret under 32 characters, so a placeholder cannot quietly
+become a production key.
 
 ```bash
-docker compose up --build
+git clone <this repository>
+cd tp-icap-take-home-assessment
+npm run start
 ```
 
-- Web app: <http://localhost:3000>
-- API: <http://localhost:5000/health> and <http://localhost:5000/ready>
-- Postgres: `localhost:5432`, user/password/database `blotter`
+`npm run start` builds the images and waits until all five services report healthy: Postgres,
+Redis, a one-shot migration, the API and the web app. First build takes a few minutes; later ones
+are cached. Without Docker, see [Running without Docker](#running-without-docker).
 
-Migrations run automatically on API start. If the trade table is empty, 500 realistic randomised
-trades are generated and inserted.
+## Running the application
 
-Stop and keep data with `docker compose down`, or discard it with `docker compose down -v`.
+| | |
+|---|---|
+| Web app | <http://localhost:3000> |
+| API | <http://localhost:5000/health>, <http://localhost:5000/ready>, <http://localhost:5000/metrics> |
+| Sign in | `jsmith` or `abrown` (traders), `mjones` (desk head), `viewer` (read only); password `blotter-demo-2026` |
 
-### Locally, without Docker
+An empty database is seeded with 500 realistic trades and the four accounts. A simulated desk
+then books, amends and cancels trades every three to eight seconds, so the blotter moves on its
+own; open it in two windows and watch the same rows change in both. Book a trade as `jsmith` in
+one window and it appears in the other. Sign in as `viewer` to see the booking controls disappear,
+and as `jsmith` to see another trader's trade greyed with "desk head only".
 
-Requires Node 22 or newer and a reachable PostgreSQL 17.
+`npm run stop` stops the stack and keeps the data. `docker compose down -v` discards it.
+
+Other root scripts:
+
+| Script | Does |
+|---|---|
+| `npm run dev` | The same stack, attached, with logs streaming; Ctrl+C stops it |
+| `npm run logs` | Follow the running stack's logs |
+| `npm run build` | Build the shared contract, the API and the web app locally |
+| `npm run typecheck` | `tsc --noEmit` in all three workspaces |
+| `npm run lint` | ESLint on the web app (the API and contract have no lint script by choice) |
+| `npm run db:generate` | Regenerate the Prisma client |
+| `npm run db:migrate` | Apply migrations to `DATABASE_URL` |
+| `npm run capture:readme` | Re-take the image at the top of this file from the running stack |
+
+### Running without Docker
+
+Requires Node 22 or newer. Postgres and Redis can still come from compose:
 
 ```bash
 npm install
 npm run build:shared
-
-# Point the API at your database. The repository never writes to your .env for you.
-# backend/.env needs at minimum:
-#   DATABASE_URL=postgresql://blotter:blotter@localhost:5432/blotter?schema=public
-
-npm run dev:backend    # http://localhost:5000
-npm run dev:frontend   # http://localhost:3000
+npm run db:generate
+npm run dev:deps          # Postgres and Redis only, from compose
+npm run dev:backend       # http://localhost:5000, reads backend/.env
+npm run dev:frontend      # http://localhost:3000
 ```
 
-`npm run build:shared` is not optional on a fresh clone: both apps import `@blotter/shared` from
-its built output.
+`backend/.env` needs at least `DATABASE_URL`, `REDIS_URL`, `JWT_ACCESS_SECRET` and
+`JWT_REFRESH_SECRET`; the full list is in [`docs/api_reference.md`](docs/api_reference.md). The
+repository never writes to your `.env` for you. `npm run build:shared` and `npm run db:generate`
+are not optional on a fresh clone: both apps import the shared contract from its built output, and
+the Prisma client is generated rather than committed.
 
-## Continuous integration
+## Running the tests
 
-`.github/workflows/ci.yml` runs on every push and pull request: install, build the shared
-contract, generate the Prisma client, typecheck, lint, the unit and route suites, then the
-migrations and the integration tier against a real Postgres service container. The integration
-step is the reason the service exists in the workflow; without it those tests skip and a green run
-would prove less than it appears to.
+| Script | Tier | Needs | Observed |
+|---|---|---|---|
+| `npm test` | Unit and route tests in all three workspaces: contract, service and route suites against an in-memory repository, the cache-patching and formatting logic on the client | nothing | 238 pass: 30 shared, 170 backend, 38 frontend |
+| `npm run test:integration` | Repository, refresh-token and positions tests against real Postgres and Redis, including the append-only trigger | the compose stack | 35 pass |
+| `npm run test:e2e` | Playwright, two browser contexts: a trade booked in one appears in the other, follows its amend and cancel, a concurrent amend is refused with a 409, and the role rules hold | the compose stack | 7 pass |
+| `npm run test:load` | k6, four virtual users for sixty seconds inside the API's own rate limits, p95 under 300ms | the compose stack and [k6](https://k6.io) | 259 requests, 0 failed, p95 78ms; list p95 104ms, create p95 28ms |
+| `npm run test:lighthouse` | Lighthouse on the login page and the signed-in blotter, through Playwright's Chromium; reports in `frontend/lighthouse/` | the compose stack | login 100 / 98 / 96 / 100, blotter 100 / 96 / 100 / 100 (performance, accessibility, best practices, SEO, desktop preset) |
+| `npm run test:all` | The first three in sequence | the compose stack | |
 
-## Testing
+The browser tier needs Playwright's Chromium once: `cd frontend && npx playwright install chromium`.
+The e2e suite signs each demo account in
+once per run and shares the session across its tests, because the API limits the credential
+endpoints to ten requests a minute per address and the suite tests the stack as shipped.
 
-```bash
-npm test          # every workspace
-npm run typecheck # every workspace
-```
+CI (`.github/workflows/ci.yml`) runs install, the shared build, typecheck, lint, the unit tier,
+the migrations and the integration tier against Postgres and Redis service containers on every
+push.
 
-Contract tests live with the schema in `shared/`, and cover the derived shapes rather than
-restating the model. API tests use supertest against the real app, with collaborators injected as
-doubles, so no framework internals are mocked. The seed generator is tested for the properties
-that make its output realistic: round lots, prices near each instrument's own level, timestamps
-inside a trading session, and determinism for a given seed.
-
-The service and route tests run against `in_memory_trade_repository.ts`, a second real
-implementation of the repository port, rather than a mock. A test that passes there is asserting
-behaviour, not that a spy was called, and the same suite would pass against Postgres.
-
-`socket_broadcast.test.ts` is the one worth reading. It boots the real HTTP server and Socket.IO on
-an ephemeral port, connects two Socket.IO clients standing in for two browser tabs, creates a trade
-over the network, and asserts the second tab sees it without asking. That is the brief's real-time
-requirement stated as an assertion rather than a claim, and it also covers the envelope, sequence
-monotonicity, and the rejection of a socket from an origin that is not on the allowlist.
-
-The database-backed repository tier is separate. It is excluded from `npm test` by the default
-vitest config and lives behind `vitest.integration.config.ts`, so the cheap tier runs identically
-everywhere instead of quietly changing shape when TEST_DATABASE_URL happens to be set. Run it by
-pointing it at a database:
-
-```bash
-TEST_DATABASE_URL=postgresql://blotter:blotter@localhost:5432/blotter npm run test:integration --workspace backend
-```
-
-Without `TEST_DATABASE_URL` it skips rather than fails, so a developer with no Postgres running
-still gets a green suite. It creates its rows inside a run-scoped `book` and deletes them
-afterwards.
-
-### What has been verified against the running containers
-
-On 2026-09-11, against `docker compose up`:
-
-- 70 unit and route tests pass; the 8 database-backed repository tests pass against the containerised
-  Postgres.
-- 28 end-to-end checks pass against the running API, including two Socket.IO clients standing in for
-  two browser tabs: a trade created over HTTP reaches both without a refresh, and so do the amend and
-  cancel events.
-- Optimistic concurrency holds: a stale `PATCH` is refused with 409 naming the current version, a
-  cancelled trade cannot be amended, and a second cancel is refused.
-- A cold start on an empty volume applies the migration and seeds 500 trades: 12 symbols, 8 traders,
-  4 books, 10 counterparties, 5.8% cancelled, AAPL priced 219.00 to 236.24 against the brief's 227.45
-  anchor.
-- The live feed books, amends and cancels trades on its own, and connected clients receive those
-  events.
-- Hardening holds at runtime: the backend runs as non-root `node`, the root filesystem is read-only
-  and rejects writes, all capabilities are dropped, and `no-new-privileges` is set.
-- Data survives a container restart, and the seed does not re-run when the table is populated.
-- `docker compose stop` logs `SIGTERM received, shutting down` then `shutdown complete` and exits
-  0 in about a second, rather than waiting out the SIGKILL timeout.
-
-Since that run the API gained keyset paging, currency, the trade event log, problem+json errors,
-request logging, metrics, the socket Origin check and the whole of authentication, all on a machine
-with no Docker engine available. CI covers the gap: 221 tests pass there, 33 of them against real
-Postgres and Redis service containers, including the append-only trigger, the currency migration and
-the refresh-token replay detection. **The compose stack has not been run since any of it**, and it
-now has a fourth service and a native build stage, so one `docker compose up -d --wait` is the first
-thing to do before the interface work.
-
-The audit trail and the widened query surface were added after that run, on a machine with no
-Docker engine available. CI covered the gap: its Postgres service container ran all 15
-database-backed tests, the seven new audit ones included, and they pass. The Prisma transaction
-that writes the amendment row, and the JSONB round trip through the shared schema, are therefore
-verified against a real database, just not against the compose stack on this machine.
-
-CI also caught a defect in the test wiring on its first run. `npm test` matched the integration
-suffix, and the job sets `TEST_DATABASE_URL`, so the skip guard never fired and the
-database-backed tests ran before the migrations had been applied. The two tiers now sit behind
-separate vitest configs, which is what the suffix was there for.
-
-Two defects were found by running the containers rather than reasoning about them, and both are
-fixed:
-
-- The API's graceful shutdown never ran. PID 1 was `npm run start`, and npm does not forward
-  SIGTERM to its child, so `shutdown()` in `backend/src/index.ts` was dead code inside Docker.
-  Migrations now run as their own one-shot compose service, which lets node be PID 1.
-- With the handler finally running, it exited 1 on every stop. `io.close()` also closes the HTTP
-  server it is attached to, so the following `http_server.close()` answered
-  `ERR_SERVER_NOT_RUNNING` and the shutdown reported failure. That specific code is now treated as
-  the expected path.
+The test worth reading is `backend/src/realtime/socket_broadcast.test.ts`: it boots the real HTTP
+server and Socket.IO, connects two clients, creates a trade over the network, and asserts the
+second client sees it. `frontend/e2e/live_sync.spec.ts` is the same claim in two real browsers.
+`frontend/src/lib/query/apply_broadcast.test.ts` covers where a broadcast lands in a sorted,
+filtered, paged view, and that a stale version is dropped.
 
 ## Assumptions
 
-- No authentication. The brief does not ask for it, and a half-built login is worth less than a
-  clear statement of what production would need: short-lived access tokens with rotating refresh
-  tokens, a global auth guard, and permission checks in the service layer.
-- `trader` is a free-text desk code, not a user account.
-- Changes are attributed to the trade's own trader. With no authentication and no actor field on
-  the payload there is no better answer, and a constant actor would make the audit trail
-  unreadable. A real system would use the authenticated user.
-- Notional ceilings are per currency rather than normalised through an FX rate. A rate would have
-  to be invented, and inventing a financial convention is worse than naming the limit.
-- The seed skips weekends but not exchange holidays. A real calendar is per venue and this universe
-  spans two.
-- The event sequence on broadcasts restarts when the process does. A client cannot tell a restart
-  from a gap on sequence alone, which is why the client needs a resync path rather than a promise.
-- Sessions live in Redis with no persistence, so a Redis restart signs everybody out. For a service
-  whose sessions are worth minutes rather than money, that is an acceptable failure mode and not
-  data loss.
+- A trade's `trader` comes from the access token. You book as yourself. This diverges from the
+  brief's sample payload, which shows `trader` as a client field.
+- The brief states the model twice and the statements disagree; the model carries every field from
+  both, plus `version`, `currency`, `createdAt` and `updatedAt`.
+- The browser reaches the API at `http://localhost:5000`. Another address is a build argument,
+  `NEXT_PUBLIC_API_URL`, because Next inlines it.
 - The demo accounts share a documented password. They exist so a reviewer can sign in to a
-  throwaway local stack, and nothing about that arrangement should survive contact with a real
-  deployment.
-- The refresh cookie uses `SameSite=Lax`, which is enough while the interface and the API share a
-  site, as they do on localhost. Splitting them across domains would need `None` with `Secure`.
-- All prices are quoted in the instrument's own currency. There is no currency column, because the
-  brief's payload has none, and a single-currency blotter is the smaller lie than an unpopulated
-  field.
-- One API process. Rate limits are in-process and would need a shared Redis store across replicas.
+  throwaway local stack, and nothing about that arrangement should survive a real deployment.
+- Sessions live in Redis with no persistence, so a Redis restart signs everybody out.
+- The broadcast sequence restarts when the API process does. The client treats a decrease as a
+  restart and resyncs, which is why it needs a resync path rather than a promise.
+- The seed skips weekends but not exchange holidays. A real calendar is per venue.
+- The refresh cookie is `SameSite=Lax`, enough while the interface and API share a site, as they
+  do on localhost. Splitting them across domains needs `None` with `Secure`.
+- All times are shown in UTC, because a session runs on the venue's clock, not the viewer's.
 
 ## Trade-offs accepted
 
-- **In-process rate limiting.** Correct for one container, wrong for a cluster. Noted rather than
-  built.
-- **`prisma` ships as a production dependency** so `prisma migrate deploy` can run at container
-  start. It costs image size and buys a stack that comes up correctly from `docker compose up`
-  with no manual migration step.
-- **No path aliases in the backend.** Under ESM with `nodenext`, TypeScript path aliases are not
-  rewritten at emit and break at runtime without an extra build step. The source tree is shallow
-  enough that relative imports never exceed one level.
+- **Hooks are camelCase in a snake_case codebase.** React's rules-of-hooks lint requires the
+  `useX` form. Files stay snake_case; only the hook names follow the framework.
+- **The React Compiler is not enabled.** TanStack Table v8 returns functions it cannot memoise,
+  so the grid opts out with `'use no memo'` and memoises by hand. v9 shipped five weeks before
+  submission and was not adopted.
+- **The e2e suite shares sign-ins** rather than isolating every test, because of the auth rate
+  limit above. Each test resets the page client-side instead.
+- **A row that leaves a filtered view can still be a stored cursor.** If a trade is cancelled while
+  the view is filtered to `ACTIVE`, the page cursor that named it still names a real row and the
+  next page still resolves; a stale page is corrected by the next resync or refresh.
+- **`prisma` ships as a production dependency** so the one-shot migration container can run
+  `prisma migrate deploy`. Image size against a stack that comes up correctly on its own.
+- **No path aliases in the backend.** Under ESM with `nodenext`, TypeScript does not rewrite them
+  at emit. The source tree is shallow enough that relative imports never exceed one level.
 - **Five high-severity `npm audit` findings remain**, all reached through the Prisma 7 toolchain
-  via `@prisma/config`. The suggested fix downgrades Prisma to 6.x, a breaking change, and the
-  vulnerable paths are build-time rather than runtime.
-- **The frontend page is still the scaffold.** It is replaced wholesale by the blotter UI in the
-  next phase, so styling it now would be work thrown away.
+  at build time. The suggested fix downgrades Prisma to 6, a breaking change.
+- **Lighthouse and the e2e suite run against a live stack, not in CI.** They need the built images
+  and a browser; the numbers above are observed locally and quoted as such.
+- **The positions integration test races the simulated feed.** It reads before and after its own
+  writes on a shared database; a feed action on the same symbol inside that window is possible
+  and rare.
+
+## Not built, on purpose
+
+- **P&L.** Needs a mark price and a cost-basis convention. Notional by symbol is shown instead.
+- **FX normalisation.** The notional ceiling is per currency rather than converted at a rate the
+  repository would have had to invent.
+- **Registration, password reset, profile edit or account deletion.** A trader code is issued by
+  the desk, and deleting a trader stamped on historical trades would break attribution.
+- **An offline mutation queue.** Blocked with a reason instead, see the decisions.
+- **`Idempotency-Key`, `ETag` and `If-Match`, `SERIALIZABLE` isolation, Socket.IO connection state
+  recovery, a Redis adapter for a second API node.** Each is a correct next step for a cluster and
+  none is needed for one container; the version column and the sequence resync cover the cases
+  they would.
+- **A design-system workspace package.** One consumer today; the primitives live in
+  `frontend/src/components/ui/` with the same rules a package would carry.
+- **Column resizing, reordering, grouping, CSV export.** The brief asks for sorting and basic
+  filtering.
+- **A cancellation reason and an `AMENDED` status.** Both were drawn, both were removed on purpose:
+  a trader is not asked to justify a cancellation, and the brief's status enum has two values.
+- **Cloud deployment.** The brief accepts a repository that installs and runs locally on any OS,
+  which this is.
 
 ## AI usage
 
-AI-assisted development was used throughout. See [`docs/ai_usage_report.md`](docs/ai_usage_report.md)
-for how, and [`docs/prompt_log/`](docs/prompt_log/index.md) for the prompts themselves.
+AI-assisted development was used throughout, under a rule that no agent decides anything about the
+system. How, and where suggestions were taken or refused, is in
+[`docs/ai_usage_report.md`](docs/ai_usage_report.md); the prompts themselves are in
+[`docs/prompt_log/`](docs/prompt_log/index.md). The line-by-line check against the brief is in
+[`docs/artifacts/submission_verification.html`](docs/artifacts/submission_verification.html).

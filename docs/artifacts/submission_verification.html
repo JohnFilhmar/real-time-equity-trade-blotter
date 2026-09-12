@@ -1,0 +1,238 @@
+<title>Submission verification</title>
+<style>
+  :root {
+    --ground: #f5f6f8;
+    --surface: #ffffff;
+    --surface_sunk: #eef0f4;
+    --ink: #151a21;
+    --ink_muted: #5b6675;
+    --rule: #dce0e6;
+    --rule_strong: #c3cad3;
+    --accent: #12596e;
+    --pass: #0e7a50;
+    --fail: #a8332a;
+    --warn: #8a5a06;
+    --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --body: "Newsreader", Georgia, "Times New Roman", serif;
+    --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  }
+  :root:not([data-theme="light"]) { color-scheme: light; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0f1319; --surface: #161b22; --surface_sunk: #1c222b; --ink: #e6eaf0; --ink_muted: #94a1b1;
+      --rule: #262d38; --rule_strong: #38424f; --accent: #62aec6; --pass: #3ac48d; --fail: #e47365; --warn: #d9a441;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0f1319; --surface: #161b22; --surface_sunk: #1c222b; --ink: #e6eaf0; --ink_muted: #94a1b1;
+    --rule: #262d38; --rule_strong: #38424f; --accent: #62aec6; --pass: #3ac48d; --fail: #e47365; --warn: #d9a441;
+    color-scheme: dark;
+  }
+  body { background: var(--ground); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.6; padding-inline: 20px; padding-block: 56px 96px; margin: 0; }
+  .wrap { max-width: 84ch; margin-inline: auto; display: flex; flex-direction: column; gap: 48px; }
+  h1, h2, h3 { font-family: var(--display); margin: 0; line-height: 1.15; text-wrap: balance; }
+  h1 { font-size: clamp(2rem, 6vw, 2.8rem); font-weight: 700; letter-spacing: -0.02em; }
+  h2 { font-size: 1.4rem; font-weight: 600; padding-bottom: 10px; border-bottom: 2px solid var(--rule_strong); }
+  p { margin: 0; }
+  a { color: var(--accent); text-underline-offset: 3px; }
+  .eyebrow { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink_muted); }
+  header { display: flex; flex-direction: column; gap: 14px; }
+  .standfirst { font-size: 1.12rem; color: var(--ink_muted); max-width: 64ch; }
+  .meta { display: flex; flex-wrap: wrap; gap: 10px 26px; font-family: var(--mono); font-size: 0.78rem; color: var(--ink_muted); padding-top: 14px; border-top: 1px solid var(--rule); }
+  .meta b { color: var(--ink); font-weight: 500; }
+  section { display: flex; flex-direction: column; gap: 18px; }
+  .scroller { overflow-x: auto; border: 1px solid var(--rule); border-radius: 3px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-family: var(--display); font-size: 0.84rem; min-width: 700px; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink_muted); background: var(--surface_sunk); white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  code { font-family: var(--mono); font-size: 0.85em; background: var(--surface_sunk); padding: 1px 5px; border-radius: 2px; }
+  .flag { font-family: var(--mono); font-size: 0.66rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; padding: 2px 7px; border-radius: 2px; border: 1px solid currentColor; }
+  .pass { color: var(--pass); }
+  .fail { color: var(--fail); }
+  .warn { color: var(--warn); }
+  .scoreboard { display: flex; flex-wrap: wrap; gap: 14px; }
+  .score { flex: 1 1 150px; background: var(--surface); border: 1px solid var(--rule); border-radius: 3px; padding: 16px 18px; display: flex; flex-direction: column; gap: 4px; }
+  .score b { font-family: var(--display); font-size: 1.7rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
+  .score span { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink_muted); }
+  .callout { background: var(--surface); border: 1px solid var(--rule); border-left: 3px solid var(--accent); border-radius: 3px; padding: 18px 22px; display: flex; flex-direction: column; gap: 10px; }
+  .callout.warn { border-left-color: var(--warn); }
+  ul { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 8px; }
+  @media (max-width: 620px) { body { font-size: 16px; padding-block: 40px 72px; } .wrap { gap: 36px; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">TP ICAP take-home &middot; submission verification</p>
+    <h1>The brief, checked line by line</h1>
+    <p class="standfirst">
+      Every requirement, deliverable and assessment criterion in <code>take-home-assessment.md</code>, with a
+      pass or fail and the evidence it rests on. Nothing here was marked as passing without being observed
+      passing; anything not run says so.
+    </p>
+    <div class="meta">
+      <span>Verified <b>2026-09-12, 10:54 UTC</b></span>
+      <span>Branch <b>worktree-submission</b> at <b>f4847d7</b></span>
+      <span>Platform <b>Windows 11, Docker Desktop 28.5, Node 22.12</b></span>
+    </div>
+  </header>
+
+  <section>
+    <div class="scoreboard">
+      <div class="score"><b class="pass">37</b><span>lines pass</span></div>
+      <div class="score"><b class="warn">1</b><span>pass with a named gap</span></div>
+      <div class="score"><b class="fail">1</b><span>deliberately not built</span></div>
+      <div class="score"><b>0</b><span>marked pass without running</span></div>
+    </div>
+    <div class="callout">
+      <h3>How this was checked</h3>
+      <p>
+        From a fresh worktree: <code>npm install</code>, <code>npm run build:shared</code>, <code>npm run db:generate</code>,
+        then <code>npm run typecheck</code>, <code>npm run lint</code> and <code>npm test</code>. The compose stack was
+        rebuilt with <code>npm run start</code> and the integration, browser, load and audit tiers were run against it.
+        Two browser contexts, one booking and the other watching, were driven by Playwright rather than by hand.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Technology requirements</h2>
+    <div class="scroller"><table>
+      <thead><tr><th>Requirement</th><th>Result</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>React frontend written in TypeScript</td><td><span class="flag pass">pass</span></td><td>Next.js 16.3.4, React 19.2.8, TypeScript strict; <code>frontend/src</code>. <code>npm run typecheck</code> clean.</td></tr>
+        <tr><td>TypeScript backend API</td><td><span class="flag pass">pass</span></td><td>Express 5 under <code>backend/src</code>; TypeScript strict with <code>exactOptionalPropertyTypes</code>.</td></tr>
+        <tr><td>A database for persistence</td><td><span class="flag pass">pass</span></td><td>PostgreSQL 17 via Prisma 7, four hand-written migrations under <code>backend/prisma/migrations</code>. Data survives a container restart.</td></tr>
+        <tr><td>Real-time updates delivered to the UI (WebSockets, Socket.IO or SSE)</td><td><span class="flag pass">pass</span></td><td>Socket.IO. <code>backend/src/realtime/socket_broadcast.test.ts</code> proves a second client receives a trade; <code>frontend/e2e/live_sync.spec.ts</code> proves it in two browsers.</td></tr>
+        <tr><td>Local execution via Docker and/or simple setup instructions</td><td><span class="flag pass">pass</span></td><td><code>npm run start</code> brings up five services and waits for health. Observed on Windows; macOS and Linux not run here (the images are <code>node:22-alpine</code> and <code>postgres:17-alpine</code>, and CI runs the same install on Ubuntu).</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Trade model and sample data</h2>
+    <div class="scroller"><table>
+      <thead><tr><th>Requirement</th><th>Result</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Minimum fields: id, symbol, quantity, price, side, trader, tradeDate, status</td><td><span class="flag pass">pass</span></td><td><code>shared/src/schemas/trade.ts</code> carries every field from both of the brief's statements: <code>id</code> and <code>tradeId</code>, <code>tradeTimestamp</code>, <code>book</code>, <code>counterparty</code>, plus <code>currency</code>, <code>version</code>, <code>createdAt</code>, <code>updatedAt</code>.</td></tr>
+        <tr><td>Status is ACTIVE or CANCELLED</td><td><span class="flag pass">pass</span></td><td>Two-valued enum in the schema and the database. An amendment is a version, not a status.</td></tr>
+        <tr><td>Realistic randomised data, 100 to 1,000 trades</td><td><span class="flag pass">pass</span></td><td>500 seeded on first start (<code>SEED_TRADE_COUNT</code>), round lots, prices near each instrument's level, London names in pence, weekday sessions. Asserted in <code>generate_trades.test.ts</code>.</td></tr>
+        <tr><td>Optional: generate on startup when no data exists</td><td><span class="flag pass">pass</span></td><td><code>seed_trades_if_empty</code> and <code>seed_users_if_empty</code> in <code>backend/src/index.ts</code>. A simulated desk then keeps booking, amending and cancelling.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Functional requirements</h2>
+    <div class="scroller"><table>
+      <thead><tr><th>Requirement</th><th>Result</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Display a table or grid showing all trades</td><td><span class="flag pass">pass</span></td><td>TanStack Table over react-virtual, <code>frontend/src/components/blotter/TradeGrid.tsx</code>; keyset-paged so every trade is reachable. Card list on phones.</td></tr>
+        <tr><td>Sorting</td><td><span class="flag pass">pass</span></td><td>Server-side on every displayed column, <code>aria-sort</code> on the header, sort in the URL. Asserted in <code>e2e/blotter.spec.ts</code> (quantity ascending).</td></tr>
+        <tr><td>Basic filtering</td><td><span class="flag pass">pass</span></td><td>Symbol, side, status, trader, book, counterparty and a trade-date range, all server-side, all in the URL, each removable as a chip. Asserted in <code>e2e/blotter.spec.ts</code> (side SELL).</td></tr>
+        <tr><td>Refreshing data from the API</td><td><span class="flag pass">pass</span></td><td>Refresh button refetches the list; positions and the audit trail have their own. Asserted in <code>e2e/blotter.spec.ts</code>.</td></tr>
+        <tr><td>Create a trade, with validation where appropriate</td><td><span class="flag pass">pass</span></td><td>The ticket runs the same zod schema the server runs; the server adds the symbol allowlist, the future-date bound and the notional ceiling. Field errors land beside inputs. Asserted in <code>e2e/live_sync.spec.ts</code>.</td></tr>
+        <tr><td>Amend an existing trade</td><td><span class="flag pass">pass</span></td><td>Quantity, price, book and counterparty; version echoed; a 409 shows what moved. Asserted in <code>e2e/live_sync.spec.ts</code> and <code>e2e/conflict.spec.ts</code>.</td></tr>
+        <tr><td>Cancel a trade, a simple status transition</td><td><span class="flag pass">pass</span></td><td>Named action, confirm dialog with a recap, no reason field. Row stays, struck through. Asserted in <code>e2e/live_sync.spec.ts</code>.</td></tr>
+        <tr><td>Live updates: changes by one client visible to all connected clients without a refresh</td><td><span class="flag pass">pass</span></td><td>Two browser contexts in <code>e2e/live_sync.spec.ts</code>: booked in one, visible in the other, then its amend and cancel. Observed passing against the compose build: 7 of 7 in 24 seconds.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Non-functional requirements</h2>
+    <div class="scroller"><table>
+      <thead><tr><th>Expectation</th><th>Result</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Clean code</td><td><span class="flag pass">pass</span></td><td>Typecheck and lint clean in every workspace; one canonical schema per model; routes parse, delegate, answer; JSDoc on every export. Three backend files exceed the 250-line house limit (see gaps).</td></tr>
+        <tr><td>Unit tests</td><td><span class="flag pass">pass</span></td><td><code>npm test</code>: 238 pass (30 shared, 170 backend, 38 frontend), no skips.</td></tr>
+        <tr><td>Sensible architecture</td><td><span class="flag pass">pass</span></td><td>Shared contract package; service layer behind repository ports with an in-memory and a Prisma implementation; broadcaster port; providers at the root, server state in TanStack Query, one cache-patch function for sockets and mutations alike.</td></tr>
+        <tr><td>Appropriate use of TypeScript</td><td><span class="flag pass">pass</span></td><td>No <code>any</code>, no silencing casts; types inferred from schemas; typed socket event maps on both sides; <code>unknown</code> narrowed at every boundary.</td></tr>
+        <tr><td>Reasonable error handling</td><td><span class="flag pass">pass</span></td><td>RFC 9457 problem documents with a correlation id; the client parses them into one <code>ApiError</code>; seven designed table states; a 409 shows the diff instead of retrying.</td></tr>
+        <tr><td>Automated testing where appropriate</td><td><span class="flag pass">pass</span></td><td>Unit and route tier, integration tier against Postgres and Redis (35), Playwright (7), k6 and Lighthouse scripts. CI runs the first two on every push.</td></tr>
+        <tr><td>Thoughtful UX</td><td><span class="flag pass">pass</span></td><td>Built to <a href="../superpowers/specs/2026-09-12-interface-behaviour-design.md">the interface spec</a>: three connection states, mutations blocked with a reason, flash throttle with a direction arrow, scroll pinning with a count pill, ARIA grid with roving row focus, permission-aware controls, three themes, phone layout.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Deliverables</h2>
+    <div class="scroller"><table>
+      <thead><tr><th>Deliverable</th><th>Result</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>README.md with the six sections</td><td><span class="flag pass">pass</span></td><td>Architecture decisions, installation, running, tests, assumptions, trade-offs, in the brief's order, plus a lead image and a not-built section.</td></tr>
+        <tr><td>frontend/</td><td><span class="flag pass">pass</span></td><td>Next.js app, Dockerfile, e2e suite, audit and capture scripts.</td></tr>
+        <tr><td>backend/</td><td><span class="flag pass">pass</span></td><td>Express API, Prisma schema and migrations, Dockerfile.</td></tr>
+        <tr><td>database/</td><td><span class="flag pass">pass</span></td><td>Schema documentation pointing at the Prisma schema and migrations, which are the source of truth.</td></tr>
+        <tr><td>docker-compose.yml (optional but preferred)</td><td><span class="flag pass">pass</span></td><td><code>docker-compose.yaml</code>: Postgres, Redis, one-shot migrate, API, web, each with a healthcheck, non-root, dropped capabilities.</td></tr>
+        <tr><td>AI usage report</td><td><span class="flag pass">pass</span></td><td><code>docs/ai_usage_report.md</code>: tools, method, sample prompts, decisions influenced, accepted and rejected suggestions, corrected mistakes.</td></tr>
+        <tr><td>Prompt log</td><td><span class="flag pass">pass</span></td><td><code>docs/prompt_log/</code>, one file per agent, verbatim prompts with two-sentence outcomes, appended as the work happened.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Bonus ideas</h2>
+    <div class="scroller"><table>
+      <thead><tr><th>Idea</th><th>Result</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Audit trail</td><td><span class="flag pass">pass</span></td><td>Append-only <code>trade_event</code> table enforced by a trigger; per-trade history in the drawer and a global feed at <code>/audit</code>.</td></tr>
+        <tr><td>Position summary: net positions by symbol</td><td><span class="flag pass">pass</span></td><td><code>GET /api/v1/positions</code> and the positions page: net, bought, sold, gross notional, trade count per symbol.</td></tr>
+        <tr><td>P&amp;L view</td><td><span class="flag fail">not built</span></td><td>Deliberately. A P&amp;L needs a mark price and a cost-basis convention that the brief does not supply. Notional is shown and labelled as such.</td></tr>
+        <tr><td>User authentication</td><td><span class="flag pass">pass</span></td><td>Rotating refresh tokens in an httpOnly cookie, bcrypt, lockout, three roles mapped to permissions, ownership rule, authenticated socket handshake.</td></tr>
+        <tr><td>Trade validation rules</td><td><span class="flag pass">pass</span></td><td>Positive quantity and price, symbol allowlist, future-date bound, per-currency notional ceiling, trader from the token.</td></tr>
+        <tr><td>Virtualised grid</td><td><span class="flag pass">pass</span></td><td>TanStack Table with react-virtual; only the visible window renders, <code>aria-rowcount</code> carries the server total.</td></tr>
+        <tr><td>Containerisation</td><td><span class="flag pass">pass</span></td><td>Multi-stage Dockerfiles, compose with healthchecks, resource limits, read-only root filesystems.</td></tr>
+        <tr><td>Deployment: cloud, or a repository that installs and runs locally, OS agnostic</td><td><span class="flag warn">pass, one OS observed</span></td><td>Local repository route. Run and verified on Windows 11; CI runs on Ubuntu; macOS not run.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Test tiers, as observed</h2>
+    <div class="scroller"><table>
+      <thead><tr><th>Tier</th><th>Command</th><th>Observed</th></tr></thead>
+      <tbody>
+        <tr><td>Typecheck</td><td><code>npm run typecheck</code></td><td>Clean, three workspaces.</td></tr>
+        <tr><td>Lint</td><td><code>npm run lint</code></td><td>Clean (frontend; the API and contract have no lint script by the owner's choice).</td></tr>
+        <tr><td>Unit and route</td><td><code>npm test</code></td><td>238 pass, 0 skipped.</td></tr>
+        <tr><td>Integration</td><td><code>npm run test:integration</code></td><td>35 pass, 2 files, against the compose Postgres and Redis.</td></tr>
+        <tr><td>Browser end to end</td><td><code>npm run test:e2e</code></td><td>7 pass in 24 seconds against the compose build, one worker, two browser contexts where the journey needs them.</td></tr>
+        <tr><td>Load</td><td><code>npm run test:load</code></td><td>k6, 4 virtual users, 60 seconds: 259 requests, 0 failed, 319 of 319 checks, p95 78ms overall, list p95 104ms, create p95 28ms. Both thresholds met.</td></tr>
+        <tr><td>Page audit</td><td><code>npm run test:lighthouse</code></td><td>Desktop preset. Login: performance 100, accessibility 98, best practices 96, SEO 100. Blotter, signed in: 100, 96, 100, 100. Reports in <code>frontend/lighthouse/</code>, not committed.</td></tr>
+        <tr><td>Compose stack</td><td><code>npm run start</code></td><td>Five services healthy: database, redis, migrate (exited 0, four migrations applied), backend, frontend. The redis service needed a fix found only by running it (see the README's decisions and the prompt log).</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Assessment criteria</h2>
+    <div class="scroller"><table>
+      <thead><tr><th>Criterion</th><th>Weight</th><th>Where it is demonstrated</th></tr></thead>
+      <tbody>
+        <tr><td>Engineering quality: code quality, project structure, maintainability</td><td>30%</td><td>Workspaces by role; one schema per model; ports and two repository implementations; JSDoc; commit history in logical steps; the prompt log showing who decided what.</td></tr>
+        <tr><td>TypeScript usage: type safety, domain modelling, API contracts</td><td>20%</td><td><code>shared/</code> as the contract both sides import; typed socket event maps; no <code>any</code>; problem documents and envelopes parsed at the client boundary.</td></tr>
+        <tr><td>Full stack design: interaction, database, API</td><td>20%</td><td>Keyset paging, optimistic concurrency, the broadcast envelope with a sequence, cache patching with gap resync, RFC 9457 errors, append-only audit, permissions enforced server-side and mirrored in the interface.</td></tr>
+        <tr><td>User experience: usability, responsiveness, error handling</td><td>10%</td><td>The interface spec implemented: table states, connection states, flash with direction, keyboard, ARIA, three themes, tablet and phone layouts, conflict shown as a diff.</td></tr>
+        <tr><td>Testing: unit and integration, sensible coverage</td><td>10%</td><td>238 unit and route tests, 35 integration against real datastores, 7 browser journeys including the brief's literal acceptance criterion, a load script inside the API's own limits.</td></tr>
+        <tr><td>Communication: README, AI usage report, explanation of decisions</td><td>10%</td><td>README in the brief's order with four-line decisions and a not-built section; AI report naming rejections; two specs recording the options each decision came from; this table.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Gaps named rather than hidden</h2>
+    <div class="callout warn">
+      <ul>
+        <li>P&amp;L is not built; notional by symbol stands in and is labelled.</li>
+        <li>Three backend files (<code>prisma_trade_repository.ts</code>, <code>in_memory_trade_repository.ts</code>, <code>trade_service.ts</code>) are over the 250-line house limit. Splitting them is its own change and is awaiting the owner's call.</li>
+        <li>The seeded (startup) generator still emits six-decimal prices; only the live feed was rounded. Awaiting the owner's call, since rounding changes the deterministic dataset.</li>
+        <li>The positions integration test races the simulated feed on a shared database. Possible, rare, noted.</li>
+        <li>macOS was not run. Windows observed; Ubuntu through CI.</li>
+        <li>Lighthouse and the browser tier run locally against the built stack, not in CI.</li>
+        <li>The frontend calls the API at a build-time address. Serving the two from different hosts needs <code>NEXT_PUBLIC_API_URL</code> at build and <code>CORS_ORIGINS</code> at run.</li>
+      </ul>
+    </div>
+  </section>
+</div>

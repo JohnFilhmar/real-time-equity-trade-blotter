@@ -1,8 +1,17 @@
 # Trade API design
 
 **Date:** 2026-09-12
-**Status:** approved, not yet implemented
+**Status:** approved, then implemented. Superseded in places by the code, see below
 **Branch:** `worktree-trade-api`
+
+> **Superseded, 2026-09-12.** This document is the design as approved before the build. The code
+> and the README are the truth where they differ, and they differ in four places that were decided
+> during the build: paging is keyset with a `cursor` and `next_cursor`, not `offset`; passwords are
+> hashed with bcrypt, not argon2id; refresh-token families and rate-limit counters live in Redis,
+> not Postgres, and compose runs a Redis service; and the access token carries `username`,
+> `trader_code` and `role` alongside `sub`. Two endpoints were added after this document,
+> `GET /positions` and `GET /trades/events`, both described in the README. The decisions table and
+> the auth reasoning below are unchanged and still hold.
 
 ## Why this exists
 
