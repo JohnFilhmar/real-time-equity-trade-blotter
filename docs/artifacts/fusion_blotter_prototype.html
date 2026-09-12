@@ -1,4 +1,34 @@
 <title>Fusion Blotter Prototype</title>
+
+<!--
+  SCOPE NOTE, 2026-09-12.
+
+  This prototype is the reference for the visual system and the core interactions. It is NOT a
+  complete behavioural target, and it is deliberately not being brought up to date, because
+  implementing the same decisions twice, once here and once in the real frontend, buys nothing.
+
+  Accurate here: tokens and the three theme states, density, glass, type, the grid, sorting,
+  filtering, booking, amending, cancelling, live price ticking, and the reconnect lifecycle.
+
+  Decided AFTER this file was last built, and therefore absent from it. The specs are authoritative
+  for all of these:
+    U-M4   a direction arrow on the row flash; the tint alone is here
+    U-M5   scroll pinning and the "n new trades" count pill
+    U-M6   requestAnimationFrame coalescing and the 333ms per-cell flash throttle
+    U-M8   mutations blocked while disconnected; here they are blocked only when already cancelled
+    U-M9   the RESYNCING third connection state
+    U-M12  arrow-key row navigation, Home and End
+    ARIA   role="grid", aria-sort, aria-live, aria-rowcount
+    U-M14  the seven designed table states
+    C4     the from and to date-range filter
+           roles VIEWER, TRADER and ADMIN, and permission-aware controls
+           login required before the blotter is readable
+           trade ownership, a TRADER touching only its own trades
+
+  See docs/superpowers/specs/2026-09-12-interface-behaviour-design.md and
+      docs/superpowers/specs/2026-09-12-trade-api-design.md
+-->
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
@@ -381,6 +411,79 @@ button {
   color: var(--faint);
   max-width: 46ch;
 }
+
+/* ---------- scope note ---------- */
+
+.scope {
+  margin: 14px 16px 0;
+  border: 1px solid var(--warn_edge);
+  border-left: 3px solid var(--warn);
+  border-radius: var(--r);
+  background: var(--warn_bg);
+  font-size: 12.5px;
+  color: var(--text_2);
+}
+
+.scope summary {
+  padding: 11px 14px;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 9px;
+}
+
+.scope summary::-webkit-details-marker { display: none; }
+.scope summary b { color: var(--warn); font-weight: 600; }
+
+.scope_more {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--warn);
+  white-space: nowrap;
+}
+
+.scope[open] .scope_more::after { content: " \2191"; }
+.scope:not([open]) .scope_more::after { content: " \2193"; }
+
+.scope_body {
+  padding: 0 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.scope_body p { margin: 0; max-width: 92ch; line-height: 1.6; }
+
+.scope_cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 13px 26px;
+}
+
+.scope_cols h4 {
+  margin: 0 0 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+  color: var(--faint);
+  font-weight: 600;
+}
+
+.scope_cols ul {
+  margin: 0;
+  padding-left: 1.1em;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.scope_cols li { line-height: 1.45; }
 
 /* ---------- device frame ---------- */
 
@@ -1456,6 +1559,50 @@ select.inp option { background: var(--surface); color: var(--text); }
     </div>
     <p class="hint">Real state. Sort, filter, book, amend and cancel all mutate it; prices tick and positions recompute from the trades you leave behind.</p>
   </div>
+
+  <details class="scope">
+    <summary>
+      <b>Reference, not a complete build.</b>
+      Accurate for look, density and core interaction. Fifteen later decisions are not in it.
+      <span class="scope_more">What is missing</span>
+    </summary>
+    <div class="scope_body">
+      <p>
+        This file settled the design decisions it was built to settle. It is deliberately not being
+        updated further, because implementing the same behaviour twice, here and in the real
+        frontend, buys nothing. The specs are authoritative wherever the two disagree.
+      </p>
+      <div class="scope_cols">
+        <div>
+          <h4>Trust this file for</h4>
+          <ul>
+            <li>Tokens and all three theme states</li>
+            <li>Row density, glass, type</li>
+            <li>Sorting, filtering, row selection</li>
+            <li>Booking, amending, cancelling</li>
+            <li>Live price ticking and reconnect</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Decided later, absent here</h4>
+          <ul>
+            <li>Direction arrow on the row flash</li>
+            <li>Scroll pinning and the new-trades pill</li>
+            <li>rAF coalescing, 333ms flash throttle</li>
+            <li>Mutations blocked while disconnected</li>
+            <li>The RESYNCING connection state</li>
+            <li>Arrow-key row navigation</li>
+            <li><span class="mono">role="grid"</span>, aria-sort, aria-live</li>
+            <li>The seven designed table states</li>
+            <li>The date-range filter</li>
+            <li>Roles and permission-aware controls</li>
+            <li>Login before the blotter is readable</li>
+            <li>Trade ownership limits</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </details>
 
   <div class="stage">
     <div class="device" id="device" data-w="desktop">

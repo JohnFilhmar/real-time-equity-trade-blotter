@@ -450,3 +450,13 @@ to a later session.
 **Outcome:** Merged `main` at `c20b857`, installed, built and ran the suite rather than trusting the handoffs: 188 tests pass and typecheck is clean, so 22 of 23 server musts and 10 of 11 shoulds are now closed and all ten decisions are settled, leaving the unbuilt interface as the only real gap. Rewrote the artifact as a current-state document and corrected two of my own revision-1 findings, including U-M4, where I had searched for JavaScript escapes and missed the prototype's HTML-entity tick arrows.
 
 **Artifact:** [Blotter MVP Requirements](../artifacts/mvp_requirements_and_gap_analysis.html)
+
+---
+
+### 2026-09-12T04:30Z - scope_the_prototype_rather_than_rebuild_it
+
+**Prompt:** "by the way is the hi-fi already updated to the changes? or is it not needed to update that?"
+
+**Outcome:** Audited the prototype against every decision taken after its last commit and found fifteen missing, including roles, the login gate, all ARIA grid semantics and the RESYNCING state, which also made a line in the freshly merged handoff actively misleading. The user chose to scope the file honestly rather than rebuild it, so it gained a source comment and a visible banner listing what it does and does not demonstrate, and the handoff now states that the specs win wherever the two disagree.
+
+**Artifact:** [Fusion Blotter Prototype](../artifacts/fusion_blotter_prototype.html)
