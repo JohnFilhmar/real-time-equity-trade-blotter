@@ -35,7 +35,7 @@ this is a graded take-home whose rubric scores engineering decisions and the exp
 
 | Path | What it is |
 |---|---|
-| `docs/artifacts/fusion_blotter_prototype.html` | The interactive reference. 86KB, one file, no build step |
+| `docs/artifacts/fusion_blotter_prototype.html` | The interactive reference. One file, no build step. Carries a scope banner listing what it does not cover |
 | `docs/artifacts/fusion_blotter_design_canvas.html` | Static gallery of 23 artboards |
 | `docs/artifacts/fusion_blotter/` | The same 23 artboards as standalone pages |
 | `docs/artifacts/design_data_shape_conformance.html` | Field-by-field audit of the design against the brief's payload |
@@ -248,9 +248,21 @@ Read both specs first: `docs/superpowers/specs/2026-09-12-trade-api-design.md` a
 twenty-one decisions with the options each was chosen from.
 
 Then open `docs/artifacts/fusion_blotter_prototype.html` in a browser. It is one file with no build
-step and it is the behavioural reference: sort, filter, book, amend, cancel, watch prices tick,
-press "Drop link" to see the reconnect lifecycle. Reading its source is faster than reading the
-specs for anything about how something should feel.
+step, and it opens with a banner saying exactly what it does and does not demonstrate. Read that
+banner first.
+
+**The prototype is not a complete behavioural target and is deliberately not being updated.** It is
+authoritative for the visual system and the core interactions: tokens and the three theme states,
+density, glass, type, sorting, filtering, booking, amending, cancelling, live ticking, and the
+reconnect lifecycle. Press "Drop link" to see that last one.
+
+Fifteen decisions were taken after it was last built and are absent from it: the flash direction
+arrow, scroll pinning and the new-trades pill, rAF coalescing and the flash throttle, blocking
+mutations while disconnected, the RESYNCING state, arrow-key navigation, all ARIA grid semantics,
+the seven table states, the date-range filter, roles and permission-aware controls, the login gate,
+and trade ownership limits. **Where the prototype and the specs disagree, the specs win.** Rebuilding
+it was considered and rejected on 2026-09-12: it would mean implementing the same behaviour twice,
+once in a file that never ships.
 
 The first implementation step is porting the prototype's `:root` token block into
 `frontend/app/globals.css` as a Tailwind v4 `@theme`, keeping all three theme blocks intact.
