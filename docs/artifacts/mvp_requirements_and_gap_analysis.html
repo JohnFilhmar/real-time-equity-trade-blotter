@@ -1,0 +1,788 @@
+<title>Blotter MVP Requirements</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap">
+
+<style>
+  :root {
+    --ground: #f5f6f8;
+    --surface: #ffffff;
+    --surface_sunk: #eef0f4;
+    --ink: #151a21;
+    --ink_muted: #5b6675;
+    --rule: #dce0e6;
+    --rule_strong: #c3cad3;
+    --accent: #12596e;
+    --accent_soft: #dceaf0;
+    --buy: #0e7a50;
+    --sell: #a8332a;
+    --warn: #8a5a06;
+
+    --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --body: "Newsreader", Georgia, "Times New Roman", serif;
+    --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  }
+
+  :root:not([data-theme="light"]) { color-scheme: light; }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0f1319;
+      --surface: #161b22;
+      --surface_sunk: #1c222b;
+      --ink: #e6eaf0;
+      --ink_muted: #94a1b1;
+      --rule: #262d38;
+      --rule_strong: #38424f;
+      --accent: #62aec6;
+      --accent_soft: #17323d;
+      --buy: #3ac48d;
+      --sell: #e47365;
+      --warn: #d9a441;
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0f1319;
+    --surface: #161b22;
+    --surface_sunk: #1c222b;
+    --ink: #e6eaf0;
+    --ink_muted: #94a1b1;
+    --rule: #262d38;
+    --rule_strong: #38424f;
+    --accent: #62aec6;
+    --accent_soft: #17323d;
+    --buy: #3ac48d;
+    --sell: #e47365;
+    --warn: #d9a441;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 17px;
+    line-height: 1.65;
+    padding-inline: 20px;
+    padding-block: 56px 96px;
+  }
+
+  .wrap {
+    max-width: 82ch;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 52px;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--display);
+    text-wrap: balance;
+    margin: 0;
+    line-height: 1.15;
+  }
+
+  h1 { font-size: clamp(2.1rem, 6vw, 3rem); font-weight: 700; letter-spacing: -0.022em; }
+
+  h2 {
+    font-size: 1.42rem;
+    font-weight: 600;
+    letter-spacing: -0.012em;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--rule_strong);
+  }
+
+  h3 { font-size: 1.03rem; font-weight: 600; letter-spacing: -0.005em; }
+
+  p { margin: 0; }
+  a { color: var(--accent); text-underline-offset: 3px; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink_muted);
+  }
+
+  header { display: flex; flex-direction: column; gap: 14px; }
+
+  .standfirst { font-size: 1.14rem; color: var(--ink_muted); max-width: 62ch; }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 26px;
+    font-family: var(--mono);
+    font-size: 0.79rem;
+    color: var(--ink_muted);
+    padding-top: 14px;
+    border-top: 1px solid var(--rule);
+  }
+
+  .meta b { color: var(--ink); font-weight: 500; }
+
+  section { display: flex; flex-direction: column; gap: 20px; }
+
+  .scroller {
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    background: var(--surface);
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-family: var(--display);
+    font-size: 0.84rem;
+    min-width: 660px;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+
+  th {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink_muted);
+    background: var(--surface_sunk);
+    white-space: nowrap;
+  }
+
+  td.id { font-family: var(--mono); font-size: 0.76rem; color: var(--ink_muted); white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+
+  td code, p code, li code, th code {
+    font-family: var(--mono);
+    font-size: 0.85em;
+    background: var(--surface_sunk);
+    padding: 1px 5px;
+    border-radius: 2px;
+  }
+
+  .flag {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    padding: 2px 7px;
+    border-radius: 2px;
+    border: 1px solid currentColor;
+  }
+
+  .flag.done { color: var(--buy); }
+  .flag.gap { color: var(--sell); }
+  .flag.partial { color: var(--warn); }
+  .flag.decision { color: var(--accent); }
+
+  ul, ol { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 9px; }
+  li { padding-left: 2px; }
+
+  .callout {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    border-radius: 3px;
+    padding: 18px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .callout.warn { border-left-color: var(--warn); }
+  .callout h3 { font-size: 0.96rem; }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    font-family: var(--display);
+    font-size: 0.8rem;
+    color: var(--ink_muted);
+    align-items: center;
+  }
+
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+
+  .src { font-size: 0.86rem; color: var(--ink_muted); }
+  .src a { word-break: break-word; }
+
+  .tight { font-size: 0.95rem; }
+
+  @media (max-width: 620px) {
+    body { font-size: 16px; padding-block: 40px 72px; }
+    .wrap { gap: 40px; }
+  }
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">TP ICAP take-home &middot; requirements research</p>
+  <h1>What a viable trade blotter MVP actually needs</h1>
+  <p class="standfirst">
+    A sourced requirement list for the server and the interface, checked line by line against the
+    code on the three unmerged branches, so the remaining work is a list of named gaps rather than
+    a guess.
+  </p>
+  <div class="meta">
+    <span><b>Written</b> 2026-09-12</span>
+    <span><b>Method</b> 4 research passes, ~100 searches</span>
+    <span><b>Checked against</b> worktree-blotter_phase_01, worktree-hifi-prototype</span>
+    <span><b>Decisions taken</b> none</span>
+  </div>
+</header>
+
+<section>
+  <h2>How to read this</h2>
+  <p>
+    Every requirement below came out of research into how real blotters, real trade-capture APIs and
+    real grading rubrics work, not out of the brief alone. Each one is then marked with what the
+    repository actually does today, verified by reading the code on the branch that holds it.
+  </p>
+  <div class="legend">
+    <span><em class="flag done">done</em> built and verified in the repo</span>
+    <span><em class="flag partial">partial</em> present but incomplete or defective</span>
+    <span><em class="flag gap">gap</em> not built</span>
+    <span><em class="flag decision">decision</em> yours to make, options given</span>
+  </div>
+  <p class="tight">
+    No decision in here has been taken for you. Where the evidence points somewhere, it says so and
+    names the cost of going the other way.
+  </p>
+</section>
+
+<section>
+  <h2>What the brief actually rewards</h2>
+  <p>
+    The rubric is weighted, and the weighting is the most useful planning document in the exercise.
+    Engineering Quality 30, TypeScript 20, Full Stack Design 20, User Experience 10, Testing 10,
+    Communication 10. The first three are seventy percent of the mark and none of them is a feature
+    count. The brief says so in its own words: it does not expect production-ready systems, and it
+    values thoughtful trade-offs and clear communication over feature completeness.
+  </p>
+  <p>
+    That points the opposite way from instinct. Nothing in the evidence rewards building more. The
+    highest-value remaining work is narrow, finished, and written down.
+  </p>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr><th>Candidate work</th><th>Hours</th><th>Rubric line</th><th>Value</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Shared contract package, types inferred from one schema</td><td>1.5</td><td>TypeScript, Full Stack</td><td>10 / 10</td></tr>
+        <tr><td>README with decision, alternative, cost, and the trigger that flips it</td><td>1.5</td><td>Communication</td><td>9.5 / 10</td></tr>
+        <tr><td>Docker verified from a clean clone</td><td>1.5</td><td>Protects the whole submission</td><td>9.5 / 10</td></tr>
+        <tr><td>The two-client broadcast test</td><td>0.75</td><td>Testing, Full Stack</td><td>9.5 / 10</td></tr>
+        <tr><td>Audit trail on an append-only table</td><td>2 to 3</td><td>Full Stack (database design)</td><td>8 / 10</td></tr>
+        <tr><td>Connection state and row-change highlight</td><td>1</td><td>UX, Full Stack</td><td>8 / 10</td></tr>
+        <tr><td>Grid virtualisation built from scratch</td><td>2 to 3</td><td>Unneeded at 1,000 rows</td><td>2.5 / 10</td></tr>
+        <tr><td>Cloud deployment</td><td>2 to 6</td><td>Brief offers a local repo instead</td><td>2 / 10</td></tr>
+        <tr><td>Real authentication</td><td>3 to 5</td><td>No security line exists in the rubric</td><td>1.5 / 10</td></tr>
+        <tr><td>P&amp;L view</td><td>3 to 6</td><td>Needs a mark price and a cost-basis convention</td><td>1 / 10</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <h3>The two lowest-value items on that table are both already designed</h3>
+    <p>
+      The interactive prototype ships a P&amp;L view fed by a synthetic mark feed, and the design
+      canvas carries <code>Login.html</code> and <code>LoginMobile.html</code>. Research ranks those
+      28th and 27th of 28 candidate work items. P&amp;L is worse than low-value: it publishes a
+      financial number derived from a mark price the brief never supplies and a cost-basis
+      convention you would have to invent, to an audience who computes financial numbers for a
+      living. Getting it wrong costs more than omitting it.
+    </p>
+    <p>
+      There is a cheaper way to bank the same domain credibility. Compute notional by symbol,
+      <code>&Sigma; quantity &times; price</code> signed by side, label it notional and not P&amp;L,
+      and put one line in the README saying real P&amp;L needs a mark and a cost basis and both are
+      out of scope. That sentence demonstrates more understanding than a wrong number does.
+    </p>
+  </div>
+</section>
+
+<section>
+  <h2>Where the build stands</h2>
+  <p>
+    <code>main</code> is foundation only. Everything that makes this a blotter sits on three branches
+    that have been pushed and never merged, so a clone of the default branch today gets health
+    routes, a seed generator and a Next.js starter page.
+  </p>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr><th>Branch</th><th>Holds</th><th>State</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>worktree-blotter_phase_01</code></td>
+          <td>The entire trade API: repository, service, routes, Socket.IO broadcaster, live feed, mappers, 2,689 added lines</td>
+          <td>Pushed, not merged</td>
+        </tr>
+        <tr>
+          <td><code>worktree-hifi-prototype</code></td>
+          <td><code>fusion_blotter_prototype.html</code>, 85KB, the working UI reference</td>
+          <td>Pushed, not merged</td>
+        </tr>
+        <tr>
+          <td><code>worktree-design-data-shape-audit</code></td>
+          <td>The design-versus-schema conformance audit</td>
+          <td>Pushed, not merged</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="tight">
+    The frontend is an untouched <code>create-next-app</code> scaffold on every branch. Next 16.3.4,
+    React 19.2.8, Tailwind v4. No <code>socket.io-client</code>, no TanStack packages. So the whole
+    of the UI/UX section below is unbuilt, and the question there is only which requirements the
+    design reference already answers.
+  </p>
+</section>
+
+<section>
+  <h2>Server requirements: must</h2>
+  <p>
+    Seventeen of these twenty-three are already done, which is the real headline. The backend is in
+    good shape and the remaining six are specific.
+  </p>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Requirement</th><th>Status</th><th>Where it stands</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="id">S-M1</td><td>Money stored and carried as decimal, never binary float</td><td><em class="flag done">done</em></td><td><code>Decimal(18,6)</code>, and <code>trade_mapper.ts</code> is the single conversion point</td></tr>
+        <tr><td class="id">S-M2</td><td>Every timestamp is <code>timestamptz</code> at millisecond precision</td><td><em class="flag done">done</em></td><td><code>@db.Timestamptz(3)</code> on all four datetime columns</td></tr>
+        <tr><td class="id">S-M3</td><td>No hard delete. Cancel is a status transition</td><td><em class="flag done">done</em></td><td>Cancel is <code>POST /:trade_id/cancel</code>, deliberately not a DELETE</td></tr>
+        <tr><td class="id">S-M4</td><td>One canonical schema, every inbound shape derived from it</td><td><em class="flag done">done</em></td><td><code>trade_schema</code> with <code>.omit()</code> and <code>.partial()</code> in <code>shared/</code></td></tr>
+        <tr><td class="id">S-M5</td><td>Sort fields are an allowlist, never passed to the ORM raw</td><td><em class="flag done">done</em></td><td><code>sort_by</code> is a five-value Zod enum</td></tr>
+        <tr><td class="id">S-M6</td><td>The list endpoint is bounded server-side</td><td><em class="flag done">done</em></td><td><code>limit</code> capped at 1000, defaulted to 100</td></tr>
+        <tr><td class="id">S-M7</td><td>Concurrent amendment is caught, not silently lost</td><td><em class="flag done">done</em></td><td>Conditional <code>updateMany</code>, so the version check and the write are one statement</td></tr>
+        <tr><td class="id">S-M8</td><td>404, 409 and "already cancelled" are distinguished, not collapsed</td><td><em class="flag done">done</em></td><td><code>explain_failed_write()</code> re-reads to pick the right code. Most candidates return 409 for all three</td></tr>
+        <tr><td class="id">S-M9</td><td>Amend of a cancelled trade returns 409 and changes nothing</td><td><em class="flag done">done</em></td><td>Covered by service tests</td></tr>
+        <tr><td class="id">S-M10</td><td>Cancel of a cancelled trade returns 409 and changes nothing</td><td><em class="flag done">done</em></td><td>Covered by service tests</td></tr>
+        <tr><td class="id">S-M11</td><td>No mass assignment: the client cannot set server-owned fields</td><td><em class="flag done">done</em></td><td><code>create_trade_schema</code> omits id, tradeId, status, version and row timestamps</td></tr>
+        <tr><td class="id">S-M12</td><td>helmet, a body size cap and a deliberate <code>trust proxy</code></td><td><em class="flag done">done</em></td><td><code>app.ts</code>: helmet, <code>limit: '100kb'</code>, <code>trust proxy 1</code></td></tr>
+        <tr><td class="id">S-M13</td><td>Liveness and readiness are separate endpoints</td><td><em class="flag done">done</em></td><td><code>health_probe</code> interface with a Prisma-backed readiness probe</td></tr>
+        <tr><td class="id">S-M14</td><td>SIGTERM drains in the right order and exits 0</td><td><em class="flag done">done</em></td><td>Verified under Docker; two real defects were found and fixed doing it</td></tr>
+        <tr><td class="id">S-M15</td><td>Socket CORS is an explicit allowlist, never <code>*</code></td><td><em class="flag done">done</em></td><td>Origins come from config, paired with <code>credentials: true</code></td></tr>
+        <tr><td class="id">S-M16</td><td>Broadcast events carry the full entity including its version</td><td><em class="flag done">done</em></td><td>Correct default for a blotter: a row is under 1KB and the grid needs every field</td></tr>
+        <tr><td class="id">S-M17</td><td>Integration tests run against real Postgres, not a mock</td><td><em class="flag done">done</em></td><td>8 integration tests pass against the containerised database</td></tr>
+        <tr><td class="id">S-M18</td><td>A test proves a broadcast reached a second, uninvolved client</td><td><em class="flag gap">gap</em></td><td>This exact check was run, with two Socket.IO clients, but as a throwaway script in a job temp directory that is deliberately not in the repo. It is the single highest-signal test on the exercise and it currently scores zero</td></tr>
+        <tr><td class="id">S-M19</td><td>Events carry a monotonic <code>seq</code> and a server <code>emitted_at</code></td><td><em class="flag gap">gap</em></td><td><code>ServerToClientEvents</code> carries a bare <code>Trade</code>. Without a sequence the client cannot know it missed anything</td></tr>
+        <tr><td class="id">S-M20</td><td>A client detects a gap and resyncs rather than silently diverging</td><td><em class="flag gap">gap</em></td><td>Depends on S-M19 and on a frontend that does not exist yet</td></tr>
+        <tr><td class="id">S-M21</td><td>A trade timestamp in the future is rejected</td><td><em class="flag gap">gap</em></td><td><code>tradeTimestamp</code> is <code>z.iso.datetime()</code> with no upper bound, so a trade can be booked in 2074</td></tr>
+        <tr><td class="id">S-M22</td><td>One structured log line per request, carrying a correlation id</td><td><em class="flag gap">gap</em></td><td>Only <code>console.error('unhandled_error', error)</code> in the error handler</td></tr>
+        <tr><td class="id">S-M23</td><td>Seed data survives an industry reader's realism check</td><td><em class="flag partial">partial</em></td><td>Mostly strong. Two defects, below</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <h3>S-M23, the two seed defects</h3>
+    <p>
+      The generator does the hard parts well. Prices drift around a per-instrument base rather than
+      being drawn at random, quantities are round lots weighted toward smaller tickets, session
+      times cluster at the open and the close, books follow the listing venue, and one trade in
+      twenty is already cancelled so the status filter has something to find. That is better than
+      most submissions manage.
+    </p>
+    <p>
+      <b>Weekend sessions.</b> <code>generate_trades()</code> builds five consecutive days from
+      2026-08-18. The fifth is Saturday 2026-08-22, verified. Weekend trade dates are on the standard
+      list of tells that mark a dataset as generated. The fix is to step over weekends when building
+      the session array.
+    </p>
+    <p>
+      <b>London prices are in pounds, not pence.</b> The universe carries <code>HSBA.L</code> at
+      9.82, <code>BP.L</code> at 4.36, <code>VOD.L</code> at 0.78 and <code>SHEL.L</code> at 28.14.
+      The London Stock Exchange quotes in GBX, so those names print around 982, 436, 78 and 2814 on
+      a real blotter. There is also no currency field anywhere in the schema, so a grid mixing
+      <code>EQUITIES_US</code> and <code>EQUITIES_UK</code> shows two currencies in one price column
+      with nothing to tell them apart. This is a decision, not just a fix: see D7.
+    </p>
+  </div>
+</section>
+
+<section>
+  <h2>Server requirements: should</h2>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Requirement</th><th>Status</th><th>Note</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="id">S-S1</td><td>Pagination that stays correct while rows insert</td><td><em class="flag gap">gap</em></td><td>The list uses <code>limit</code> and <code>offset</code>. On a blotter sorted newest first with trades arriving all day, page two re-serves rows already seen and skips others. A correctness problem, not a performance one</td></tr>
+        <tr><td class="id">S-S2</td><td>A trade-date range filter</td><td><em class="flag gap">gap</em></td><td><code>trade_query_schema</code> has no date parameter. The design's "Trade date: Today" chip has nothing behind it</td></tr>
+        <tr><td class="id">S-S3</td><td>A server-side notional limit (fat-finger control)</td><td><em class="flag gap">gap</em></td><td>Roughly ten lines. Reads as domain literacy rather than CRUD, and echoes the pre-trade control obligations under SEC Rule 15c3-5</td></tr>
+        <tr><td class="id">S-S4</td><td>Symbol validated against a known instrument set</td><td><em class="flag gap">gap</em></td><td>Today it is a regex, so <code>ZZZZ</code> books happily while the seed universe is twelve names</td></tr>
+        <tr><td class="id">S-S5</td><td>Indexes matching the real filter-then-sort queries</td><td><em class="flag gap">gap</em></td><td>Present: <code>(status, trade_timestamp DESC)</code> which is right, plus single-column symbol, trader and book. Filtering by symbol and sorting by time wants the composite <code>(symbol, trade_timestamp DESC)</code></td></tr>
+        <tr><td class="id">S-S6</td><td>An audit row written on amend and on cancel, with actor and source</td><td><em class="flag gap">gap</em></td><td><code>TradeAmendment</code> exists and nothing writes to it. It has no <code>source</code> and no <code>reason</code> column. This is the best marks-per-hour bonus available, because database design sits inside the 20 percent Full Stack line</td></tr>
+        <tr><td class="id">S-S7</td><td>The audit table is append-only, enforced by grant</td><td><em class="flag gap">gap</em></td><td>Follows S-S6</td></tr>
+        <tr><td class="id">S-S8</td><td>An Origin check independent of the CORS option</td><td><em class="flag gap">gap</em></td><td>Socket.IO CORS applies only to the HTTP long-polling handshake. WebSocket frames are not subject to CORS at all, so the allowlist protects less than it looks like it does</td></tr>
+        <tr><td class="id">S-S9</td><td>Socket metrics, including broadcast lag from commit to emit</td><td><em class="flag gap">gap</em></td><td>Clients connected, events per second and lag are the three numbers that say the blotter is actually real-time</td></tr>
+        <tr><td class="id">S-S10</td><td>A <code>/v1</code> prefix on the API</td><td><em class="flag gap">gap</em></td><td>One router mount. Costs nothing, visible in the README</td></tr>
+        <tr><td class="id">S-S11</td><td>Currency on the trade</td><td><em class="flag decision">decision</em></td><td>See D7</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>Server requirements: won't, and why</h2>
+  <p>
+    Each of these is a real technique that a reviewer might ask about. Naming them in the README with
+    the reason scores on Communication, and builds the case that the omissions were priced rather
+    than missed.
+  </p>
+  <ul class="tight">
+    <li><b>Idempotency-Key middleware with a fingerprint store.</b> The unique constraint on
+      <code>tradeId</code> plus a version-guarded amend already covers double-click and retry.</li>
+    <li><b>ETag and If-Match.</b> The version field in the body is equivalent here and cheaper to get
+      right. A half-built ETag layer, weak tags used with If-Match or 409 where 412 belongs, reads
+      worse than none.</li>
+    <li><b>SERIALIZABLE isolation or SELECT FOR UPDATE.</b> Optimistic concurrency fits low-contention
+      amendments and needs no retry loop or lock ordering.</li>
+    <li><b>Socket.IO connection state recovery.</b> Best-effort by its own documentation, capped by a
+      disconnection window, and unsupported by the Redis pub/sub adapter. Refetch-on-reconnect has to
+      exist anyway, so build the fallback first.</li>
+    <li><b>Redis adapter and sticky sessions.</b> Single node here. Name the scale-out path instead.</li>
+    <li><b>Authentication.</b> The rubric has no security line. See D3.</li>
+    <li><b>A partial index on <code>status = 'ACTIVE'</code>.</b> Prisma emits parameterised
+      predicates, and the Postgres planner cannot prove a parameter implies a literal index
+      predicate, so the index would rarely be used. A talking point, not a win.</li>
+    <li><b>Allocations, confirmation, affirmation and settlement.</b> The post-trade chain is a
+      project, not a feature.</li>
+    <li><b>A FIX engine.</b> Model the vocabulary, do not implement the transport.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Interface requirements: must</h2>
+  <p>
+    None of this is built, because the frontend is still the starter page. The useful column is
+    whether the design reference already answers it, which I checked by reading the prototype
+    source rather than by trusting the design notes.
+  </p>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Requirement</th><th>In the reference</th><th>Note</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="id">U-M1</td><td>Compact rows, 24 to 32px, with 12 to 13px type</td><td><em class="flag done">yes</em></td><td>Prototype row heights land at 27 to 33px. This is the most visible "do they know trading UI" signal and a 48px Material default fails it instantly</td></tr>
+        <tr><td class="id">U-M2</td><td>Numerics right-aligned with tabular figures</td><td><em class="flag done">yes</em></td><td><code>tabular-nums</code> is present. Without it a price column does not scan</td></tr>
+        <tr><td class="id">U-M3</td><td>Changed cells flash, held ~300 to 500ms then faded over ~700 to 1,000ms</td><td><em class="flag done">yes</em></td><td>Flash logic is extensive. The timings match the AG Grid defaults most bank blotters use</td></tr>
+        <tr><td class="id">U-M4</td><td>Direction is readable without colour</td><td><em class="flag gap">no</em></td><td>No up-tick or down-tick glyph anywhere in the prototype. Direction is carried by colour alone, which fails WCAG 1.4.1 and fails roughly 8 percent of a male-skewed trading floor</td></tr>
+        <tr><td class="id">U-M5</td><td>Arriving rows never reset scroll or move the row under the cursor</td><td><em class="flag decision">unstated</em></td><td>The single worst failure in blotter demos. Needs a stable row key and no wholesale array replacement</td></tr>
+        <tr><td class="id">U-M6</td><td>Updates are batched, not applied one per message</td><td><em class="flag gap">no</em></td><td>No <code>requestAnimationFrame</code> in the prototype. Anything past roughly 10 updates a second per cell is wasted on a human, and a cell flashing more than three times a second breaches WCAG 2.3.1, so conflation is an accessibility control as well as a performance one</td></tr>
+        <tr><td class="id">U-M7</td><td>A persistent connected / reconnecting / disconnected indicator, with text as well as colour</td><td><em class="flag done">yes</em></td><td>The amber reconnecting lifecycle is built, with a control to exercise it</td></tr>
+        <tr><td class="id">U-M8</td><td>Mutations blocked or queued while disconnected, stated either way</td><td><em class="flag decision">unstated</em></td><td>Queueing a trade you cannot confirm is worse than refusing it</td></tr>
+        <tr><td class="id">U-M9</td><td>Resyncing is a visible state between socket-open and data-trustworthy</td><td><em class="flag partial">partial</em></td><td>The prototype catches up queued trades on reconnect. Showing green the instant the socket opens is the common bug</td></tr>
+        <tr><td class="id">U-M10</td><td>Virtualisation, or a README line naming the row count that would trigger it</td><td><em class="flag decision">unstated</em></td><td>At 100 to 1,000 rows it is genuinely not needed. The paragraph explaining that scores more than the feature</td></tr>
+        <tr><td class="id">U-M11</td><td>Sticky header</td><td><em class="flag decision">unstated</em></td><td></td></tr>
+        <tr><td class="id">U-M12</td><td>Arrow keys move row focus, Enter opens the ticket, Escape closes it</td><td><em class="flag gap">no</em></td><td>One <code>keydown</code> handler and one <code>Escape</code> reference in 85KB. A desk is a keyboard culture and mouse-only is the thing that most makes a finance UI feel wrong. Roughly 40 lines</td></tr>
+        <tr><td class="id">U-M13</td><td>Body text clears 4.5:1, including text inside a flashed cell</td><td><em class="flag decision">unverified</em></td><td>The trap is that flashed text is measured against the flash colour, not the row colour. Saturated fills with white text usually fail</td></tr>
+        <tr><td class="id">U-M14</td><td>Every table state has copy: empty, no-results, loading, error</td><td><em class="flag decision">unstated</em></td><td>Sixteen distinct states enumerated in the research. An empty grid with no message is always a bug</td></tr>
+        <tr><td class="id">U-M15</td><td>The ticket validates on blur with inline field errors</td><td><em class="flag done">yes</em></td><td><code>aria-invalid</code> is present and validation mirrors the Zod schema. On-blur validation measured 22 percent fewer errors than submit-time</td></tr>
+        <tr><td class="id">U-M16</td><td>Cancel confirmation restates symbol, side, quantity and notional, with verb-labelled buttons</td><td><em class="flag partial">partial</em></td><td>Cancel is a plain confirm by an explicit earlier decision. Watch the naming trap: a dialog offering "Cancel" and "Cancel trade" is a hazard. Use "Keep trade" and "Cancel trade"</td></tr>
+        <tr><td class="id">U-M17</td><td>Live notional preview in the ticket as the user types</td><td><em class="flag done">yes</em></td><td>Notional appears 18 times. This is the control that catches the quantity-versus-notional confusion directly, which is the exact error class behind the Citi fat-finger case</td></tr>
+        <tr><td class="id">U-M18</td><td>No broken layout or horizontal body scroll at 400px</td><td><em class="flag done">yes</em></td><td>Container queries with device presets</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <h3>The accessibility gap the design reference does not cover</h3>
+    <p>
+      Three markers are absent from the prototype entirely: <code>role="grid"</code>,
+      <code>aria-sort</code> and <code>aria-live</code>. So the grid has no ARIA grid semantics, a
+      sorted column is not announced, and nothing announces that rows changed underneath the user.
+      Combined with U-M4 and U-M12, the screen-reader and keyboard story is the weakest part of an
+      otherwise strong design. It is also the cheapest to fix, because the WAI-ARIA grid pattern
+      prescribes exactly what to do: one tab stop, roving focus inside, arrows between cells.
+    </p>
+  </div>
+</section>
+
+<section>
+  <h2>Interface requirements: should</h2>
+  <p>Each is a visible step up costing roughly 30 to 120 minutes.</p>
+  <ul class="tight">
+    <li>A quick filter across all columns, debounced, with a "showing 42 of 1,280" count.</li>
+    <li>Active filters as removable chips.</li>
+    <li>Multi-column sort by shift-click, with a stable tiebreaker on trade id so equal rows never
+      swap under live updates.</li>
+    <li><b>Sort does not re-order on every tick.</b> Only on load and on explicit user sort. If rows
+      re-sorted on each update the grid would churn and nothing would be clickable. AG Grid declines
+      to re-sort on value change for exactly this reason.</li>
+    <li>A pending row state for an optimistic amend, and a <em>distinct</em> failed state. Failed
+      means the server said no. Conflicted means the server said "not from this version", which needs
+      a diff, not a retry.</li>
+    <li>A row being edited is never overwritten by an incoming update for that row.</li>
+    <li>Recover from a rejected patch by replaying remaining patches over the last confirmed server
+      state, not by surgically reverting. Surgical reversion drifts; rebasing cannot.</li>
+    <li>Never flash your own optimistic write and then flash again on confirmation. One user action
+      producing two flashes looks like two trades.</li>
+    <li>A staleness ladder, live to degraded to stale, with an explicit "data as of 12s ago". Stale
+      data is harder to spot than missing data, because the screen still shows a number.</li>
+    <li>A pinned summary footer with row count and total notional, recomputed on filter.</li>
+    <li>Clipboard copy as TSV that pastes into Excel, or a CSV download. Excel is where reconciliation
+      happens.</li>
+    <li>Up and down colour tokens that can be inverted, because China, Japan and Taiwan use red for
+      rising and green for falling, and Korea often uses blue for down. TP ICAP has a large APAC
+      presence, so this is a live concern rather than trivia.</li>
+    <li><code>prefers-reduced-motion</code> suppresses the flash animation while keeping the direction
+      glyph. Already present in the prototype.</li>
+    <li>Density toggle, persisted. Doubles as a low-vision escape hatch, which is also how the tension
+      between 24px rows and the WCAG 2.2 target-size minimum gets resolved.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Interface requirements: won't</h2>
+  <ul class="tight">
+    <li><b>A phone-optimised card blotter.</b> A blotter is a desk tool on multiple monitors. Make the
+      grid not break at 400px, say plainly that the phone target is read-only status, and do not
+      pretend it is mobile-first.</li>
+    <li><b>Saved and named views.</b> A real desk feature, but it is persistence plumbing rather than
+      UX signal.</li>
+    <li><b>Field-level three-way conflict merge.</b> Show the conflict and let the user choose.
+      Auto-merge is a week of edge cases.</li>
+    <li><b>Column grouping, pivoting and aggregation rows.</b> Grid-vendor enterprise territory.</li>
+    <li><b>Full WCAG 2.2 AA conformance.</b> Name the known tension between compact rows and the
+      24px target-size minimum, and say the density toggle resolves it. That sentence scores better
+      than a silent partial pass.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>The gap list, ranked</h2>
+  <p>
+    Everything above, reduced to what is actually missing, ordered by value against the rubric rather
+    than by effort.
+  </p>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Gap</th><th>Hours</th><th>Why it ranks here</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="id">1</td><td>Build the blotter UI at all</td><td>5 to 7</td><td>The frontend is a starter page. Nothing else matters until a grid exists</td></tr>
+        <tr><td class="id">2</td><td>Move the two-client broadcast check into the repo as a real test</td><td>0.75</td><td>Highest-signal test on the exercise, already proven to pass, currently scoring zero because it lives in a temp directory</td></tr>
+        <tr><td class="id">3</td><td>Merge the three branches into <code>main</code></td><td>0.5</td><td>A clone of the default branch today is a health endpoint and a starter page. See D1</td></tr>
+        <tr><td class="id">4</td><td>Sequence and <code>emitted_at</code> on events, plus gap-detect and resync on the client</td><td>1.5</td><td>Separates a demo from something that could run. Almost nobody writes it, and the client apply rule that makes duplicates no-ops is three lines</td></tr>
+        <tr><td class="id">5</td><td>Write the audit trail into <code>TradeAmendment</code>, with actor and source</td><td>2 to 3</td><td>Best bonus on the board. Database design is inside the 20 percent Full Stack line, and a blotter is a record of what happened</td></tr>
+        <tr><td class="id">6</td><td>Fix pagination against live inserts</td><td>1</td><td>Correctness, not performance. Also the one bug whose test ("insert between page one and page two, assert zero overlap") proves you understood why</td></tr>
+        <tr><td class="id">7</td><td>Tick arrows and ARIA grid semantics</td><td>1</td><td>Closes U-M4 and U-M12 together, and the WAI-ARIA grid pattern tells you exactly what to write</td></tr>
+        <tr><td class="id">8</td><td>Batch and conflate incoming updates</td><td>0.5</td><td>Both a performance control and a WCAG 2.3.1 control</td></tr>
+        <tr><td class="id">9</td><td>Fix the weekend sessions and settle the London price convention</td><td>0.5</td><td>Cheap, and both are things an industry reader spots in seconds</td></tr>
+        <tr><td class="id">10</td><td>Reject future trade timestamps; add a notional limit and a symbol allowlist</td><td>0.75</td><td>Three small server rules that together read as domain literacy</td></tr>
+        <tr><td class="id">11</td><td>Structured request logging with a correlation id</td><td>0.5</td><td>Turns "an error happened" into a log key the user can quote back</td></tr>
+        <tr><td class="id">12</td><td>Composite indexes, <code>/v1</code>, Origin check, socket metrics</td><td>1</td><td>Small, individually cheap, collectively the difference between careful and adequate</td></tr>
+        <tr><td class="id">13</td><td><code>lint</code> scripts for <code>backend</code> and <code>shared</code></td><td>0.25</td><td>Only <code>frontend</code> has one today, so the root <code>lint</code> script covers a third of the code</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>Where the two plans disagree</h2>
+  <p>
+    The backend agent and the design agent each made coherent choices. Five places where those
+    choices do not meet.
+  </p>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Design expects</th><th>Backend provides</th><th>Reading</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="id">C1</td>
+          <td>A P&amp;L view fed by a synthetic mark feed walking prices every 900ms</td>
+          <td>No market-price field, no mark endpoint, no <code>mark.updated</code> event</td>
+          <td>The largest single conflict. Also the lowest-value item in the research ranking. See D2</td>
+        </tr>
+        <tr>
+          <td class="id">C2</td>
+          <td>Login boards for desktop and mobile</td>
+          <td>No auth anywhere; <code>trader</code> is a free-text field the client supplies</td>
+          <td>Ranked 27th of 28. The rubric has no security line. See D3</td>
+        </tr>
+        <tr>
+          <td class="id">C3</td>
+          <td>Audit columns for <code>SOURCE</code> and <code>ACTION</code>, and cancels in the event feed</td>
+          <td><code>TradeAmendment</code> has neither column and nothing writes to it</td>
+          <td>Agrees with gap 5. Renaming the table to <code>TradeEvent</code> makes source, action and cancel rows all natural</td>
+        </tr>
+        <tr>
+          <td class="id">C4</td>
+          <td>A "Trade date: Today" filter chip</td>
+          <td><code>trade_query_schema</code> has no date parameter</td>
+          <td>Small. Either add <code>from</code> and <code>to</code>, or drop the chip</td>
+        </tr>
+        <tr>
+          <td class="id">C5</td>
+          <td>A "Desk: LONDON" chip</td>
+          <td>There is no desk field. <code>book</code> is the nearest thing</td>
+          <td>Make it a display alias for a book filter, or drop it</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="tight">
+    One earlier conflict is already settled and should stay settled. The design shows an amended
+    trade as <code>ACTIVE</code> plus an amber version pill, not as a third <code>AMENDED</code>
+    status. That is also what the industry does: the wire protocol uses cancel-and-correct pairs,
+    the internal store versions an immutable record, and the UI presents it as a badge. Keep
+    <code>trade_status_values</code> at two values.
+  </p>
+</section>
+
+<section>
+  <h2>Decisions for you</h2>
+  <p>
+    Nothing here has been decided. Each option says what it costs and what the evidence favours.
+  </p>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Question</th><th>Options</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="id">D1</td>
+          <td>Merge the three branches into <code>main</code>?</td>
+          <td>Merge all three, merge only the backend, or keep reviewing. Until this happens a clone of the default branch is a health endpoint and a starter page</td>
+        </tr>
+        <tr>
+          <td class="id">D2</td>
+          <td>P&amp;L, as designed?</td>
+          <td><b>a)</b> Build it with a server mark feed and a <code>mark.updated</code> event, 3 to 6 hours, and own a financial number you invented the convention for. <b>b)</b> Downgrade to notional by symbol, label it notional, one README line on why real P&amp;L is out of scope, under an hour. <b>c)</b> Cut the view. Evidence favours (b)</td>
+        </tr>
+        <tr>
+          <td class="id">D3</td>
+          <td>Authentication, as designed?</td>
+          <td><b>a)</b> Build it properly, 3 to 5 hours, and it contaminates every existing test. <b>b)</b> An "acting as trader" selector, explicitly labelled as not authentication, which also gives the audit trail a real actor. <b>c)</b> Cut it and describe the design in the README. Evidence favours (b) or (c); a fake login screen reads worse than none</td>
+        </tr>
+        <tr>
+          <td class="id">D4</td>
+          <td>Pagination</td>
+          <td><b>a)</b> Keyset cursor on <code>(trade_timestamp DESC, id DESC)</code>, correct and conventional. <b>b)</b> Return the whole working set and sort and filter in the grid, legitimate at 1,000 rows and cheaper. <b>c)</b> Keep offset and document the flaw. (c) is the weakest, because the flaw is visible in a demo</td>
+        </tr>
+        <tr>
+          <td class="id">D5</td>
+          <td>Event envelope</td>
+          <td><b>a)</b> Add <code>seq</code> and <code>emitted_at</code> now and wrap the trade. <b>b)</b> Ship bare entities and document resync as future work. (a) is cheap and is what gap 4 depends on</td>
+        </tr>
+        <tr>
+          <td class="id">D6</td>
+          <td>Audit row shape</td>
+          <td><b>a)</b> Keep the changes-only JSONB, compact, but reconstructing state at version N means replaying. <b>b)</b> Full row snapshot per version, bigger, but "what did this look like at 14:32" is one query. Ops users usually want (b). Either way add <code>source</code>, and write a row on cancel too</td>
+        </tr>
+        <tr>
+          <td class="id">D7</td>
+          <td>Currency and the London price convention</td>
+          <td><b>a)</b> Add a <code>currency</code> field and price the <code>.L</code> names in GBX as the market does. <b>b)</b> Keep one currency and drop the London names from the universe. <b>c)</b> Leave it and note it. Doing nothing is the only option an industry reader would notice</td>
+        </tr>
+        <tr>
+          <td class="id">D8</td>
+          <td>Which fields may be amended</td>
+          <td>Today <code>amend_trade_schema</code> permits changing symbol, side and trade timestamp. In a real system re-pointing a trade at a different symbol is a rebooking, not an amendment. The live feed already restricts itself to quantity and price. Options: restrict the API to match, or keep it open and say why</td>
+        </tr>
+        <tr>
+          <td class="id">D9</td>
+          <td>Error response shape</td>
+          <td>Today it is a custom <code>{ error: { code, message, details } }</code>, applied consistently. RFC 9457 <code>application/problem+json</code> is the standard. Migrating is maybe an hour; staying put is defensible if the README names the choice</td>
+        </tr>
+        <tr>
+          <td class="id">D10</td>
+          <td>Grid implementation</td>
+          <td><b>a)</b> TanStack Table headless, gives sorting and filtering cleanly, both core requirements. <b>b)</b> AG Grid, what most bank blotters actually use, heavier. <b>c)</b> Hand-rolled. The brief lists virtualised grids as a bonus, but at 1,000 rows virtualisation is not needed and the paragraph explaining that scores more than the feature</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>Vocabulary worth using, and worth avoiding</h2>
+  <p>
+    TP ICAP is the world's largest interdealer broker, and since December 2024 has been migrating
+    most of its infrastructure to AWS, co-developing its Fusion platform with an embedded AWS team.
+    Its front-end job ads name React and TypeScript. The reviewer is likely to be someone who
+    brokers these trades for a living, so correct jargon lands and decorative jargon does not.
+  </p>
+  <p class="tight">
+    <b>Safe and useful.</b> Trade capture, which is the industry name for what the POST endpoint
+    does, and is literally the FIX <code>TradeCaptureReport &lt;AE&gt;</code> message. Notional. Net
+    position by symbol. Trade lifecycle. Book. Counterparty. Amend, cancel and bust, used precisely:
+    a cancel is the firm withdrawing its own trade report on trade date, a reversal is the same act
+    afterwards, and a bust is a venue declaring a trade clearly erroneous under FINRA Rule 11891.
+  </p>
+  <p class="tight">
+    <b>Avoid unless certain.</b> Matched principal, name give-up, clearing, settlement date, T+1,
+    best execution, RFQ. All real TP ICAP vocabulary, but this exercise has no settlement or clearing
+    dimension, and using them decoratively reads as keyword-stuffing.
+  </p>
+</section>
+
+<section>
+  <h2>Method and sources</h2>
+  <p class="tight">
+    Four parallel research passes, roughly 100 searches and fetches between them, covering the
+    blotter domain and FIX lifecycle, real-time grid UX, server and real-time architecture, and what
+    scores on a take-home at a trading firm. Every status column above was then checked against the
+    code by reading it on the branch that holds it, not by trusting the handoff notes. Two claims
+    were verified by execution: the Saturday session date, and the absence of ARIA grid markers and
+    tick-arrow glyphs in the prototype source.
+  </p>
+  <p class="src">
+    Primary sources include the FIX 4.4 dictionary for tag numbers and the ExecType and
+    TradeReportType enums; 17 CFR 240.17a-3 and 17a-4 for what a blotter is as a record and how long
+    it is kept; FINRA Rules 11891, 7130 and 4511; SEC Rule 15c3-5 on pre-trade controls; the Socket.IO
+    documentation on delivery guarantees, connection state recovery and CORS; RFC 9110 and RFC 9457;
+    the PostgreSQL documentation on transaction isolation, numeric types and partial indexes; Google
+    AIP-158 on page tokens; AG Grid on flash timings, DOM virtualisation and high-frequency updates;
+    W3C WCAG 2.2 and the WAI-ARIA grid pattern; Nielsen Norman Group on data tables, response times
+    and skeleton screens; and Bloomberg's published work on designing the Terminal for colour
+    accessibility.
+  </p>
+  <p class="src">
+    Known limits. Vendor blotter column lists from Bloomberg AIM and TOMS, Charles River and Fidessa
+    are behind logins and could not be verified. The MiFID II RTS 25 clock-synchronisation figures
+    come from a secondary source cross-checked against vendor whitepapers, not from EUR-Lex directly.
+    No public TP ICAP engineering rubric exists, so the grading section is drawn from published
+    rubrics elsewhere plus reviewer writeups, with inferences labelled as such in the underlying
+    research.
+  </p>
+</section>
+
+</div>

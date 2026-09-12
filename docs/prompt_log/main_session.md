@@ -82,3 +82,22 @@ Significant prompts only, append-only, newest at the bottom. Rules: `/CLAUDE.md`
 **Outcome:** Found thirteen further gaps beyond the nine already listed, among them a missing root README, a healthcheck that never touched the database, and Prisma 7 requiring a driver adapter, a generator output path and a `prisma.config.ts` that the scaffold had never installed. Closed all twenty-two by restructuring the repository into npm workspaces with a shared zod contract, adding the Postgres schema, hand-authored migration and realistic seed, hardening the API, and rebuilding both Dockerfiles, then verified it by running the stack rather than asserting it.
 
 **Commits:** `12e5a5b`
+
+---
+
+### 2026-09-12T01:57Z - research_mvp_requirements_and_gaps
+
+**Prompt**
+
+> i want you to perform a deep research for what is needed for this application accordingly for what
+> the user should see. @D:\My Folder\tp-icap-take-home-assessment\take-home-assessment.md goal is to
+> have a list of both ui/ux and server requirements to achieve a viable true MVP of this system.
+> you perform deep research through various sources that provides necessary data for a financial
+> application/system or a small to large trading application/system that manages a trade blotter
+> containing equity trades. and another goal is to close the gap on what's already planned by 2
+> agents running on the same repositories on their own worktree both for the frontend and backend
+> works.
+
+**Outcome:** Four parallel research passes produced a sourced must/should/won't requirement list for the server and the interface, each line then checked against the code on the three unmerged branches rather than against the handoff notes. Found seventeen of twenty-three server musts already built, thirteen ranked gaps, five places where the backend and design plans disagree, and two verified data defects: a Saturday trade date in the seed and London names priced in pounds where the market quotes pence.
+
+**Artifact:** [Blotter MVP Requirements](../artifacts/mvp_requirements_and_gap_analysis.html)
