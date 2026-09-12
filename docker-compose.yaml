@@ -30,6 +30,34 @@ services:
           cpus: "1.0"
           memory: 512M
 
+  # Migrations run once, to completion, before the API starts. Keeping them out of the API's own
+  # start command is what lets node be PID 1 there and handle SIGTERM, and it means a failed
+  # migration stops the rollout instead of crash-looping the API.
+  migrate:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: prod
+    image: tp-icap/backend:local
+    pull_policy: build
+    restart: "no"
+    command: ["npx", "prisma", "migrate", "deploy"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-blotter}:${POSTGRES_PASSWORD:-blotter}@database:5432/${POSTGRES_DB:-blotter}?schema=public
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - blotter
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
   backend:
     build:
       context: .
@@ -48,11 +76,16 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
       SEED_ON_STARTUP: "true"
       SEED_TRADE_COUNT: "500"
+      LIVE_FEED_ENABLED: ${LIVE_FEED_ENABLED:-true}
+      LIVE_FEED_MIN_INTERVAL_MS: ${LIVE_FEED_MIN_INTERVAL_MS:-3000}
+      LIVE_FEED_MAX_INTERVAL_MS: ${LIVE_FEED_MAX_INTERVAL_MS:-8000}
     ports:
       - "${BACKEND_PORT:-5000}:5000"
     depends_on:
       database:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     networks:
       - blotter
     healthcheck:

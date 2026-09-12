@@ -53,6 +53,20 @@ Significant prompts only, append-only, newest at the bottom. Rules: `/CLAUDE.md`
 
 ---
 
+### 2026-09-10T18:10Z - fix_remaining_scaffold_gaps
+
+**Prompt**
+
+> what are the remaining gaps besides the two that you have given a red banner BREAKS BUILD/RUN and
+> other gaps listed ? if there's nothing else, proceed fixing it and after finishing, merge it to
+> the default branch.
+
+**Outcome:** Found thirteen further gaps beyond the nine already listed, among them a missing root README, a healthcheck that never touched the database, and Prisma 7 requiring a driver adapter, a generator output path and a `prisma.config.ts` that the scaffold had never installed. Closed all twenty-two by restructuring the repository into npm workspaces with a shared zod contract, adding the Postgres schema, hand-authored migration and realistic seed, hardening the API, and rebuilding both Dockerfiles, then verified it by running the stack rather than asserting it.
+
+**Commits:** `12e5a5b`
+
+---
+
 ### 2026-09-10T18:45Z - align_plan_with_trade_model
 
 **Prompt**
@@ -71,20 +85,6 @@ Significant prompts only, append-only, newest at the bottom. Rules: `/CLAUDE.md`
 
 ---
 
-### 2026-09-10T18:10Z - fix_remaining_scaffold_gaps
-
-**Prompt**
-
-> what are the remaining gaps besides the two that you have given a red banner BREAKS BUILD/RUN and
-> other gaps listed ? if there's nothing else, proceed fixing it and after finishing, merge it to
-> the default branch.
-
-**Outcome:** Found thirteen further gaps beyond the nine already listed, among them a missing root README, a healthcheck that never touched the database, and Prisma 7 requiring a driver adapter, a generator output path and a `prisma.config.ts` that the scaffold had never installed. Closed all twenty-two by restructuring the repository into npm workspaces with a shared zod contract, adding the Postgres schema, hand-authored migration and realistic seed, hardening the API, and rebuilding both Dockerfiles, then verified it by running the stack rather than asserting it.
-
-**Commits:** `12e5a5b`
-
----
-
 ### 2026-09-11T01:09Z - verify_design_against_trade_shape
 
 **Prompt:** "continue blotter_ui_design and verify whether the design strictly follows the required data shape for the assessment markdown file in the root."
@@ -95,6 +95,58 @@ Significant prompts only, append-only, newest at the bottom. Rules: `/CLAUDE.md`
 
 ---
 
+### 2026-09-11T01:13Z - readiness_audit_and_no_agent_decisions_rule
+
+**Prompt**
+
+> continue on handoff blotter_foundation, then following strictly the techstack
+> suggested/recommended per the @take-home-assessment.md is the backend and database ready for
+> planning up to implementing the plan for the sole working MVP required features of this system?
+> and modify the project memory that project decisions must never be made by agents, agent must
+> always ask the user for decisions on every decision on the system and whether it always aligns
+> with the user tailored skills and memory in best-practices.
+
+**Outcome:** Audited the foundation against the brief and confirmed the stack, schema, contracts and
+hardening are in place and green (32 tests, typecheck clean) while every trade endpoint and every
+broadcast is still absent, so the backend is ready to plan against but serves no MVP feature yet.
+Recorded a standing rule in project memory that no agent decides anything about this system alone,
+which turned phase 01 into a set of questions for the user rather than code.
+
+---
+
+### 2026-09-11T01:30Z - mvp_shape_decisions
+
+**Prompt** (answers to four questions the agent was required to ask rather than decide)
+
+> MVP scope: "required five only + the real time socket.io to establish real-time transactions and
+> live updates. and we are going to go for a mix of the two in sample trade data, on startup there
+> will be initial seeded data, and continously, data are generated randomly with realistic trade
+> data."
+> Cancel shape: "POST /trades/:id/cancel". List shape: "Envelope: data + total + limit + offset".
+> URL id: "Business tradeId, TRD-100001".
+
+**Outcome:** Settled the API's shape before any of it was written: cancel is a named action rather
+than a DELETE because the row survives as `CANCELLED`, the listing answers an envelope so the grid
+gets a row count without a second call, and trades are addressed by the identifier a trader can
+actually read. The scope answer also added a continuously running trade generator on top of the
+startup seed, which was new work rather than a choice between options.
+
+---
+
+### 2026-09-11T01:33Z - live_feed_decisions
+
+**Prompt** (answers to three follow-up questions about the generator)
+
+> Acts: "New trades + amends + cancels". Cadence: "Jittered ~3-8s, env flag + interval". Write path:
+> "Through the trade service".
+
+**Outcome:** Fixed the feed as a caller of the trade service rather than a second write path, so a
+simulated trade takes the same validation, transitions and broadcast as a human one and the two
+cannot drift. Choosing all three actions is what makes `trade.amended` and `trade.cancelled` fire
+on their own, so the grid is seen updating rows in place rather than only growing.
+
+---
+
 ### 2026-09-11T01:45Z - design_is_reference_not_spec
 
 **Prompt:** "this will be fine because ui/ux created will just be the base referrence of what the system is predictably should look like."
@@ -102,6 +154,35 @@ Significant prompts only, append-only, newest at the bottom. Rules: `/CLAUDE.md`
 **Outcome:** Settled that the six open divergences are acceptable, because the artboards are a reference for how the system should look rather than a contract the schema has to satisfy. Reclassified them from blocking design questions into implementation-time notes, the load-bearing one being that the design's `AMENDED` badge means "this trade was amended" and must be built as a version pill beside an `ACTIVE` badge, not as a third enum value.
 
 **Artifact:** [Design Data Shape Audit](../artifacts/design_data_shape_conformance.html)
+
+---
+
+### 2026-09-11T01:50Z - build_phase_01_and_02
+
+**Prompt:** Implied by the decisions above, which authorised the build.
+
+**Outcome:** Built the trade endpoints, the socket broadcast and the simulated feed behind two
+ports, with a second in-memory repository so the service and route suites test real behaviour
+instead of asserting a mock was called; tests went from 32 to 70 with typecheck and lint clean.
+The database-backed repository tier was written and left skipping, because no Docker engine was
+reachable to run it against.
+
+**Commits:** `c217419`
+
+---
+
+### 2026-09-11T02:05Z - verify_containerisation
+
+**Prompt:** "docker engine is up, you can proceed testing it and verifying the containerization of the system."
+
+**Outcome:** Ran the stack and verified it rather than asserting it: 28 end-to-end checks against the
+containers including two Socket.IO clients standing in for two browser tabs, the 8 database-backed
+repository tests against the containerised Postgres, a cold start on an empty volume applying the
+migration and seeding 500 trades, and runtime hardening holding as non-root with a read-only root
+filesystem. Two real defects surfaced that only running the containers could expose, both in the
+shutdown path.
+
+**Artifact:** [Container verification](../artifacts/container_verification.html)
 
 ---
 
@@ -121,6 +202,23 @@ Significant prompts only, append-only, newest at the bottom. Rules: `/CLAUDE.md`
 **Outcome:** Chose Direction A's blue-slate neutrals and IBM Plex type with Direction B's glass material and semantics softened about 15% for legibility through blur, then built a working single-file prototype with sortable and filterable blotter, create/amend/cancel mutating real state, a synthetic mark feed driving positions and P&L, an accumulating audit trail and a device frame driven by container queries rather than media queries. Amendment renders as a version pill beside a two-state status badge, which settles D1 by demonstration.
 
 **Artifact:** [Fusion Blotter Prototype](../artifacts/fusion_blotter_prototype.html)
+
+---
+
+### 2026-09-11T02:20Z - fix_graceful_shutdown_under_docker
+
+**Prompt** (answer to a question about how to fix the SIGTERM defect)
+
+> "Separate migrate from run" - CMD becomes node dist/index.js and the migration runs as its own
+> one-shot compose service that the backend depends on.
+
+**Outcome:** Moved `prisma migrate deploy` into its own compose service gated by
+`service_completed_successfully`, so node is PID 1 in the API container and actually receives
+SIGTERM, which npm had been swallowing. That exposed a second bug underneath, `io.close()` already
+closing the HTTP server so the following `http_server.close()` failed with `ERR_SERVER_NOT_RUNNING`
+and exited 1; the stop now logs `shutdown complete` and exits 0 in about a second.
+
+**Commits:** `c5611f6`
 
 ---
 
@@ -158,6 +256,36 @@ Significant prompts only, append-only, newest at the bottom. Rules: `/CLAUDE.md`
 
 ---
 
+### 2026-09-12T01:20Z - backend_remaining_work
+
+**Prompt:** "UI is after the backend has been properly established on what's needed. what's next on the backend server?"
+
+**Outcome:** Audited the backend against what the grid will actually ask of it and found three gaps
+in the code: `counterparty` had no filter, `sort_by` covered five of the ten displayed columns, and
+nothing read the `trade_amendment` table. Put those, plus the missing CI and lint scripts, to the
+user as choices rather than picking.
+
+---
+
+### 2026-09-12T01:45Z - close_contract_gaps_and_build_audit_trail
+
+**Prompt** (answers to seven questions across two rounds)
+
+> Contract: "Counterparty filter + full sort coverage". Quality: "CI workflow". Audit table:
+> "Implement the audit trail". Then: amended_by from "Payload trader, else the trade's trader";
+> changes stored as "Before and after per changed field"; history readable via
+> "GET /api/trades/:trade_id/amendments".
+
+**Outcome:** Widened the shared query schema so the API no longer describes less than the grid
+displays, and built the audit trail as a row written inside the same transaction as the update,
+recording both sides of every field that actually moved. Added a CI workflow that runs the
+integration tier against a Postgres service, which matters because those 15 tests still have not
+executed anywhere.
+
+**Commits:** `2bea289`
+
+---
+
 ### 2026-09-12T01:57Z - research_mvp_requirements_and_gaps
 
 **Prompt**
@@ -177,6 +305,24 @@ Significant prompts only, append-only, newest at the bottom. Rules: `/CLAUDE.md`
 
 ---
 
+### 2026-09-12T02:10Z - merge_research_and_raise_server_decisions
+
+**Prompt**
+
+> Pull the default branch before anything else. `main` moved to 550b2de and now carries a
+> requirements and gap analysis that was checked line by line against your branch at 69fc726 [...]
+> Your half of the gap list, by the IDs used in that document [...] Decisions D4 through D9 in that
+> document are yours to raise, not to take. [...] THE STANDING RULE HOLDS. Decide nothing.
+
+**Outcome:** Merged `origin/main`, keeping both sides of the expected prompt-log conflict in
+timestamp order, and independently confirmed the two seed defects rather than taking the document's
+word: the fifth session is Saturday 2026-08-22 and four London names are priced in pounds. Put
+sixteen choices to the user across four rounds instead of taking any of them.
+
+**Artifact:** [Blotter MVP Requirements](../artifacts/mvp_requirements_and_gap_analysis.html)
+
+---
+
 ### 2026-09-12T02:10Z - plan_frontend_implementation
 
 **Prompt:** "can we start the implementation of the frontend properly within frontend using all skills necessary?"
@@ -184,3 +330,24 @@ Significant prompts only, append-only, newest at the bottom. Rules: `/CLAUDE.md`
 **Outcome:** Found that `backend/src/app.ts` mounts only the health router, so there was no API for a frontend to call, and put that plus seven further forks to the user as explicit questions rather than deciding any of them. He chose backend-first, a business-id URL shape with cancel as a named action, all four optional features, `TradeEvent` replacing `TradeAmendment`, in-memory marks, his full auth baseline with Postgres standing in for Redis, server-computed positions with client-side unrealised P&L, and the compose Postgres for the integration tier.
 
 **Artifact:** [Trade API design](../superpowers/specs/2026-09-12-trade-api-design.md)
+
+---
+
+### 2026-09-12T03:20Z - close_the_server_gap_list
+
+**Prompt** (answers to sixteen questions across four rounds)
+
+> Keyset cursor on (tradeTimestamp DESC, id DESC). Wrap: { seq, emitted_at, trade }. Add currency,
+> price the .L names in GBX. Economic terms and booking details, not identity. Rename to trade_event
+> with action and source. Keep before-and-after pairs only. Migrate to application/problem+json.
+> Cheap tier, real HTTP and sockets, in-memory repository. One constant in @blotter/shared. All
+> three guard rails. pino and pino-http. A database trigger that raises on UPDATE or DELETE.
+> Composite index, socket Origin check, /v1 prefix. Prometheus text exposure format. Step the seed
+> over weekends, trade-date range filter. Merge after this work lands.
+
+**Outcome:** Closed every open server item on the gap list, including the two-client broadcast test
+that previously existed only in a temp directory and now proves an uninvolved tab sees a trade
+created over the network. Tests went from 93 to 152, with the database-backed tier covering the
+append-only trigger and the currency migration in CI.
+
+**Commits:** `9d3c27e`
