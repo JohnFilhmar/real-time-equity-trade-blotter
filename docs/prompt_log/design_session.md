@@ -78,3 +78,20 @@ Significant prompts only, append-only, newest at the bottom. Rules: `/CLAUDE.md`
 **Outcome:** Audited the canvas against the brief and found the required set covered apart from a cancel confirmation step, a mobile create-trade page and a weak refresh affordance, with four bonus ideas already carried by the existing boards. Added nine artboards in Direction A that close those gaps and cover every remaining optional extension, taking the canvas to twenty-three boards.
 
 **Artifact:** [Fusion Blotter design canvas](../artifacts/fusion_blotter_design_canvas.html)
+
+---
+
+### 2026-09-12T02:40Z - close_the_mvp_interface_gaps
+
+**Prompt**
+
+> Pull the default branch before anything else. `main` moved to 550b2de and now carries a
+> requirements and gap analysis whose interface section was checked against your prototype source,
+> not against the design notes. [... truncated, ~2200 characters omitted: the ten interface gap IDs
+> U-M4 through U-M16 with their findings, the five backend conflicts C1 through C5, the instruction
+> that D2, D3 and D10 are the user's to decide, the standing rule that the agent decides nothing,
+> and the instruction to log here.]
+
+**Outcome:** Verified the gap list against the prototype source and found two of ten claims did not hold, U-M4's evidence (the tick glyphs exist, three occurrences; the real 1.4.1 gap is the row flash) and U-M16 (already satisfied), then put all thirteen remaining decisions to the user rather than taking any. He held both 02:10Z decisions on P&L and authentication despite the research ranking them last and twenty-seventh of twenty-eight, chose TanStack Table headless, a date range with the desk chip dropped, and the recommended option on every interface behaviour item.
+
+**Artifact:** [Interface behaviour design](../superpowers/specs/2026-09-12-interface-behaviour-design.md)
