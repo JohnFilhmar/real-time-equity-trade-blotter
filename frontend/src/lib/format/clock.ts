@@ -27,22 +27,26 @@ export function format_date_time(iso: string): string {
 }
 
 /**
- * Formats a UTC date as the `datetime-local` input value for the same instant.
+ * Formats a UTC date as the `datetime-local` input value for the same instant, to the second.
+ *
+ * Seconds are kept because a trade's execution time is what the blotter sorts on: a ticket that
+ * defaulted to the top of the minute would file a new trade below ones executed later in that
+ * minute.
  *
  * @param date - The instant to show.
- * @returns `YYYY-MM-DDTHH:MM` in UTC.
+ * @returns `YYYY-MM-DDTHH:MM:SS` in UTC.
  */
 export function to_datetime_local_value(date: Date): string {
-  return date.toISOString().slice(0, 16);
+  return date.toISOString().slice(0, 19);
 }
 
 /**
  * Reads a `datetime-local` input value as UTC.
  *
  * The control has no time zone, so the value is interpreted as UTC to match how every other time
- * on the blotter is shown.
+ * on the blotter is shown. Browsers omit the seconds when they are zero, so both forms parse.
  *
- * @param value - The input's value, `YYYY-MM-DDTHH:MM`.
+ * @param value - The input's value, `YYYY-MM-DDTHH:MM` or `YYYY-MM-DDTHH:MM:SS`.
  * @returns An ISO timestamp, or `undefined` when the value is empty or malformed.
  */
 export function from_datetime_local_value(value: string): string | undefined {
@@ -50,6 +54,7 @@ export function from_datetime_local_value(value: string): string | undefined {
     return undefined;
   }
 
-  const time = Date.parse(`${value}:00.000Z`);
+  const with_seconds = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value) ? `${value}:00` : value;
+  const time = Date.parse(`${with_seconds}Z`);
   return Number.isNaN(time) ? undefined : new Date(time).toISOString();
 }

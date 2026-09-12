@@ -106,6 +106,7 @@ export function FilterRail({ query, onChange, onClear, loaded, total, book_butto
         <Input
           id="f_from"
           type="datetime-local"
+          step={1}
           value={query.date_from === undefined ? '' : to_datetime_local_value(new Date(query.date_from))}
           onChange={(event) => onChange({ date_from: iso_or_clear(event.target.value) })}
         />
@@ -115,6 +116,7 @@ export function FilterRail({ query, onChange, onClear, loaded, total, book_butto
         <Input
           id="f_to"
           type="datetime-local"
+          step={1}
           value={query.date_to === undefined ? '' : to_datetime_local_value(new Date(query.date_to))}
           onChange={(event) => onChange({ date_to: iso_or_clear(event.target.value) })}
         />

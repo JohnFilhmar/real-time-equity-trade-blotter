@@ -23,11 +23,15 @@ describe('format_date_time', () => {
 });
 
 describe('datetime-local round trip', () => {
-  it('reads the input as UTC and writes it back the same way', () => {
-    const iso = '2026-08-18T09:15:00.000Z';
+  it('reads the input as UTC and writes it back to the second', () => {
+    const iso = '2026-08-18T09:15:23.000Z';
     const value = to_datetime_local_value(new Date(iso));
-    expect(value).toBe('2026-08-18T09:15');
+    expect(value).toBe('2026-08-18T09:15:23');
     expect(from_datetime_local_value(value)).toBe(iso);
+  });
+
+  it('accepts a value without seconds, as browsers emit at the top of a minute', () => {
+    expect(from_datetime_local_value('2026-08-18T09:15')).toBe('2026-08-18T09:15:00.000Z');
   });
 
   it('treats an empty input as no filter', () => {
