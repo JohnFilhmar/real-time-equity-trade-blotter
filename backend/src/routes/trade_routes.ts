@@ -27,12 +27,15 @@ const trade_params_schema = z.object({
  * No business rule lives here, and no handler touches Prisma. Express 5 forwards a rejected
  * promise to the error middleware on its own, so none of them need a try/catch.
  *
+ * Every write declares its source as `API`, which is what lets the audit trail distinguish a human
+ * request from the simulated desk feed even though both go through the same service.
+ *
  * Reads are already covered by the global `read_rate_limit`; the mutating routes add
  * `write_rate_limit` on top because each one writes to the database and fans out to every
  * connected client.
  *
  * @param service - The business layer.
- * @returns A router to mount under `/api/trades`.
+ * @returns A router to mount under `/api/v1/trades`.
  */
 export function create_trade_router(service: TradeService): Router {
   const router = Router();
@@ -47,9 +50,9 @@ export function create_trade_router(service: TradeService): Router {
     res.json(await service.get(trade_id));
   });
 
-  router.get('/:trade_id/amendments', async (req, res) => {
+  router.get('/:trade_id/events', async (req, res) => {
     const { trade_id } = trade_params_schema.parse(req.params);
-    res.json(await service.list_amendments(trade_id));
+    res.json(await service.list_events(trade_id));
   });
 
   router.post('/', write_rate_limit, async (req, res) => {
@@ -60,13 +63,13 @@ export function create_trade_router(service: TradeService): Router {
   router.patch('/:trade_id', write_rate_limit, async (req, res) => {
     const { trade_id } = trade_params_schema.parse(req.params);
     const input = amend_trade_schema.parse(req.body);
-    res.json(await service.amend(trade_id, input));
+    res.json(await service.amend(trade_id, input, 'API'));
   });
 
   router.post('/:trade_id/cancel', write_rate_limit, async (req, res) => {
     const { trade_id } = trade_params_schema.parse(req.params);
     const { version } = cancel_trade_schema.parse(req.body ?? {});
-    res.json(await service.cancel(trade_id, version));
+    res.json(await service.cancel(trade_id, version, 'API'));
   });
 
   return router;

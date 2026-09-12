@@ -13,6 +13,9 @@ export default defineConfig({
     // than the schema being weakened to tolerate an absent one.
     env: {
       NODE_ENV: 'test',
+      // Request logging is the feature, not the test output. Silenced here so a failing assertion
+      // is visible rather than buried under one JSON line per request.
+      LOG_LEVEL: 'silent',
       DATABASE_URL: 'postgresql://blotter:blotter@localhost:5432/blotter_test?schema=public',
       CORS_ORIGINS: 'http://localhost:3000',
       SEED_ON_STARTUP: 'false',

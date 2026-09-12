@@ -1,27 +1,32 @@
-import type {
-  AmendTrade,
-  CreateTrade,
-  Trade,
-  TradeAmendment,
-  TradeList,
-  TradeQuery,
+import {
+  find_instrument,
+  type AmendTrade,
+  type CreateTrade,
+  type Currency,
+  type Trade,
+  type TradeEvent,
+  type TradeEventSource,
+  type TradeList,
+  type TradeQuery,
 } from '@blotter/shared';
+import { notional_limits } from '../config/env.js';
 import type { TradeBroadcaster } from '../interfaces/trade_broadcaster.js';
 import type { TradeRepository } from '../interfaces/trade_repository.js';
-import { AppError, error_codes } from '../lib/errors/app_error.js';
+import { AppError } from '../lib/errors/app_error.js';
 
 /**
  * The blotter's business rules: what a trade may become, and who is told about it.
  *
  * Everything that writes a trade goes through here, the HTTP routes and the live feed alike, so
- * the status transitions, the concurrency check and the broadcast exist in exactly one place.
+ * the status transitions, the concurrency check, the pre-trade limits and the broadcast exist in
+ * exactly one place.
  */
 export interface TradeService {
   /**
    * Reads a filtered, sorted page of the blotter.
    *
    * @param query - Already parsed by `trade_query_schema`.
-   * @returns The page, with the unpaged total and the window that produced it.
+   * @returns The page, with the unpaged total and the cursor for the next one.
    */
   list(query: TradeQuery): Promise<TradeList>;
 
@@ -39,6 +44,7 @@ export interface TradeService {
    *
    * @param input - A validated create payload.
    * @returns The stored trade.
+   * @throws {AppError} 422 when the notional exceeds the desk limit for its currency.
    */
   create(input: CreateTrade): Promise<Trade>;
 
@@ -47,32 +53,62 @@ export interface TradeService {
    *
    * @param trade_id - The trade to amend.
    * @param input - Validated changes, carrying the version the client last saw.
+   * @param source - Which path the amendment arrived through.
    * @returns The amended trade, one version higher.
-   * @throws {AppError} 422 when no field was supplied, 404 when the trade is missing, 409 when the
-   * trade is cancelled or has already moved on.
+   * @throws {AppError} 422 when no field was supplied or the resulting notional breaches the
+   * limit, 404 when the trade is missing, 409 when it is cancelled or has already moved on.
    */
-  amend(trade_id: string, input: AmendTrade): Promise<Trade>;
+  amend(trade_id: string, input: AmendTrade, source: TradeEventSource): Promise<Trade>;
 
   /**
    * Cancels an active trade.
    *
    * @param trade_id - The trade to cancel.
    * @param expected_version - Optional version guard from the client.
+   * @param source - Which path the cancellation arrived through.
    * @returns The cancelled trade.
    * @throws {AppError} 404 when the trade is missing, 409 when it is already cancelled or has
    * moved on.
    */
-  cancel(trade_id: string, expected_version?: number): Promise<Trade>;
+  cancel(
+    trade_id: string,
+    expected_version: number | undefined,
+    source: TradeEventSource,
+  ): Promise<Trade>;
 
   /**
-   * Reads the amendment history of one trade, oldest first.
+   * Reads the history of one trade, oldest first.
    *
    * @param trade_id - The trade whose history to read.
-   * @returns The amendments, empty when the trade has never been amended.
+   * @returns The events, empty when the trade has never changed.
    * @throws {AppError} 404 when the trade itself does not exist, so an empty array always means
-   * "never amended" rather than "no such trade".
+   * "never changed" rather than "no such trade".
    */
-  list_amendments(trade_id: string): Promise<TradeAmendment[]>;
+  list_events(trade_id: string): Promise<TradeEvent[]>;
+}
+
+/**
+ * Rejects a ticket whose notional breaches the desk limit for its currency.
+ *
+ * The pre-trade control the brief never asks for and a trading firm would expect: it is the check
+ * that stops a quantity typed into the price field from booking. Limits are per currency because
+ * the blotter quotes in both USD and GBX and one ceiling cannot mean the same thing in both.
+ *
+ * @param quantity - Share count.
+ * @param price - Price in the instrument's own currency.
+ * @param currency - The instrument's quote currency.
+ * @throws {AppError} 422 when the notional is over the limit.
+ */
+function enforce_notional_limit(quantity: number, price: number, currency: Currency): void {
+  const notional = quantity * price;
+  const limit = notional_limits[currency];
+
+  if (notional > limit) {
+    throw AppError.validation_failed(
+      `Notional ${notional.toFixed(2)} ${currency} exceeds the ${limit.toFixed(2)} ${currency} desk limit`,
+      [{ field: 'quantity', message: 'quantity times price exceeds the desk notional limit' }],
+    );
+  }
 }
 
 /**
@@ -147,7 +183,7 @@ export function create_trade_service(
         data: page.trades,
         total: page.total,
         limit: query.limit,
-        offset: query.offset,
+        next_cursor: page.next_cursor,
       };
     },
 
@@ -156,25 +192,41 @@ export function create_trade_service(
     },
 
     async create(input: CreateTrade): Promise<Trade> {
-      const trade = await repository.create(input);
+      const instrument = find_instrument(input.symbol);
+
+      // The symbol is a Zod enum over this same universe, so a miss here means the two lists have
+      // drifted, which is a programming error rather than a client one.
+      if (instrument === undefined) {
+        throw new Error(`symbol ${input.symbol} is not in the instrument universe`);
+      }
+
+      enforce_notional_limit(input.quantity, input.price, instrument.currency);
+
+      const trade = await repository.create({ ...input, currency: instrument.currency });
       broadcaster.trade_created(trade);
       return trade;
     },
 
-    async amend(trade_id: string, input: AmendTrade): Promise<Trade> {
+    async amend(trade_id: string, input: AmendTrade, source: TradeEventSource): Promise<Trade> {
       const { version, ...changes } = input;
 
       if (Object.keys(changes).length === 0) {
-        throw new AppError(
-          422,
-          error_codes.validation_failed,
-          'An amendment must change at least one field',
-        );
+        throw AppError.validation_failed('An amendment must change at least one field');
       }
 
-      // With no authentication, the trader on the payload is the closest thing to an actor. When
-      // the amendment does not touch the trader, the repository attributes it to the trade's own.
-      const amended = await repository.amend(trade_id, version, changes, changes.trader);
+      const current = await require_trade(trade_id);
+
+      enforce_notional_limit(
+        changes.quantity ?? current.quantity,
+        changes.price ?? current.price,
+        current.currency,
+      );
+
+      // With no authentication and no trader field on the amendment payload, the trade's own
+      // trader is the only honest actor. The repository applies that fallback.
+      const amended = await repository.amend(trade_id, version, changes, {
+        source,
+      });
 
       if (amended === null) {
         return explain_failed_write(repository, trade_id, 'amended');
@@ -184,8 +236,12 @@ export function create_trade_service(
       return amended;
     },
 
-    async cancel(trade_id: string, expected_version?: number): Promise<Trade> {
-      const cancelled = await repository.cancel(trade_id, expected_version);
+    async cancel(
+      trade_id: string,
+      expected_version: number | undefined,
+      source: TradeEventSource,
+    ): Promise<Trade> {
+      const cancelled = await repository.cancel(trade_id, expected_version, { source });
 
       if (cancelled === null) {
         return explain_failed_write(repository, trade_id, 'cancelled');
@@ -195,9 +251,9 @@ export function create_trade_service(
       return cancelled;
     },
 
-    async list_amendments(trade_id: string): Promise<TradeAmendment[]> {
+    async list_events(trade_id: string): Promise<TradeEvent[]> {
       await require_trade(trade_id);
-      return repository.find_amendments(trade_id);
+      return repository.find_events(trade_id);
     },
   };
 }

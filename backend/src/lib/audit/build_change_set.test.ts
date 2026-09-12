@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Trade } from '@blotter/shared';
-import { build_change_set } from './build_change_set.js';
+import { build_cancellation_change_set, build_change_set } from './build_change_set.js';
 
 /** A stored trade to diff against. */
 const before: Trade = {
@@ -10,6 +10,7 @@ const before: Trade = {
   side: 'BUY',
   quantity: 5000,
   price: 227.45,
+  currency: 'USD',
   trader: 'JSMITH',
   book: 'EQUITIES_UK',
   counterparty: 'Goldman Sachs',
@@ -28,9 +29,13 @@ describe('build_change_set', () => {
   });
 
   it('records every field that moved', () => {
-    const changes = build_change_set(before, { quantity: 7500, price: 230.1, trader: 'ABROWN' });
+    const changes = build_change_set(before, {
+      quantity: 7500,
+      price: 230.1,
+      counterparty: 'Nomura',
+    });
 
-    expect(Object.keys(changes).sort()).toEqual(['price', 'quantity', 'trader']);
+    expect(Object.keys(changes).sort()).toEqual(['counterparty', 'price', 'quantity']);
   });
 
   it('ignores a field resent at the value it already held', () => {
@@ -40,14 +45,23 @@ describe('build_change_set', () => {
   });
 
   it('returns nothing when the amendment changes nothing', () => {
-    expect(build_change_set(before, { symbol: 'AAPL', quantity: 5000 })).toEqual({});
+    expect(build_change_set(before, { quantity: 5000, book: 'EQUITIES_UK' })).toEqual({});
   });
 
-  it('never records a server-owned field', () => {
+  it('never records a field an amendment is not allowed to touch', () => {
     const changes = build_change_set(before, { quantity: 7500 });
 
+    expect(changes).not.toHaveProperty('symbol');
+    expect(changes).not.toHaveProperty('side');
     expect(changes).not.toHaveProperty('version');
     expect(changes).not.toHaveProperty('status');
-    expect(changes).not.toHaveProperty('updatedAt');
+  });
+});
+
+describe('build_cancellation_change_set', () => {
+  it('records the status transition in the same shape as any other movement', () => {
+    expect(build_cancellation_change_set()).toEqual({
+      status: { from: 'ACTIVE', to: 'CANCELLED' },
+    });
   });
 });

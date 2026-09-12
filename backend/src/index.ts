@@ -3,6 +3,7 @@ import { create_app } from './app.js';
 import { cors_origins, env, live_feed_options } from './config/env.js';
 import { prisma } from './db/prisma_client.js';
 import { create_live_feed } from './lib/live_feed/live_feed.js';
+import { logger } from './lib/logging/logger.js';
 import { seed_trades_if_empty } from './lib/seed/seed_trades.js';
 import { create_socket_broadcaster } from './realtime/socket_broadcaster.js';
 import { create_socket_server } from './realtime/socket_server.js';
@@ -64,10 +65,10 @@ function close_http_server(): Promise<void> {
  * @param signal - The signal that triggered the shutdown, for the log line.
  */
 async function shutdown(signal: string): Promise<void> {
-  console.log(`${signal} received, shutting down`);
+  logger.info({ signal }, 'shutting_down');
 
   const force_exit = setTimeout(() => {
-    console.error('shutdown timed out, exiting');
+    logger.error('shutdown_timed_out');
     process.exit(1);
   }, env.SHUTDOWN_TIMEOUT_MS);
   force_exit.unref();
@@ -77,10 +78,10 @@ async function shutdown(signal: string): Promise<void> {
     await io.close();
     await close_http_server();
     await prisma.$disconnect();
-    console.log('shutdown complete');
+    logger.info('shutdown_complete');
     process.exit(0);
   } catch (error) {
-    console.error('shutdown failed', error);
+    logger.error({ err: error }, 'shutdown_failed');
     process.exit(1);
   }
 }
@@ -89,18 +90,22 @@ async function main(): Promise<void> {
   if (env.SEED_ON_STARTUP) {
     const inserted = await seed_trades_if_empty(prisma, env.SEED_TRADE_COUNT);
     if (inserted > 0) {
-      console.log(`seeded ${inserted} trades`);
+      logger.info({ inserted }, 'seeded_trades');
     }
   }
 
   http_server.listen(env.PORT, () => {
-    console.log(`API listening on http://localhost:${env.PORT.toString()}`);
+    logger.info({ port: env.PORT }, 'api_listening');
   });
 
   if (env.LIVE_FEED_ENABLED) {
     live_feed.start();
-    console.log(
-      `live feed on, every ${live_feed_options.min_interval_ms.toString()} to ${live_feed_options.max_interval_ms.toString()} ms`,
+    logger.info(
+      {
+        min_interval_ms: live_feed_options.min_interval_ms,
+        max_interval_ms: live_feed_options.max_interval_ms,
+      },
+      'live_feed_started',
     );
   }
 }
@@ -109,6 +114,6 @@ process.on('SIGTERM', () => void shutdown('SIGTERM'));
 process.on('SIGINT', () => void shutdown('SIGINT'));
 
 main().catch((error: unknown) => {
-  console.error('failed to start', error);
+  logger.error({ err: error }, 'failed_to_start');
   process.exit(1);
 });

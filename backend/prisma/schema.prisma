@@ -21,6 +21,30 @@ enum TradeStatus {
   @@map("trade_status")
 }
 
+/// GBX is pence sterling, which is how the London Stock Exchange quotes. Without this column a
+/// grid showing HSBA.L beside AAPL has two price scales and no way to tell them apart.
+enum Currency {
+  USD
+  GBX
+
+  @@map("currency")
+}
+
+/// Booking is not an action here: a trade's creation is the row itself.
+enum TradeEventAction {
+  AMENDED
+  CANCELLED
+
+  @@map("trade_event_action")
+}
+
+enum TradeEventSource {
+  API
+  LIVE_FEED
+
+  @@map("trade_event_source")
+}
+
 /// An executed equity trade as it appears on the blotter.
 model Trade {
   id             String      @id @default(uuid()) @db.Uuid
@@ -29,6 +53,7 @@ model Trade {
   side           TradeSide
   quantity       Int
   price          Decimal     @db.Decimal(18, 6)
+  currency       Currency
   trader         String      @db.VarChar(32)
   book           String      @db.VarChar(64)
   counterparty   String      @db.VarChar(128)
@@ -38,26 +63,32 @@ model Trade {
   createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt      DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  amendments TradeAmendment[]
+  events TradeEvent[]
 
   @@index([status, tradeTimestamp(sort: Desc)], map: "trade_status_timestamp_idx")
+  @@index([symbol, tradeTimestamp(sort: Desc)], map: "trade_symbol_timestamp_idx")
   @@index([symbol], map: "trade_symbol_idx")
   @@index([trader], map: "trade_trader_idx")
   @@index([book], map: "trade_book_idx")
   @@map("trade")
 }
 
-/// One row per amendment, written in the same transaction as the update it describes.
-model TradeAmendment {
-  id        String   @id @default(uuid()) @db.Uuid
-  tradeUuid String   @map("trade_uuid") @db.Uuid
-  version   Int
-  changes   Json     @db.JsonB
-  amendedBy String   @map("amended_by") @db.VarChar(32)
-  amendedAt DateTime @default(now()) @map("amended_at") @db.Timestamptz(3)
+/// One row per change to a trade, written in the same transaction as the change it describes.
+///
+/// Append-only, enforced by a trigger rather than by convention: see the migration that creates
+/// `trade_event_is_append_only`. An audit trail the application can rewrite is not an audit trail.
+model TradeEvent {
+  id         String           @id @default(uuid()) @db.Uuid
+  tradeUuid  String           @map("trade_uuid") @db.Uuid
+  version    Int
+  action     TradeEventAction
+  source     TradeEventSource
+  changes    Json             @db.JsonB
+  actor      String           @db.VarChar(32)
+  occurredAt DateTime         @default(now()) @map("occurred_at") @db.Timestamptz(3)
 
   trade Trade @relation(fields: [tradeUuid], references: [id], onDelete: Cascade)
 
-  @@index([tradeUuid, version], map: "trade_amendment_trade_version_idx")
-  @@map("trade_amendment")
+  @@index([tradeUuid, version], map: "trade_event_trade_version_idx")
+  @@map("trade_event")
 }

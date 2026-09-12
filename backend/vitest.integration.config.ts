@@ -11,6 +11,9 @@ export default defineConfig({
     fileParallelism: false,
     env: {
       NODE_ENV: 'test',
+      // Request logging is the feature, not the test output. Silenced here so a failing assertion
+      // is visible rather than buried under one JSON line per request.
+      LOG_LEVEL: 'silent',
       CORS_ORIGINS: 'http://localhost:3000',
       SEED_ON_STARTUP: 'false',
     },

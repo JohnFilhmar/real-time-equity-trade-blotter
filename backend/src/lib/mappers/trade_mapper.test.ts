@@ -10,6 +10,7 @@ const a_row: TradeRow = {
   side: 'BUY',
   quantity: 5000,
   price: { toNumber: () => 227.45 },
+  currency: 'USD',
   trader: 'JSMITH',
   book: 'EQUITIES_UK',
   counterparty: 'Goldman Sachs',
@@ -41,6 +42,7 @@ describe('to_wire_trade', () => {
   it('renders every timestamp as an ISO string', () => {
     const trade = to_wire_trade(a_row);
 
+    expect(trade.currency).toBe('USD');
     expect(trade.tradeTimestamp).toBe('2026-08-18T09:15:23.000Z');
     expect(trade.createdAt).toBe('2026-08-18T09:15:24.000Z');
     expect(trade.updatedAt).toBe('2026-08-18T09:15:24.000Z');

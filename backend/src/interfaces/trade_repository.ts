@@ -1,16 +1,49 @@
-import type { CreateTrade, Trade, TradeAmendment, TradeQuery } from '@blotter/shared';
+import type {
+  AmendableTrade,
+  CreateTrade,
+  Currency,
+  Trade,
+  TradeEvent,
+  TradeEventSource,
+  TradeQuery,
+} from '@blotter/shared';
 
-/** A page of trades together with the total matching the same filters, before paging. */
+/** A page of trades, the total matching the same filters, and where the next page starts. */
 export interface TradePage {
   /** The rows in the requested window, already in wire shape. */
   trades: Trade[];
 
-  /** How many trades match the filters ignoring `limit` and `offset`. */
+  /** How many trades match the filters, ignoring the page window. */
   total: number;
+
+  /** Cursor for the next page, or `null` when this was the last one. */
+  next_cursor: string | null;
 }
 
-/** The fields an amendment is allowed to change. Identifiers, status and version are server-owned. */
-export type TradeChanges = { [K in keyof CreateTrade]?: CreateTrade[K] | undefined };
+/**
+ * A trade ready to store.
+ *
+ * `currency` is not on the create payload because it belongs to the instrument rather than the
+ * ticket, so the service resolves it and hands the repository a complete row.
+ */
+export type NewTrade = CreateTrade & { currency: Currency };
+
+/** The fields an amendment is allowed to change. */
+export type TradeChanges = { [K in keyof AmendableTrade]?: AmendableTrade[K] | undefined };
+
+/**
+ * Who made a change and where it came in from, recorded on the event row.
+ *
+ * Carried as a parameter rather than read from ambient state, so the live feed and an HTTP request
+ * are distinguishable in the audit trail without the repository knowing either exists.
+ */
+export interface TradeWriteContext {
+  /** Who to attribute the change to. When omitted, the trade's own trader is used. */
+  actor?: string;
+
+  /** Which path the change arrived through. */
+  source: TradeEventSource;
+}
 
 /**
  * Persistence port for trades.
@@ -24,10 +57,10 @@ export type TradeChanges = { [K in keyof CreateTrade]?: CreateTrade[K] | undefin
  */
 export interface TradeRepository {
   /**
-   * Reads a filtered, sorted, paged slice of the blotter.
+   * Reads a filtered, sorted, cursor-paged slice of the blotter.
    *
    * @param query - Already parsed and defaulted by `trade_query_schema`.
-   * @returns The rows in the window and the unpaged total.
+   * @returns The rows in the window, the unpaged total, and the next cursor.
    */
   list(query: TradeQuery): Promise<TradePage>;
 
@@ -42,46 +75,49 @@ export interface TradeRepository {
   /**
    * Inserts a trade, assigning the business identifier from the database sequence.
    *
-   * @param input - A validated create payload.
+   * @param input - A validated create payload with its currency resolved.
    * @returns The stored trade, including the identifiers the server assigned.
    */
-  create(input: CreateTrade): Promise<Trade>;
+  create(input: NewTrade): Promise<Trade>;
 
   /**
    * Applies an amendment to an `ACTIVE` trade whose version still matches, and records what moved
-   * in the same transaction as the update, so an amendment can never exist without its audit row.
+   * in the same transaction, so an amendment can never exist without its event row.
    *
    * @param trade_id - The trade to amend.
    * @param expected_version - The version the client last saw.
    * @param changes - The fields to overwrite.
-   * @param amended_by - Who to attribute the amendment to. When omitted, the trade's own trader is
-   * used, because without authentication there is no better answer and a constant would record
-   * nothing worth reading.
+   * @param context - Who made the change and where it came from.
    * @returns The amended trade, or `null` when nothing matched.
    */
   amend(
     trade_id: string,
     expected_version: number,
     changes: TradeChanges,
-    amended_by?: string,
+    context: TradeWriteContext,
   ): Promise<Trade | null>;
 
   /**
-   * Moves an `ACTIVE` trade to `CANCELLED`.
+   * Moves an `ACTIVE` trade to `CANCELLED`, recording the transition in the same transaction.
    *
    * @param trade_id - The trade to cancel.
    * @param expected_version - Optional version guard. Omitted means cancel whatever is current.
+   * @param context - Who cancelled it and where the request came from.
    * @returns The cancelled trade, or `null` when nothing matched.
    */
-  cancel(trade_id: string, expected_version?: number): Promise<Trade | null>;
+  cancel(
+    trade_id: string,
+    expected_version: number | undefined,
+    context: TradeWriteContext,
+  ): Promise<Trade | null>;
 
   /**
-   * Reads the amendment history of one trade, oldest first.
+   * Reads the full history of one trade, oldest first.
    *
    * @param trade_id - The trade whose history to read.
-   * @returns The amendments. Empty when the trade exists but has never been amended.
+   * @returns The events. Empty when the trade exists but has never changed.
    */
-  find_amendments(trade_id: string): Promise<TradeAmendment[]>;
+  find_events(trade_id: string): Promise<TradeEvent[]>;
 
   /**
    * Picks one `ACTIVE` trade at random, used by the live feed to choose something to amend or
