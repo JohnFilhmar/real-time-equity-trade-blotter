@@ -333,6 +333,24 @@ sixteen choices to the user across four rounds instead of taking any of them.
 
 ---
 
+### 2026-09-12T03:05Z - merge_branches_and_settle_auth_model
+
+**Prompt**
+
+> merge all three branches to main, then discuss the worktree-feature-flow so i can review it.
+> implementation plan will be done by another agent post-merged to default branch of all review and
+> spec branches.
+> correct me if im wrong and give me suggestions with the query/question, my view: no roles and
+> permissions, user signs up/registers and logs in and have control over their account and actions,
+> guests/no account views only with login/register button shown in the ui for authentication and
+> actions
+
+**Outcome:** Merged all three branches to `main` at `b71eafd`, resolving three prompt-log conflicts append-style with every entry kept in timestamp order, then reviewed `worktree-feature-flow` and found it never states how a merge happens, that the one-file-per-agent log rule caused the very collisions it exists to prevent when one agent ran three worktrees, and that its CI section describes a pipeline this repo does not have. The user's no-roles model was confirmed correct and removed the `role` claim entirely, but his condition for locking out guests rested on a premise the research does not contain, so it went back to him and he chose full auth with README demo credentials on the confidentiality argument alone.
+
+**Artifact:** [Trade API design](../superpowers/specs/2026-09-12-trade-api-design.md)
+
+---
+
 ### 2026-09-12T03:20Z - close_the_server_gap_list
 
 **Prompt** (answers to sixteen questions across four rounds)
@@ -351,6 +369,22 @@ created over the network. Tests went from 93 to 152, with the database-backed ti
 append-only trigger and the currency migration in CI.
 
 **Commits:** `9d3c27e`
+
+---
+
+### 2026-09-12T03:25Z - reinstate_roles_and_permissions
+
+**Prompt**
+
+> i might pull back 1 decision which is the role and permissions decision.
+> TRADER, VIEWER and ADMIN, each mapping to permissions like trade.read, trade.create, trade.amend
+> and trade.cancel, with the routes requiring the permission rather than the role. Demonstrates the
+> RBAC-plus-permission split your baseline asks for, and a VIEWER who cannot cancel is something you
+> can actually show working.
+
+**Outcome:** Reversed decision 9 and, because ADMIN is meaningless unless TRADER is limited, decision 12 with it, after finding that `ProfileMobile.html` had specified the boundary since the design phase with "amend another trader's book, desk head only". Settled on six permissions checked by a `require_permission` guard, ownership enforced in the repository layer so a missed guard cannot leak, a scoped-out trade returning 404 rather than 403, and roles stored as three tables rather than the code map that was recommended.
+
+**Artifact:** [Trade API design](../superpowers/specs/2026-09-12-trade-api-design.md)
 
 ---
 
@@ -373,6 +407,22 @@ lockout alongside Redis-backed tiered rate limiting. Tests went from 152 to 221,
 trader now comes from the access token rather than the request body.
 
 **Commits:** `45b8315`
+
+---
+
+### 2026-09-12T04:10Z - write_ui_ux_handoff_into_the_repo
+
+**Prompt**
+
+> we are going to handoff your session to a more reliable model for the wiring of the backend server
+> and implementation of the ui/ux, so i am going to need you to write your /context-handoff to a
+> markdownfile inside the repository then merge it to the default branch for that new agent to
+> continue on as a new context. and that context should only be in your context which is planning
+> the whole ui/ux and its decisions.
+
+**Outcome:** Wrote the UI/UX planning handoff to `docs/handoff/ui_ux_planning.md` and merged it to `main`, deliberately inside the repository rather than under `~/.claude/handoff/` as the global rule requires, because the agent picking it up starts from a clone and cannot read a local path. Scoped to the interface: the A-plus-B-glass direction, the per-theme token architecture, the settled reversals that must not be re-litigated, the two MVP gap-analysis claims that were disproved, and the environment traps that cost time.
+
+**Artifact:** [UI/UX planning handoff](../handoff/ui_ux_planning.md)
 
 ---
 
