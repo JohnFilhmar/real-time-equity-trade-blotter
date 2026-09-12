@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { trade_side_values, trade_status_values } from '@blotter/shared';
-import { generate_trades } from './generate_trades.js';
+import {
+  generate_live_amendment,
+  generate_live_trade,
+  generate_trades,
+} from './generate_trades.js';
+
+/** Matches a number written with at most two decimal places. */
+const at_most_two_decimals = /^\d+(\.\d{1,2})?$/;
+
+/** How many draws the precision checks take, enough to cover every instrument many times over. */
+const sample_size = 300;
 
 describe('generate_trades', () => {
   it('is deterministic for a given seed, so the dataset reproduces between runs', () => {
@@ -66,5 +76,21 @@ describe('generate_trades', () => {
     const timestamps = trades.map((trade) => trade.tradeTimestamp.getTime());
 
     expect(timestamps).toEqual([...timestamps].sort((a, b) => a - b));
+  });
+});
+
+describe('generate_live_trade', () => {
+  it('quotes every price to at most two decimal places', () => {
+    for (let index = 0; index < sample_size; index += 1) {
+      expect(String(generate_live_trade().payload.price)).toMatch(at_most_two_decimals);
+    }
+  });
+});
+
+describe('generate_live_amendment', () => {
+  it('quotes every amended price to at most two decimal places, even from a six-place one', () => {
+    for (let index = 0; index < sample_size; index += 1) {
+      expect(String(generate_live_amendment(443.497704).price)).toMatch(at_most_two_decimals);
+    }
   });
 });

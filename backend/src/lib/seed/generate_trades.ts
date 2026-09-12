@@ -185,6 +185,9 @@ export function generate_trades(count: number, seed = 20260818): GeneratedTrade[
  * instrument and takes the trader from whoever is booking, which is why the desk code comes back
  * alongside the payload rather than inside it.
  *
+ * The price is quoted to two decimal places, which is how both USD and GBX names are quoted on
+ * screen. A price like 443.497704 is one of the standard tells that a dataset was generated.
+ *
  * @returns A create payload and the desk code to book it under.
  */
 export function generate_live_trade(): GeneratedLiveTrade {
@@ -196,7 +199,7 @@ export function generate_live_trade(): GeneratedLiveTrade {
       symbol: instrument.symbol,
       side: faker.helpers.arrayElement(['BUY', 'SELL']) as TradeSide,
       quantity: pick_quantity(),
-      price: Number((instrument.base_price * (1 + drift)).toFixed(6)),
+      price: Number((instrument.base_price * (1 + drift)).toFixed(2)),
       book: instrument.book,
       counterparty: faker.helpers.arrayElement(counterparties),
       tradeTimestamp: new Date().toISOString(),
@@ -214,7 +217,7 @@ export function generate_live_trade(): GeneratedLiveTrade {
  *
  * @param current_price - The trade's present price, so the new one drifts from it rather than
  * jumping to an unrelated level.
- * @returns A partial amendment carrying quantity and price.
+ * @returns A partial amendment carrying quantity and a price quoted to two decimal places.
  */
 export function generate_live_amendment(
   current_price: number,
@@ -223,6 +226,6 @@ export function generate_live_amendment(
 
   return {
     quantity: pick_quantity(),
-    price: Number((current_price * (1 + price_drift)).toFixed(6)),
+    price: Number((current_price * (1 + price_drift)).toFixed(2)),
   };
 }
