@@ -158,6 +158,8 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
       target: runtime
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5000}
     image: tp-icap/frontend:local
     pull_policy: build
     restart: unless-stopped
@@ -182,7 +184,7 @@ services:
         - CMD
         - node
         - -e
-        - fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))
+        - fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))
       interval: 30s
       timeout: 5s
       start_period: 30s
