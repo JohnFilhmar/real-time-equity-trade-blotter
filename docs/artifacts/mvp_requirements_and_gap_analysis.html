@@ -240,7 +240,7 @@
   <div class="meta">
     <span><b>Written</b> 2026-09-12</span>
     <span><b>Method</b> 4 research passes, ~100 searches</span>
-    <span><b>Checked against</b> worktree-blotter_phase_01, worktree-hifi-prototype</span>
+    <span><b>Checked against</b> <code>69fc726</code>, <code>worktree-hifi-prototype</code></span>
     <span><b>Decisions taken</b> none</span>
   </div>
 </header>
@@ -333,8 +333,8 @@
       <tbody>
         <tr>
           <td><code>worktree-blotter_phase_01</code></td>
-          <td>The entire trade API: repository, service, routes, Socket.IO broadcaster, live feed, mappers, 2,689 added lines</td>
-          <td>Pushed, not merged</td>
+          <td>The entire trade API: repository, service, routes, Socket.IO broadcaster, live feed, mappers, the amendment audit trail, and a GitHub Actions pipeline that runs the database-backed test tier</td>
+          <td>Pushed, not merged. CI green</td>
         </tr>
         <tr>
           <td><code>worktree-hifi-prototype</code></td>
@@ -350,6 +350,12 @@
     </table>
   </div>
 
+  <p class="tight">
+    The backend branch moved while this research was running: the amendment audit trail, CI, and a
+    widened query surface all landed at <code>2bea289</code> and after. Every status column here was
+    re-checked against <code>69fc726</code> rather than against the commit the research started from,
+    so two rows that would have read as gaps are marked done or partial instead.
+  </p>
   <p class="tight">
     The frontend is an untouched <code>create-next-app</code> scaffold on every branch. Next 16.3.4,
     React 19.2.8, Tailwind v4. No <code>socket.io-client</code>, no TanStack packages. So the whole
@@ -375,7 +381,7 @@
         <tr><td class="id">S-M2</td><td>Every timestamp is <code>timestamptz</code> at millisecond precision</td><td><em class="flag done">done</em></td><td><code>@db.Timestamptz(3)</code> on all four datetime columns</td></tr>
         <tr><td class="id">S-M3</td><td>No hard delete. Cancel is a status transition</td><td><em class="flag done">done</em></td><td>Cancel is <code>POST /:trade_id/cancel</code>, deliberately not a DELETE</td></tr>
         <tr><td class="id">S-M4</td><td>One canonical schema, every inbound shape derived from it</td><td><em class="flag done">done</em></td><td><code>trade_schema</code> with <code>.omit()</code> and <code>.partial()</code> in <code>shared/</code></td></tr>
-        <tr><td class="id">S-M5</td><td>Sort fields are an allowlist, never passed to the ORM raw</td><td><em class="flag done">done</em></td><td><code>sort_by</code> is a five-value Zod enum</td></tr>
+        <tr><td class="id">S-M5</td><td>Sort fields are an allowlist, never passed to the ORM raw</td><td><em class="flag done">done</em></td><td><code>sort_by</code> is a Zod enum over <code>trade_sort_columns</code>, deliberately the full set of ten displayed columns, so no header looks sortable while the API rejects it</td></tr>
         <tr><td class="id">S-M6</td><td>The list endpoint is bounded server-side</td><td><em class="flag done">done</em></td><td><code>limit</code> capped at 1000, defaulted to 100</td></tr>
         <tr><td class="id">S-M7</td><td>Concurrent amendment is caught, not silently lost</td><td><em class="flag done">done</em></td><td>Conditional <code>updateMany</code>, so the version check and the write are one statement</td></tr>
         <tr><td class="id">S-M8</td><td>404, 409 and "already cancelled" are distinguished, not collapsed</td><td><em class="flag done">done</em></td><td><code>explain_failed_write()</code> re-reads to pick the right code. Most candidates return 409 for all three</td></tr>
@@ -387,7 +393,7 @@
         <tr><td class="id">S-M14</td><td>SIGTERM drains in the right order and exits 0</td><td><em class="flag done">done</em></td><td>Verified under Docker; two real defects were found and fixed doing it</td></tr>
         <tr><td class="id">S-M15</td><td>Socket CORS is an explicit allowlist, never <code>*</code></td><td><em class="flag done">done</em></td><td>Origins come from config, paired with <code>credentials: true</code></td></tr>
         <tr><td class="id">S-M16</td><td>Broadcast events carry the full entity including its version</td><td><em class="flag done">done</em></td><td>Correct default for a blotter: a row is under 1KB and the grid needs every field</td></tr>
-        <tr><td class="id">S-M17</td><td>Integration tests run against real Postgres, not a mock</td><td><em class="flag done">done</em></td><td>8 integration tests pass against the containerised database</td></tr>
+        <tr><td class="id">S-M17</td><td>Integration tests run against real Postgres, not a mock</td><td><em class="flag done">done</em></td><td>93 unit and 15 integration tests pass, the integration tier against a real Postgres service container in GitHub Actions</td></tr>
         <tr><td class="id">S-M18</td><td>A test proves a broadcast reached a second, uninvolved client</td><td><em class="flag gap">gap</em></td><td>This exact check was run, with two Socket.IO clients, but as a throwaway script in a job temp directory that is deliberately not in the repo. It is the single highest-signal test on the exercise and it currently scores zero</td></tr>
         <tr><td class="id">S-M19</td><td>Events carry a monotonic <code>seq</code> and a server <code>emitted_at</code></td><td><em class="flag gap">gap</em></td><td><code>ServerToClientEvents</code> carries a bare <code>Trade</code>. Without a sequence the client cannot know it missed anything</td></tr>
         <tr><td class="id">S-M20</td><td>A client detects a gap and resyncs rather than silently diverging</td><td><em class="flag gap">gap</em></td><td>Depends on S-M19 and on a frontend that does not exist yet</td></tr>
@@ -438,8 +444,8 @@
         <tr><td class="id">S-S3</td><td>A server-side notional limit (fat-finger control)</td><td><em class="flag gap">gap</em></td><td>Roughly ten lines. Reads as domain literacy rather than CRUD, and echoes the pre-trade control obligations under SEC Rule 15c3-5</td></tr>
         <tr><td class="id">S-S4</td><td>Symbol validated against a known instrument set</td><td><em class="flag gap">gap</em></td><td>Today it is a regex, so <code>ZZZZ</code> books happily while the seed universe is twelve names</td></tr>
         <tr><td class="id">S-S5</td><td>Indexes matching the real filter-then-sort queries</td><td><em class="flag gap">gap</em></td><td>Present: <code>(status, trade_timestamp DESC)</code> which is right, plus single-column symbol, trader and book. Filtering by symbol and sorting by time wants the composite <code>(symbol, trade_timestamp DESC)</code></td></tr>
-        <tr><td class="id">S-S6</td><td>An audit row written on amend and on cancel, with actor and source</td><td><em class="flag gap">gap</em></td><td><code>TradeAmendment</code> exists and nothing writes to it. It has no <code>source</code> and no <code>reason</code> column. This is the best marks-per-hour bonus available, because database design sits inside the 20 percent Full Stack line</td></tr>
-        <tr><td class="id">S-S7</td><td>The audit table is append-only, enforced by grant</td><td><em class="flag gap">gap</em></td><td>Follows S-S6</td></tr>
+        <tr><td class="id">S-S6</td><td>An audit row written on amend and on cancel, with actor and source</td><td><em class="flag partial">partial</em></td><td>The amend half landed after this research began and is well done: written in the same transaction as the update, and <code>build_change_set()</code> records only the fields that genuinely moved, as before-and-after pairs, so a one-field amendment cannot produce a row claiming it touched eight. History reads at <code>GET /:trade_id/amendments</code>. Two pieces remain: <code>cancel()</code> writes no audit row, so a cancelled trade has no trace of who cancelled it, and there is no <code>source</code> column</td></tr>
+        <tr><td class="id">S-S7</td><td>The audit table is append-only, enforced by grant</td><td><em class="flag gap">gap</em></td><td>The application role can still update and delete audit rows</td></tr>
         <tr><td class="id">S-S8</td><td>An Origin check independent of the CORS option</td><td><em class="flag gap">gap</em></td><td>Socket.IO CORS applies only to the HTTP long-polling handshake. WebSocket frames are not subject to CORS at all, so the allowlist protects less than it looks like it does</td></tr>
         <tr><td class="id">S-S9</td><td>Socket metrics, including broadcast lag from commit to emit</td><td><em class="flag gap">gap</em></td><td>Clients connected, events per second and lag are the three numbers that say the blotter is actually real-time</td></tr>
         <tr><td class="id">S-S10</td><td>A <code>/v1</code> prefix on the API</td><td><em class="flag gap">gap</em></td><td>One router mount. Costs nothing, visible in the README</td></tr>
@@ -595,7 +601,7 @@
         <tr><td class="id">2</td><td>Move the two-client broadcast check into the repo as a real test</td><td>0.75</td><td>Highest-signal test on the exercise, already proven to pass, currently scoring zero because it lives in a temp directory</td></tr>
         <tr><td class="id">3</td><td>Merge the three branches into <code>main</code></td><td>0.5</td><td>A clone of the default branch today is a health endpoint and a starter page. See D1</td></tr>
         <tr><td class="id">4</td><td>Sequence and <code>emitted_at</code> on events, plus gap-detect and resync on the client</td><td>1.5</td><td>Separates a demo from something that could run. Almost nobody writes it, and the client apply rule that makes duplicates no-ops is three lines</td></tr>
-        <tr><td class="id">5</td><td>Write the audit trail into <code>TradeAmendment</code>, with actor and source</td><td>2 to 3</td><td>Best bonus on the board. Database design is inside the 20 percent Full Stack line, and a blotter is a record of what happened</td></tr>
+        <tr><td class="id">5</td><td>Finish the audit trail: write a row on cancel, and add <code>source</code></td><td>0.75</td><td>Was the best bonus on the board and the amend half has now landed. What remains is the half a reviewer is most likely to probe, because a cancelled trade currently has no record of who cancelled it</td></tr>
         <tr><td class="id">6</td><td>Fix pagination against live inserts</td><td>1</td><td>Correctness, not performance. Also the one bug whose test ("insert between page one and page two, assert zero overlap") proves you understood why</td></tr>
         <tr><td class="id">7</td><td>Tick arrows and ARIA grid semantics</td><td>1</td><td>Closes U-M4 and U-M12 together, and the WAI-ARIA grid pattern tells you exactly what to write</td></tr>
         <tr><td class="id">8</td><td>Batch and conflate incoming updates</td><td>0.5</td><td>Both a performance control and a WCAG 2.3.1 control</td></tr>
@@ -603,7 +609,7 @@
         <tr><td class="id">10</td><td>Reject future trade timestamps; add a notional limit and a symbol allowlist</td><td>0.75</td><td>Three small server rules that together read as domain literacy</td></tr>
         <tr><td class="id">11</td><td>Structured request logging with a correlation id</td><td>0.5</td><td>Turns "an error happened" into a log key the user can quote back</td></tr>
         <tr><td class="id">12</td><td>Composite indexes, <code>/v1</code>, Origin check, socket metrics</td><td>1</td><td>Small, individually cheap, collectively the difference between careful and adequate</td></tr>
-        <tr><td class="id">13</td><td><code>lint</code> scripts for <code>backend</code> and <code>shared</code></td><td>0.25</td><td>Only <code>frontend</code> has one today, so the root <code>lint</code> script covers a third of the code</td></tr>
+        <tr><td class="id">13</td><td><code>lint</code> scripts for <code>backend</code> and <code>shared</code></td><td>0.25</td><td>Only <code>frontend</code> has one, so the root <code>lint</code> script covers a third of the code. Listed for completeness rather than as a recommendation: you have already declined this once, and CI runs the lint step that exists</td></tr>
       </tbody>
     </table>
   </div>
@@ -625,8 +631,8 @@
         <tr>
           <td class="id">C1</td>
           <td>A P&amp;L view fed by a synthetic mark feed walking prices every 900ms</td>
-          <td>No market-price field, no mark endpoint, no <code>mark.updated</code> event</td>
-          <td>The largest single conflict. Also the lowest-value item in the research ranking. See D2</td>
+          <td>No market-price field, no mark endpoint, no <code>mark.updated</code> event, and P&amp;L is on the deferred list</td>
+          <td>The largest single conflict, and the research independently ranks P&amp;L last of twenty-eight. You have already deferred it on the backend side, so the open question is only what the UI does with the board that was drawn. See D2</td>
         </tr>
         <tr>
           <td class="id">C2</td>
@@ -637,8 +643,8 @@
         <tr>
           <td class="id">C3</td>
           <td>Audit columns for <code>SOURCE</code> and <code>ACTION</code>, and cancels in the event feed</td>
-          <td><code>TradeAmendment</code> has neither column and nothing writes to it</td>
-          <td>Agrees with gap 5. Renaming the table to <code>TradeEvent</code> makes source, action and cancel rows all natural</td>
+          <td>Amendments are now recorded with before-and-after values per changed field, but there is no <code>source</code> column and cancel writes no row</td>
+          <td>Half closed since this research began. Renaming the table to <code>TradeEvent</code> makes source, action and cancel rows all natural in one migration</td>
         </tr>
         <tr>
           <td class="id">C4</td>
@@ -684,8 +690,8 @@
         </tr>
         <tr>
           <td class="id">D2</td>
-          <td>P&amp;L, as designed?</td>
-          <td><b>a)</b> Build it with a server mark feed and a <code>mark.updated</code> event, 3 to 6 hours, and own a financial number you invented the convention for. <b>b)</b> Downgrade to notional by symbol, label it notional, one README line on why real P&amp;L is out of scope, under an hour. <b>c)</b> Cut the view. Evidence favours (b)</td>
+          <td>P&amp;L, as designed? You have deferred it on the backend; the UI board still exists</td>
+          <td><b>a)</b> Un-defer it and build a server mark feed with a <code>mark.updated</code> event, 3 to 6 hours, and own a financial number you invented the convention for. <b>b)</b> Downgrade to notional by symbol, label it notional, one README line on why real P&amp;L is out of scope, under an hour. <b>c)</b> Cut the view and say so. Evidence favours (b), which keeps the domain credit at a tenth of the cost</td>
         </tr>
         <tr>
           <td class="id">D3</td>
@@ -705,7 +711,7 @@
         <tr>
           <td class="id">D6</td>
           <td>Audit row shape</td>
-          <td><b>a)</b> Keep the changes-only JSONB, compact, but reconstructing state at version N means replaying. <b>b)</b> Full row snapshot per version, bigger, but "what did this look like at 14:32" is one query. Ops users usually want (b). Either way add <code>source</code>, and write a row on cancel too</td>
+          <td>Already built as before-and-after pairs per changed field, which is the queryable shape and a good call. The open part is whether to add a full row snapshot per version so "what did this look like at 14:32" is one query instead of a replay, and whether to add <code>source</code> and write a row on cancel. The last two are gap 5 and cost under an hour</td>
         </tr>
         <tr>
           <td class="id">D7</td>
