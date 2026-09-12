@@ -105,6 +105,59 @@ Significant prompts only, append-only, newest at the bottom. Rules: `/CLAUDE.md`
 
 ---
 
+### 2026-09-11T02:05Z - build_interactive_hifi_prototype
+
+**Prompt**
+
+> i am going to choose A, but at the same time i am liking the colorization or the glass like accent
+> to B, so if possible let's fully select A while retaining the colorization only of B or its effects,
+> its either the color and effects or just effects of the glassy texture while retaining the color of A.
+> if you still need anything to verify with me, ask away, and I will answer with my opinion, if nothing
+> else, proceed creating the high fidelity designs. responsive for window views, tablet views, and
+> phone views and generally should be adapatable in size. having an interactive hi-fi output will make
+> the result even better so i can reflect on decisions on ui before its actually implemented in the
+> frontend rather than deciding after its implemented.
+
+**Outcome:** Chose Direction A's blue-slate neutrals and IBM Plex type with Direction B's glass material and semantics softened about 15% for legibility through blur, then built a working single-file prototype with sortable and filterable blotter, create/amend/cancel mutating real state, a synthetic mark feed driving positions and P&L, an accumulating audit trail and a device frame driven by container queries rather than media queries. Amendment renders as a version pill beside a two-state status badge, which settles D1 by demonstration.
+
+**Artifact:** [Fusion Blotter Prototype](../artifacts/fusion_blotter_prototype.html)
+
+---
+
+### 2026-09-11T02:20Z - add_theme_toggle_and_fix_opacity
+
+**Prompt:** "a theme toggle feature will also be better. so create a button for that too and also planning the actual colors to prevent opacity mismatch."
+
+**Outcome:** Replaced 44 inline `rgba()` values with a 58-token palette written out per theme, because glass is a different recipe in each: translucent dark with a light edge on dark, frosted white with a dark hairline on light, which re-alpha-ing a single base cannot express. Added a three-state System/Dark/Light control, sourced the light values from Direction C rather than inverting the dark ones, and verified token parity across all three theme blocks.
+
+**Artifact:** [Fusion Blotter Prototype](../artifacts/fusion_blotter_prototype.html)
+
+---
+
+### 2026-09-11T02:30Z - confirm_type_pairing
+
+**Prompt**
+
+> by the way i forgot in case you have not used it, to use fonts Roboto and Source Sans 3 since after
+> searching via brave ai, that's the first result. but if you think there's anything better than it,
+> give me your suggestions or options.
+
+**Outcome:** Argued that Roboto and Source Sans 3 are both neutral sans at the same optical weight, so pairing them gives no contrast, and that the axis a blotter needs is proportional against monospace; offered Source Sans 3 + Source Code Pro, Source Sans 3 + Roboto Mono, and keeping IBM Plex, and the user kept IBM Plex Sans + IBM Plex Mono. Verified in the browser that Plex Mono's zero is dotted by default, which makes `0` unambiguous against `O` with no font-feature CSS, correcting an earlier claim that a slashed zero was available behind the `zero` feature.
+
+**Artifact:** [Fusion Blotter Prototype](../artifacts/fusion_blotter_prototype.html)
+
+---
+
+### 2026-09-11T02:35Z - drop_cancellation_reason
+
+**Prompt:** "remove trade cancellation reason, because modern trade sites does not have that requiring users to explain the reason for the cancelation."
+
+**Outcome:** Removed the required reason field, its five canned values and every downstream reference across nine sites, leaving cancel as a plain confirm whose dialog now states what the transition does rather than asking for a justification. This closes audit divergence D3 by deleting the requirement instead of adding a `cancel_reason` column, and matches the brief's own line that a simple status transition is sufficient.
+
+**Artifact:** [Fusion Blotter Prototype](../artifacts/fusion_blotter_prototype.html)
+
+---
+
 ### 2026-09-12T01:57Z - research_mvp_requirements_and_gaps
 
 **Prompt**
