@@ -5,8 +5,12 @@ export {
   cancel_trade_schema,
   trade_query_schema,
   trade_list_schema,
+  trade_change_schema,
+  trade_change_set_schema,
+  trade_amendment_schema,
   trade_side_values,
   trade_status_values,
+  trade_sort_columns,
   trade_id_pattern,
 } from './schemas/trade.js';
 
@@ -17,8 +21,12 @@ export type {
   CancelTrade,
   TradeQuery,
   TradeList,
+  TradeChange,
+  TradeChangeSet,
+  TradeAmendment,
   TradeSide,
   TradeStatus,
+  TradeSortColumn,
 } from './schemas/trade.js';
 
 export { trade_events } from './events/socket_events.js';

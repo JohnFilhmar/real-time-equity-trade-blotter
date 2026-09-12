@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { trade_query_schema, type CreateTrade } from '@blotter/shared';
+import { trade_query_schema, trade_sort_columns, type CreateTrade } from '@blotter/shared';
 import { PrismaClient } from '../generated/prisma/client.js';
 import type { TradeRepository } from '../interfaces/trade_repository.js';
 import { create_prisma_trade_repository } from './prisma_trade_repository.js';
@@ -124,5 +124,93 @@ describe.skipIf(test_database_url === undefined)('prisma trade repository', () =
 
   it('answers null for a trade that does not exist', async () => {
     await expect(repository.find_by_trade_id('TRD-000001')).resolves.toBeNull();
+  });
+});
+
+describe.skipIf(test_database_url === undefined)('prisma trade repository, audit trail', () => {
+  let prisma: PrismaClient;
+  let repository: TradeRepository;
+
+  beforeAll(() => {
+    prisma = new PrismaClient({
+      adapter: new PrismaPg({ connectionString: test_database_url }),
+    });
+    repository = create_prisma_trade_repository(prisma);
+  });
+
+  afterAll(async () => {
+    await prisma.trade.deleteMany({ where: { book: test_book } });
+    await prisma.$disconnect();
+  });
+
+  it('writes one amendment row per successful amend', async () => {
+    const created = await repository.create(a_create_payload({ quantity: 5000 }));
+    await repository.amend(created.tradeId, 1, { quantity: 7500 });
+    await repository.amend(created.tradeId, 2, { price: 999.5 });
+
+    const history = await repository.find_amendments(created.tradeId);
+
+    expect(history.map((entry) => entry.version)).toEqual([2, 3]);
+  });
+
+  it('records both sides of every field that moved', async () => {
+    const created = await repository.create(a_create_payload({ quantity: 5000 }));
+    await repository.amend(created.tradeId, 1, { quantity: 7500 });
+
+    const [amendment] = await repository.find_amendments(created.tradeId);
+
+    expect(amendment?.changes).toEqual({ quantity: { from: 5000, to: 7500 } });
+  });
+
+  it('attributes to the supplied actor, and otherwise to the trade trader', async () => {
+    const explicit = await repository.create(a_create_payload({ trader: 'JSMITH' }));
+    await repository.amend(explicit.tradeId, 1, { trader: 'ABROWN' }, 'ABROWN');
+
+    const implicit = await repository.create(a_create_payload({ trader: 'MJONES' }));
+    await repository.amend(implicit.tradeId, 1, { quantity: 400 });
+
+    const [explicit_row] = await repository.find_amendments(explicit.tradeId);
+    const [implicit_row] = await repository.find_amendments(implicit.tradeId);
+
+    expect(explicit_row?.amendedBy).toBe('ABROWN');
+    expect(implicit_row?.amendedBy).toBe('MJONES');
+  });
+
+  it('writes no amendment row when the version check fails', async () => {
+    const created = await repository.create(a_create_payload());
+
+    const stale = await repository.amend(created.tradeId, 99, { quantity: 100 });
+
+    expect(stale).toBeNull();
+    await expect(repository.find_amendments(created.tradeId)).resolves.toEqual([]);
+  });
+
+  it('answers an empty history for a trade that exists and was never amended', async () => {
+    const created = await repository.create(a_create_payload());
+
+    await expect(repository.find_amendments(created.tradeId)).resolves.toEqual([]);
+  });
+
+  it('filters on counterparty case-insensitively', async () => {
+    await repository.create(a_create_payload({ counterparty: 'Nomura' }));
+
+    const page = await repository.list(
+      trade_query_schema.parse({ book: test_book, counterparty: 'nomu' }),
+    );
+
+    expect(page.total).toBeGreaterThanOrEqual(1);
+    expect(page.trades.every((trade) => trade.counterparty === 'Nomura')).toBe(true);
+  });
+
+  it('accepts every sort column the grid will offer', async () => {
+    await repository.create(a_create_payload());
+
+    for (const column of trade_sort_columns) {
+      const page = await repository.list(
+        trade_query_schema.parse({ book: test_book, sort_by: column, limit: '5' }),
+      );
+
+      expect(page.trades.length).toBeGreaterThan(0);
+    }
   });
 });

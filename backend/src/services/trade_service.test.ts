@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { trade_query_schema, type CreateTrade, type Trade } from '@blotter/shared';
+import {
+  trade_query_schema,
+  trade_sort_columns,
+  type CreateTrade,
+  type Trade,
+} from '@blotter/shared';
 import type { TradeBroadcaster } from '../interfaces/trade_broadcaster.js';
 import { create_in_memory_trade_repository } from '../repositories/in_memory_trade_repository.js';
 import { AppError } from '../lib/errors/app_error.js';
@@ -217,6 +222,121 @@ describe('trade service', () => {
 
     it('reports 404 for a trade that does not exist', async () => {
       await expect(service.cancel('TRD-999999')).rejects.toMatchObject({ status: 404 });
+    });
+  });
+});
+
+describe('trade service, audit trail and widened query', () => {
+  let broadcaster: RecordingBroadcaster;
+  let service: TradeService;
+
+  beforeEach(() => {
+    broadcaster = create_recording_broadcaster();
+    service = create_trade_service(create_in_memory_trade_repository(), broadcaster);
+  });
+
+  describe('amendment history', () => {
+    it('is empty for a trade that has never been amended', async () => {
+      const created = await service.create(a_create_payload());
+
+      await expect(service.list_amendments(created.tradeId)).resolves.toEqual([]);
+    });
+
+    it('reports 404 rather than an empty list for a trade that does not exist', async () => {
+      await expect(service.list_amendments('TRD-999999')).rejects.toMatchObject({ status: 404 });
+    });
+
+    it('records what moved, with both sides', async () => {
+      const created = await service.create(a_create_payload({ quantity: 5000 }));
+      await service.amend(created.tradeId, { version: 1, quantity: 7500 });
+
+      const [amendment] = await service.list_amendments(created.tradeId);
+
+      expect(amendment?.version).toBe(2);
+      expect(amendment?.changes).toEqual({ quantity: { from: 5000, to: 7500 } });
+    });
+
+    it('attributes the amendment to the payload trader when one is sent', async () => {
+      const created = await service.create(a_create_payload({ trader: 'JSMITH' }));
+      await service.amend(created.tradeId, { version: 1, trader: 'ABROWN' });
+
+      const [amendment] = await service.list_amendments(created.tradeId);
+
+      expect(amendment?.amendedBy).toBe('ABROWN');
+    });
+
+    it("falls back to the trade's own trader when the amendment does not touch it", async () => {
+      const created = await service.create(a_create_payload({ trader: 'JSMITH' }));
+      await service.amend(created.tradeId, { version: 1, quantity: 7500 });
+
+      const [amendment] = await service.list_amendments(created.tradeId);
+
+      expect(amendment?.amendedBy).toBe('JSMITH');
+    });
+
+    it('accumulates one row per amendment, oldest first', async () => {
+      const created = await service.create(a_create_payload());
+      await service.amend(created.tradeId, { version: 1, quantity: 100 });
+      await service.amend(created.tradeId, { version: 2, quantity: 200 });
+      await service.amend(created.tradeId, { version: 3, price: 999.5 });
+
+      const history = await service.list_amendments(created.tradeId);
+
+      expect(history.map((entry) => entry.version)).toEqual([2, 3, 4]);
+      expect(history.at(-1)?.changes).toHaveProperty('price');
+    });
+
+    it('writes no audit row when the amendment is rejected', async () => {
+      const created = await service.create(a_create_payload());
+
+      await expect(
+        service.amend(created.tradeId, { version: 99, quantity: 300 }),
+      ).rejects.toThrow();
+
+      await expect(service.list_amendments(created.tradeId)).resolves.toEqual([]);
+    });
+  });
+
+  describe('widened query surface', () => {
+    it('filters on counterparty', async () => {
+      await service.create(a_create_payload({ counterparty: 'Goldman Sachs' }));
+      await service.create(a_create_payload({ counterparty: 'JP Morgan' }));
+
+      const page = await service.list(trade_query_schema.parse({ counterparty: 'morgan' }));
+
+      expect(page.total).toBe(1);
+      expect(page.data[0]?.counterparty).toBe('JP Morgan');
+    });
+
+    it('sorts on counterparty', async () => {
+      await service.create(a_create_payload({ counterparty: 'Nomura' }));
+      await service.create(a_create_payload({ counterparty: 'Barclays' }));
+      await service.create(a_create_payload({ counterparty: 'JP Morgan' }));
+
+      const page = await service.list(
+        trade_query_schema.parse({ sort_by: 'counterparty', sort_dir: 'asc' }),
+      );
+
+      expect(page.data.map((trade) => trade.counterparty)).toEqual([
+        'Barclays',
+        'JP Morgan',
+        'Nomura',
+      ]);
+    });
+
+    it('sorts on every column the grid can display', async () => {
+      await service.create(a_create_payload({ symbol: 'MSFT', book: 'TECH_GROWTH' }));
+      await service.create(a_create_payload({ symbol: 'AAPL', book: 'EQUITIES_UK' }));
+
+      for (const column of trade_sort_columns) {
+        const page = await service.list(trade_query_schema.parse({ sort_by: column }));
+
+        expect(page.data).toHaveLength(2);
+      }
+    });
+
+    it('rejects a sort column that is not a real one', () => {
+      expect(() => trade_query_schema.parse({ sort_by: 'nonsense' })).toThrow();
     });
   });
 });

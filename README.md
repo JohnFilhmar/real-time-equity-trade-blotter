@@ -21,8 +21,10 @@ feed keeps the blotter moving on its own. The React blotter UI is the remaining 
 | Trade endpoints: list, read, create, amend, cancel | Done |
 | Socket broadcast of every change | Done |
 | Simulated live trade feed | Done |
+| Audit trail (bonus) | Done |
+| CI on push and pull request | Done |
 | Blotter UI | Next |
-| Audit trail and net positions (bonus) | Deferred |
+| Net positions and P&L (bonus) | Deferred |
 
 ## Architecture
 
@@ -99,15 +101,21 @@ identifier, `TRD-100001`, because that is the value a trader reads off the blott
 | `POST` | `/api/trades` | Book a trade, answers 201 |
 | `PATCH` | `/api/trades/:trade_id` | Amend, requires the version last seen |
 | `POST` | `/api/trades/:trade_id/cancel` | Cancel, optional version guard |
+| `GET` | `/api/trades/:trade_id/amendments` | Amendment history, oldest first |
 
-`GET /api/trades` accepts `symbol`, `trader`, `book` (case-insensitive substring), `side`,
-`status`, `sort_by`, `sort_dir`, `limit` and `offset`, and answers an envelope:
+`GET /api/trades` accepts `symbol`, `trader`, `book` and `counterparty` (case-insensitive
+substring), `side`, `status`, `sort_by`, `sort_dir`, `limit` and `offset`, and answers an
+envelope:
 
 ```json
 { "data": [ /* trades */ ], "total": 500, "limit": 100, "offset": 0 }
 ```
 
 The total is the count before paging, so the grid can show a row count without a second call.
+
+`sort_by` accepts every column the blotter displays, not a subset. A header that looks sortable
+and is rejected by the API is worse than no sorting at all, so `trade_sort_columns` in the shared
+package is the single list both sides read.
 
 Amend and cancel are optimistically concurrent. The client echoes back the `version` it last saw;
 if the trade has moved on, the answer is `409` naming the current version rather than a silent
@@ -122,6 +130,20 @@ Errors always take one shape:
 
 `validation_failed` is 422 with field-level detail, `not_found` 404, `conflict` 409,
 `rate_limited` 429.
+
+### Audit trail
+
+Every amendment writes a row to `trade_amendment` in the same transaction as the update, so an
+amendment cannot exist without its audit row and a failed version check leaves nothing behind.
+
+The `changes` column records both sides of each field that actually moved, for example
+`{"quantity": {"from": 5000, "to": 7500}}`. A field resent at the value it already held is not
+recorded, so an amendment that changed one field never produces a row claiming it touched eight.
+Reading the history is then one call, with no walking backwards through versions.
+
+There is no authentication, so `amended_by` takes the trader from the amendment payload when one
+is sent, and otherwise the trade's own trader. That is an assumption, recorded below rather than
+hidden: a real system would take the authenticated user.
 
 ### Real-time
 
@@ -182,6 +204,14 @@ npm run dev:frontend   # http://localhost:3000
 `npm run build:shared` is not optional on a fresh clone: both apps import `@blotter/shared` from
 its built output.
 
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push and pull request: install, build the shared
+contract, generate the Prisma client, typecheck, lint, the unit and route suites, then the
+migrations and the integration tier against a real Postgres service container. The integration
+step is the reason the service exists in the workflow; without it those tests skip and a green run
+would prove less than it appears to.
+
 ## Testing
 
 ```bash
@@ -231,6 +261,13 @@ On 2026-09-11, against `docker compose up`:
 - `docker compose stop` logs `SIGTERM received, shutting down` then `shutdown complete` and exits
   0 in about a second, rather than waiting out the SIGKILL timeout.
 
+The audit trail and the widened query surface were added after that run, and the Docker engine was
+unavailable when they landed. Their 15 integration tests are written and **have not been executed**:
+the audit trail is proven against the in-memory repository and through the routes, but the Prisma
+transaction that writes the row, and the JSONB round trip, are unverified until someone runs
+`npm run test:integration --workspace backend` against a live Postgres. CI does exactly that on
+the next push.
+
 Two defects were found by running the containers rather than reasoning about them, and both are
 fixed:
 
@@ -248,6 +285,9 @@ fixed:
   clear statement of what production would need: short-lived access tokens with rotating refresh
   tokens, a global auth guard, and permission checks in the service layer.
 - `trader` is a free-text desk code, not a user account.
+- Amendments are attributed to the trader on the payload, or to the trade's own trader when the
+  amendment does not touch it. With no authentication there is no better answer, and a constant
+  actor would make the audit trail unreadable. A real system would use the authenticated user.
 - All prices are quoted in the instrument's own currency. There is no currency column, because the
   brief's payload has none, and a single-currency blotter is the smaller lie than an unpopulated
   field.
