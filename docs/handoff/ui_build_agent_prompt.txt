@@ -1,0 +1,183 @@
+You are picking up a nearly-finished take-home exercise and taking it to submission. Read before
+you build: most of this system already exists, and the fastest way to fail here is to rebuild
+something that is already done and tested.
+
+REPOSITORY
+
+  D:\My Folder\tp-icap-take-home-assessment
+  Default branch `main`, currently at b885b4e. Work in your own git worktree, branched from
+  origin/main. Do not work in the shared checkout.
+
+CATCH UP FIRST. Read these six, in this order, before writing any code.
+
+  1. take-home-assessment.md                                    the brief you are graded against
+  2. docs/artifacts/mvp_requirements_and_gap_analysis.html       current state, verified by running
+                                                                the code. Start here: it tells you
+                                                                what is done, what is left, and
+                                                                which decisions are closed
+  3. docs/handoff/backend_server.md                             the backend agent's handover
+  4. docs/handoff/ui_ux_planning.md                             the design agent's handover
+  5. docs/superpowers/specs/2026-09-12-trade-api-design.md       the API contract
+  6. docs/superpowers/specs/2026-09-12-interface-behaviour-design.md
+                                                                every interface behaviour, already
+                                                                decided: conflation, connection
+                                                                lifecycle, ARIA, keyboard, flash
+                                                                contrast, table states
+
+  Then skim docs/artifacts/fusion_blotter_prototype.html. It is a working reference implementation
+  of the UI, not a mockup, and it carries a scope note. Where it and the specs disagree, the specs
+  win. Also read the root CLAUDE.md and frontend/CLAUDE.md for repo conventions.
+
+THE STANDING RULE. Read this before anything else, and apply it to everything below.
+
+  YOU DECIDE NOTHING.
+
+  Any choice that is not already written down in the specs, the gap analysis, or the repo
+  CLAUDE.md files stops and goes to the user as an explicit question, with the options, the cost
+  of each, and your recommendation. Then you wait for the answer.
+
+  This includes choices that feel small: a library, a dependency version, a file or directory
+  layout, a component boundary, a state shape, a naming pattern, an error message, a scope cut, a
+  test tier, a script name, a threshold, a token or colour not already specified.
+
+  Ask before, not after. A decision taken and then reported is a violation even when the choice was
+  right. "It was obvious", "it was reversible", "it was only small", and "I was unblocking myself"
+  are not reasons to proceed.
+
+  For every question, state for each option whether it agrees with the user's skills in
+  ~/.claude/skills/ and his memory.
+
+  Two things are NOT decisions and need no question: following something already recorded in the
+  two specs, the gap analysis, or the repo conventions; and mechanical work that follows directly
+  from a decision already taken.
+
+  If you are waiting on an answer, do not idle and do not guess. Move to other already-specified
+  work, keep a running open-questions list, and never proceed past an unanswered question on the
+  thing it blocks.
+
+  Carry this rule verbatim into every subagent you dispatch. A subagent decides nothing either. It
+  returns findings and options to you, and you put them to the user.
+
+WHAT IS ALREADY DONE. Do not rebuild any of this.
+
+  The backend is complete and tested. npm workspaces across shared/, backend/, frontend/. Express 5,
+  Prisma, Postgres, Socket.IO. One canonical Zod schema in shared/ with every inbound shape derived
+  from it. Keyset pagination, RFC 9457 problem+json errors, optimistic concurrency on a version
+  column, an append-only TradeEvent audit trail enforced by a database trigger, per-currency
+  notional limits, auth with roles and permissions, /metrics, structured logging with a correlation
+  id, Docker compose, CI. Broadcasts carry a {seq, emitted_at, trade} envelope.
+
+  188 tests pass and typecheck is clean across all three workspaces. Verify that yourself before you
+  start, so you know your starting point is green.
+
+WHAT IS LEFT. This is your job.
+
+  1. THE BLOTTER UI. The frontend is still the untouched create-next-app scaffold, so User
+     Experience currently scores zero and this is all of the remaining risk. Build it against the
+     interface behaviour spec. TanStack Table headless is already the decided grid. Socket events
+     patch the query cache via setQueryData, never a refetch.
+
+     Adding socket.io-client and the TanStack packages is a dependency choice: put the exact package
+     list and versions to the user before installing.
+
+     Close S-M20 while you are there: the client compares `seq`, refetches the list on a gap, and
+     discards any event whose version is not greater than the one already cached.
+
+     The spec settles behaviour, not structure. Component boundaries, file layout, and where state
+     lives are not in it, so propose them and get approval before you build them.
+
+  2. WIRE IT INTO ONE SYSTEM. Frontend talking to the real API, through Docker, end to end. Bring
+     the compose stack up and confirm it actually works: two browser tabs, a trade created in one
+     appearing in the other with no refresh. The stack has not been run since auth, the event log
+     and currency landed. Two of the three defects found on this project so far were invisible to
+     the test suite and only appeared when containers ran, so treat this as discovery rather than
+     confirmation.
+
+  3. TEST TOOLING. Lighthouse for the frontend, k6 for the API, and an end-to-end pass with
+     Playwright covering the brief's literal acceptance criterion: two browser contexts, one
+     creates, the other updates without a refresh.
+
+     Scope for these is not settled. Put a proposal to the user before building any of it: which
+     pages Lighthouse runs against and whether any score is treated as a gate, which endpoints k6
+     exercises and at what load profile, and how many Playwright journeys. Note in your proposal
+     that the rubric has no performance line and weights Testing at 10% for "unit and integration
+     testing, sensible coverage", so the user can size these against the UI work deliberately.
+
+  4. ROOT README AND SCRIPTS.
+
+     The README is 10% of the mark and must cover the brief's six points in its own order:
+     architecture decisions, installation, how to run the application, how to run tests, assumptions
+     made, trade-offs accepted. Aim for a three-minute read. Lead with a screenshot or short GIF of
+     two windows updating together, because that proves the hardest requirement before the grader
+     runs anything.
+
+     Write decisions in a consistent four-line shape: the decision, the alternative considered, why
+     it was chosen, and the condition that would change the answer. Add a "not built, on purpose"
+     section listing what was deliberately left out and why. Most of the raw material is already in
+     the gap analysis artifact and the two specs; mine those rather than inventing new reasoning,
+     and do not record a rationale the user has not actually given.
+
+     Update the root package.json so a grader can drive everything from the repository root: run the
+     whole system, run it in development, run all tests, run each tier on its own, typecheck, lint,
+     seed, migrate. Script names and the exact set are a decision: propose the full list first, get
+     approval, then implement. Verify each script actually runs before you document it.
+
+     Confirm the deliverables the brief asks for are all present and coherent: README.md, frontend/,
+     backend/, database/, docker-compose. Also finish docs/ai_usage_report.md, which the brief
+     requires: which tools, how used, example prompts, decisions influenced, and where suggestions
+     were accepted or rejected. It reads as honest when it names a rejection and the reasoning; it
+     reads as marketing when everything was accepted. Draw real examples from docs/prompt_log/.
+
+  5. FINAL VERIFICATION, THEN FIX WHAT YOU FIND. Go through take-home-assessment.md and check the
+     work against it criterion by criterion: every functional requirement, every non-functional
+     requirement, every deliverable, and each of the six weighted assessment criteria. Produce a
+     written pass or fail per line with the evidence.
+
+     For each finding, classify it first. If the fix is mechanical and follows from something
+     already decided, dispatch a subagent to fix it, then re-verify that line yourself. If the
+     finding has more than one reasonable fix, or implies any new choice, it goes to the user as a
+     question before anything is changed.
+
+     Do not mark anything as passing that you have not observed passing. "NOT RUN" never becomes
+     "PASS".
+
+GROUND RULES, non-negotiable.
+
+  - No AI attribution anywhere in a commit message, PR body, or any git artifact.
+  - Never read, write, move, copy or delete .env, .env.*, keys, or *.enc.
+  - No `any`, no `as` used to silence an error, no @ts-ignore. Use unknown and narrow.
+  - snake_case for files, functions and variables, except where the framework mandates otherwise:
+    PascalCase for React components and types, Next.js App Router special filenames.
+  - Do not reopen anything recorded in the specs. In particular, do not reintroduce AMENDED as a
+    trade status.
+  - Log significant prompts to docs/prompt_log/ as you go, per the rules in the root CLAUDE.md.
+    Append-only, verbatim prompt, one or two sentence outcome. Never batch at the end.
+  - Commit as you work, in logical steps. A single squashed commit throws away the reviewer's view
+    of your process, and commit history is read as an Engineering Quality signal.
+
+SETUP, and the things that will waste your time otherwise.
+
+  A fresh worktree needs all three of these before anything runs:
+      npm install
+      npm run build:shared
+      cd backend && DATABASE_URL="postgresql://x:x@localhost:5432/x" npx prisma generate
+
+  Skip the last one and typecheck fails with "Cannot find module '../generated/prisma/client.js'".
+  Skip the first two and the suite fails with `instruments` undefined. Neither is a real defect;
+  both have been mistaken for one.
+
+  Other traps, all previously hit in this repo:
+  - The worktree guard refuses bash heredocs containing backticks, and refuses compound commands it
+    cannot verify stay inside the worktree. Split into plain single commands, or use the Write tool.
+  - Most repo files are CRLF. Normalise before any scripted text replacement.
+  - @faker-js/faker must stay in dependencies; the live feed uses it at runtime.
+  - backend and shared have no lint script. The user declined adding them; do not add them uninvited.
+
+DONE MEANS
+
+  A grader clones the repository on Windows, macOS or Linux, follows the README, and gets a working
+  real-time trade blotter. Two tabs stay in sync. Every documented script runs. Every test tier
+  passes and you have watched it pass. The verification table shows the brief satisfied line by
+  line, with the gaps you chose not to close named and justified rather than left silent.
+
+  And every choice along the way that was not already written down was put to the user first.
