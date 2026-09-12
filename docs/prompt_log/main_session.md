@@ -85,6 +85,26 @@ Significant prompts only, append-only, newest at the bottom. Rules: `/CLAUDE.md`
 
 ---
 
+### 2026-09-11T01:09Z - verify_design_against_trade_shape
+
+**Prompt:** "continue blotter_ui_design and verify whether the design strictly follows the required data shape for the assessment markdown file in the root."
+
+**Outcome:** All ten fields of the brief's sample payload are rendered in every visual direction with values that pass the committed Zod constraints, but seven things diverge, the blocking one being `AMENDED` drawn as a third status badge against the two-value enum `shared/src/schemas/trade.ts` deliberately settled on. Fixed the single unambiguous board defect, the Light direction's STATUS filter displaying a date, and left the six contract questions open with a recommendation recorded against each.
+
+**Artifact:** [Design Data Shape Audit](../artifacts/design_data_shape_conformance.html)
+
+---
+
+### 2026-09-11T01:45Z - design_is_reference_not_spec
+
+**Prompt:** "this will be fine because ui/ux created will just be the base referrence of what the system is predictably should look like."
+
+**Outcome:** Settled that the six open divergences are acceptable, because the artboards are a reference for how the system should look rather than a contract the schema has to satisfy. Reclassified them from blocking design questions into implementation-time notes, the load-bearing one being that the design's `AMENDED` badge means "this trade was amended" and must be built as a version pill beside an `ACTIVE` badge, not as a third enum value.
+
+**Artifact:** [Design Data Shape Audit](../artifacts/design_data_shape_conformance.html)
+
+---
+
 ### 2026-09-12T01:57Z - research_mvp_requirements_and_gaps
 
 **Prompt**
