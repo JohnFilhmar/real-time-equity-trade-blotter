@@ -1,4 +1,4 @@
-import type { Trade } from '../schemas/trade.js';
+import type { BroadcastEnvelope } from '../schemas/broadcast.js';
 
 /**
  * Event names broadcast by the API. Declared once so the server cannot emit a name the client
@@ -10,11 +10,17 @@ export const trade_events = {
   cancelled: 'trade.cancelled',
 } as const;
 
-/** Events the server sends to connected blotter clients. */
+/**
+ * Events the server sends to connected blotter clients.
+ *
+ * Each carries an envelope rather than a bare trade, so a client can tell it missed one. The whole
+ * row travels inside rather than a patch, so a client that did miss one still converges on the
+ * correct trade once it refetches.
+ */
 export interface ServerToClientEvents {
-  'trade.created': (trade: Trade) => void;
-  'trade.amended': (trade: Trade) => void;
-  'trade.cancelled': (trade: Trade) => void;
+  'trade.created': (event: BroadcastEnvelope) => void;
+  'trade.amended': (event: BroadcastEnvelope) => void;
+  'trade.cancelled': (event: BroadcastEnvelope) => void;
 }
 
 /**
@@ -27,7 +33,7 @@ export interface ClientToServerEvents {
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 }
 
-/** Per-socket state. Unused today, declared so the server generic stays explicit. */
+/** Per-socket state. */
 export interface SocketData {
   connected_at: string;
 }

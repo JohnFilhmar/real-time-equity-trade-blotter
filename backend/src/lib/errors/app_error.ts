@@ -1,14 +1,15 @@
-/** Machine-readable error codes returned to clients. */
-export const error_codes = {
-  validation_failed: 'validation_failed',
-  not_found: 'not_found',
-  conflict: 'conflict',
-  rate_limited: 'rate_limited',
-  internal: 'internal',
-} as const;
+import { problem_codes, type ProblemCode } from '@blotter/shared';
+
+/**
+ * Machine-readable error codes returned to clients.
+ *
+ * Re-exported from the shared package rather than declared again here, so the server and any
+ * client branch on one list.
+ */
+export const error_codes = problem_codes;
 
 /** One of the error codes the API can return. */
-export type ErrorCode = (typeof error_codes)[keyof typeof error_codes];
+export type ErrorCode = ProblemCode;
 
 /**
  * An error carrying the HTTP status and machine-readable code the client should see.
@@ -59,5 +60,16 @@ export class AppError extends Error {
    */
   static conflict(message: string): AppError {
     return new AppError(409, error_codes.conflict, message);
+  }
+
+  /**
+   * Builds a 422 for a rule the schema cannot express, such as a configurable limit.
+   *
+   * @param message - What was rejected, in terms the client can act on.
+   * @param details - Optional field-level detail.
+   * @returns An `AppError` with status 422.
+   */
+  static validation_failed(message: string, details?: unknown): AppError {
+    return new AppError(422, error_codes.validation_failed, message, details);
   }
 }

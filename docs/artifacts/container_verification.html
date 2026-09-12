@@ -1,0 +1,584 @@
+<title>Container Verification</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f6f7fa;
+    --surface: #ffffff;
+    --surface-sunk: #eef1f6;
+    --ink: #101828;
+    --ink-soft: #4a5468;
+    --ink-faint: #77819a;
+    --rule: #dbe1ea;
+    --accent: #2b4c8c;
+    --pass: #1c7355;
+    --pass-bg: #e4f2ec;
+    --warn: #8a5807;
+    --warn-bg: #f8efdd;
+    --fail: #a32c2c;
+
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --serif: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0d1017;
+      --surface: #151a24;
+      --surface-sunk: #1b212d;
+      --ink: #e6eaf2;
+      --ink-soft: #9aa4b6;
+      --ink-faint: #6f7a8e;
+      --rule: #252c3a;
+      --accent: #86a8e4;
+      --pass: #4fbf93;
+      --pass-bg: #12261f;
+      --warn: #d9a441;
+      --warn-bg: #2a2113;
+      --fail: #e07b7b;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0d1017;
+    --surface: #151a24;
+    --surface-sunk: #1b212d;
+    --ink: #e6eaf2;
+    --ink-soft: #9aa4b6;
+    --ink-faint: #6f7a8e;
+    --rule: #252c3a;
+    --accent: #86a8e4;
+    --pass: #4fbf93;
+    --pass-bg: #12261f;
+    --warn: #d9a441;
+    --warn-bg: #2a2113;
+    --fail: #e07b7b;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 860px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 56px 72px;
+    display: flex;
+    flex-direction: column;
+    gap: 52px;
+  }
+
+  header { display: flex; flex-direction: column; gap: 18px; }
+
+  .eyebrow {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(30px, 5.5vw, 44px);
+    line-height: 1.08;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  .standfirst {
+    margin: 0;
+    max-width: 62ch;
+    font-family: var(--serif);
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+  }
+
+  .runmeta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 26px;
+    padding-top: 16px;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--ink-faint);
+  }
+  .runmeta b { color: var(--ink-soft); font-weight: 500; }
+
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+  }
+  .tile {
+    background: var(--surface);
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .tile .n {
+    font-family: var(--mono);
+    font-size: 30px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .tile .n.ok { color: var(--pass); }
+  .tile .n.warn { color: var(--warn); }
+  .tile .lbl {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .tile .sub { font-size: 13.5px; color: var(--ink-soft); }
+
+  section { display: flex; flex-direction: column; gap: 18px; }
+
+  h2 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  p { margin: 0; max-width: 68ch; font-family: var(--serif); color: var(--ink-soft); }
+  p.sans { font-family: var(--sans); }
+
+  .tablewrap { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  th {
+    text-align: left;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    padding: 0 14px 9px 0;
+    border-bottom: 1px solid var(--rule);
+    white-space: nowrap;
+  }
+  td {
+    padding: 11px 14px 11px 0;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+    color: var(--ink-soft);
+  }
+  td:first-child { color: var(--ink); font-weight: 500; }
+  td.num, th.num { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; padding-right: 0; }
+  td code, p code, li code { font-family: var(--mono); font-size: 0.88em; color: var(--ink); background: var(--surface-sunk); padding: 1px 5px; border-radius: 3px; }
+
+  .chip {
+    display: inline-block;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .chip.pass { color: var(--pass); background: var(--pass-bg); }
+  .chip.fixed { color: var(--warn); background: var(--warn-bg); }
+
+  pre {
+    margin: 0;
+    background: var(--surface-sunk);
+    border-left: 2px solid var(--accent);
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.65;
+    color: var(--ink);
+  }
+  pre .dim { color: var(--ink-faint); }
+  pre .good { color: var(--pass); }
+  pre .bad { color: var(--fail); }
+
+  .defect {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-top: 2px solid var(--warn);
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .defect-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .defect-ord {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--warn);
+    letter-spacing: 0.05em;
+  }
+  .defect dl { margin: 0; display: grid; grid-template-columns: 88px 1fr; gap: 8px 16px; font-size: 14.5px; }
+  .defect dt {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    padding-top: 3px;
+  }
+  .defect dd { margin: 0; color: var(--ink-soft); }
+
+  ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 9px; color: var(--ink-soft); font-family: var(--serif); max-width: 68ch; }
+
+  footer {
+    border-top: 1px solid var(--rule);
+    padding-top: 18px;
+    font-size: 13px;
+    color: var(--ink-faint);
+    font-family: var(--mono);
+  }
+
+  @media (max-width: 560px) {
+    .defect dl { grid-template-columns: 1fr; gap: 2px 0; }
+    .defect dt { padding-top: 10px; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Trade blotter / phases 01 and 02</div>
+    <h1>Container Verification</h1>
+    <p class="standfirst">
+      The API, the database and the real-time broadcast were exercised inside the containers rather
+      than reasoned about. Everything below is an observed result. Two defects surfaced that no unit
+      test could have caught, both in the shutdown path, and both are fixed.
+    </p>
+    <div class="runmeta">
+      <span><b>Run</b> 2026-09-11</span>
+      <span><b>Engine</b> Docker 28.5.1, linux</span>
+      <span><b>Project</b> tp-icap-blotter</span>
+      <span><b>Branch</b> worktree-blotter_phase_01</span>
+    </div>
+  </header>
+
+  <div class="tiles">
+    <div class="tile">
+      <span class="n ok">106</span>
+      <span class="lbl">Checks passing</span>
+      <span class="sub">70 unit and route, 8 against Postgres, 28 end to end</span>
+    </div>
+    <div class="tile">
+      <span class="n warn">2</span>
+      <span class="lbl">Defects found</span>
+      <span class="sub">Both in graceful shutdown, both fixed and re-verified</span>
+    </div>
+    <div class="tile">
+      <span class="n ok">500</span>
+      <span class="lbl">Seeded cold</span>
+      <span class="sub">On an empty volume, after the migration applied</span>
+    </div>
+    <div class="tile">
+      <span class="n ok">0</span>
+      <span class="lbl">Exit code on stop</span>
+      <span class="sub">Was 1 before the fix, and the handler never ran at all</span>
+    </div>
+  </div>
+
+  <section>
+    <h2>What was run</h2>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Suite</th>
+            <th>Command</th>
+            <th class="num">Result</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Unit and route</td>
+            <td><code>npm test</code></td>
+            <td class="num">70 passed</td>
+          </tr>
+          <tr>
+            <td>Repository, real Postgres</td>
+            <td><code>npm run test:integration --workspace backend</code></td>
+            <td class="num">8 passed</td>
+          </tr>
+          <tr>
+            <td>End to end, live containers</td>
+            <td>two Socket.IO clients plus HTTP</td>
+            <td class="num">28 passed</td>
+          </tr>
+          <tr>
+            <td>Typecheck</td>
+            <td><code>npm run typecheck</code></td>
+            <td class="num">clean</td>
+          </tr>
+          <tr>
+            <td>Lint</td>
+            <td><code>npm run lint</code></td>
+            <td class="num">clean</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      The integration tier had never been executed before this run. It skips rather than fails when
+      <code>TEST_DATABASE_URL</code> is absent, so a green suite on a developer machine with no
+      Postgres was not evidence of anything. Pointed at the containerised database, all eight pass.
+    </p>
+  </section>
+
+  <section>
+    <h2>Real time, proven with two clients</h2>
+    <p>
+      The brief asks that a change made by one client appear on every other without a refresh. Two
+      Socket.IO clients stood in for two browser tabs. A trade created over HTTP in one reached both.
+    </p>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Check</th>
+            <th>Observed</th>
+            <th class="num">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Both tabs receive <code>trade.created</code></td>
+            <td>Same <code>tradeId</code>, full row, price as a JSON number</td>
+            <td class="num"><span class="chip pass">Pass</span></td>
+          </tr>
+          <tr>
+            <td>Amend reaches the other tab</td>
+            <td><code>trade.amended</code>, quantity 7500, version 2</td>
+            <td class="num"><span class="chip pass">Pass</span></td>
+          </tr>
+          <tr>
+            <td>Cancel reaches the other tab</td>
+            <td><code>trade.cancelled</code>, status <code>CANCELLED</code></td>
+            <td class="num"><span class="chip pass">Pass</span></td>
+          </tr>
+          <tr>
+            <td>Stale amend is refused</td>
+            <td>409, message names the current version</td>
+            <td class="num"><span class="chip pass">Pass</span></td>
+          </tr>
+          <tr>
+            <td>Cancelled trade cannot be amended</td>
+            <td>409, message says it is cancelled</td>
+            <td class="num"><span class="chip pass">Pass</span></td>
+          </tr>
+          <tr>
+            <td>Second cancel refused</td>
+            <td>409 rather than a silent success</td>
+            <td class="num"><span class="chip pass">Pass</span></td>
+          </tr>
+          <tr>
+            <td>Price precision survives the round trip</td>
+            <td><code>1234.567891</code> in, same value out of <code>numeric(18,6)</code></td>
+            <td class="num"><span class="chip pass">Pass</span></td>
+          </tr>
+          <tr>
+            <td>Live feed pushes unprompted</td>
+            <td>5 events in 25s, total rose 574 to 578</td>
+            <td class="num"><span class="chip pass">Pass</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <pre><span class="dim">// the conflict message a second trader actually sees</span>
+Trade TRD-101084 has changed since you loaded it.
+It is now at version 2. Reload and try again.</pre>
+  </section>
+
+  <section>
+    <h2>The two defects</h2>
+    <p class="sans">
+      These are numbered because they are a sequence, not a list. The first fix is what exposed the
+      second: until SIGTERM actually reached the process, the code containing the second bug had
+      never executed.
+    </p>
+
+    <div class="defect">
+      <div class="defect-head">
+        <span class="defect-ord">01</span>
+        <h3>Graceful shutdown was dead code inside Docker</h3>
+        <span class="chip fixed">Fixed</span>
+      </div>
+      <dl>
+        <dt>Symptom</dt>
+        <dd>
+          <code>docker compose stop backend</code> returned in 0s and the logs carried no shutdown
+          line at all, which reads like success.
+        </dd>
+        <dt>Cause</dt>
+        <dd>
+          PID 1 was <code>npm run start</code>. npm does not forward SIGTERM to its child, so the
+          handler in <code>backend/src/index.ts</code> never ran. Sockets and the Prisma pool were
+          never closed.
+        </dd>
+        <dt>Fix</dt>
+        <dd>
+          <code>prisma migrate deploy</code> moved into its own one-shot compose service gated by
+          <code>service_completed_successfully</code>, leaving the API container to run
+          <code>node dist/index.js</code> directly as PID 1.
+        </dd>
+      </dl>
+      <pre><span class="dim">$ docker compose exec backend sh -c 'cat /proc/1/cmdline'</span>
+<span class="bad">before:</span>  npm run start
+<span class="good">after:</span>   node dist/index.js</pre>
+    </div>
+
+    <div class="defect">
+      <div class="defect-head">
+        <span class="defect-ord">02</span>
+        <h3>The handler, once running, exited 1 every time</h3>
+        <span class="chip fixed">Fixed</span>
+      </div>
+      <dl>
+        <dt>Symptom</dt>
+        <dd>
+          <code>SIGTERM received, shutting down</code> appeared, <code>shutdown complete</code> did
+          not, and the container exited 1.
+        </dd>
+        <dt>Cause</dt>
+        <dd>
+          <code>io.close()</code> also closes the HTTP server it is attached to, so the following
+          <code>http_server.close()</code> answered <code>ERR_SERVER_NOT_RUNNING</code> and the
+          promise rejected into the failure branch.
+        </dd>
+        <dt>Fix</dt>
+        <dd>
+          That one error code is now treated as the expected path, since the listener being already
+          closed is exactly what was wanted.
+        </dd>
+      </dl>
+      <pre><span class="dim">$ docker compose stop backend   # after both fixes, 1s</span>
+backend-1  | <span class="good">SIGTERM received, shutting down</span>
+backend-1  | <span class="good">shutdown complete</span>
+<span class="dim">state=exited exit=0</span></pre>
+    </div>
+  </section>
+
+  <section>
+    <h2>Cold start on an empty volume</h2>
+    <p>
+      Run as a separate compose project on separate ports, so the existing data was never destroyed
+      to prove this. The migration applied from scratch, then the API seeded itself because the
+      table was empty.
+    </p>
+    <pre>migrate-1  | Applying migration `20260910180000_init`
+migrate-1  | All migrations have been successfully applied.
+backend-1  | seeded 500 trades
+backend-1  | live feed on, every 3000 to 8000 ms
+backend-1  | API listening on http://localhost:5000</pre>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Property of the seeded set</th>
+            <th class="num">Observed</th>
+            <th>Reads as realistic because</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Trades</td><td class="num">500</td><td>Inside the brief's 100 to 1,000 range</td></tr>
+          <tr><td>Cancelled</td><td class="num">29 (5.8%)</td><td>Enough for the status filter to find something</td></tr>
+          <tr><td>Symbols</td><td class="num">12</td><td>US and London names, each booked to its own venue</td></tr>
+          <tr><td>Traders</td><td class="num">8</td><td>Initial-plus-surname codes, as in the brief</td></tr>
+          <tr><td>Books</td><td class="num">4</td><td>Follow the listing venue, not drawn independently</td></tr>
+          <tr><td>Counterparties</td><td class="num">10</td><td>Firms a broker would actually face</td></tr>
+          <tr><td>AAPL price range</td><td class="num">219.00 to 236.24</td><td>Drifts around the brief's own 227.45 anchor</td></tr>
+          <tr><td>Identifiers</td><td class="num">TRD-100001 up</td><td>From a Postgres sequence, not an in-process counter</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Schema and hardening, as the container actually has them</h2>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Property</th><th>Verified value</th><th class="num">Status</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Price column</td><td><code>numeric(18,6)</code>, never a float</td><td class="num"><span class="chip pass">Pass</span></td></tr>
+          <tr><td>Timestamps</td><td><code>timestamp(3) with time zone</code></td><td class="num"><span class="chip pass">Pass</span></td></tr>
+          <tr><td>Enums</td><td><code>trade_side</code>, <code>trade_status</code></td><td class="num"><span class="chip pass">Pass</span></td></tr>
+          <tr><td>Indexes</td><td>Five, including <code>(status, trade_timestamp DESC)</code></td><td class="num"><span class="chip pass">Pass</span></td></tr>
+          <tr><td>Audit foreign key</td><td><code>trade_amendment</code> cascades on delete</td><td class="num"><span class="chip pass">Pass</span></td></tr>
+          <tr><td>Process user</td><td><code>uid=1000(node)</code>, not root</td><td class="num"><span class="chip pass">Pass</span></td></tr>
+          <tr><td>Root filesystem</td><td>Read only, and a write to <code>/app</code> is refused</td><td class="num"><span class="chip pass">Pass</span></td></tr>
+          <tr><td>Capabilities</td><td>All dropped, <code>no-new-privileges</code> set</td><td class="num"><span class="chip pass">Pass</span></td></tr>
+          <tr><td>Restart persistence</td><td>Data survives, and the seed does not re-run</td><td class="num"><span class="chip pass">Pass</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>What this run does not establish</h2>
+    <ul>
+      <li>
+        The frontend container is healthy, but it still serves the <code>create-next-app</code>
+        scaffold. Nothing about the blotter UI has been verified, because it does not exist yet.
+      </li>
+      <li>
+        No browser was driven. The two-tab claim rests on two Socket.IO clients, which is the same
+        transport a tab would use but not the same thing as a Playwright pass.
+      </li>
+      <li>
+        In the 25 second observation window the live feed emitted <code>trade.created</code> and
+        <code>trade.amended</code> but no <code>trade.cancelled</code>. Cancel carries a 10% weight,
+        so its absence across 5 events is expected rather than evidence of a fault, and the cancel
+        path is covered by the end to end and unit suites.
+      </li>
+      <li>
+        Nothing was load tested. Rate limits are in-process and would need a shared store across
+        replicas.
+      </li>
+    </ul>
+  </section>
+
+  <footer>
+    Evidence gathered 2026-09-11 against tp-icap-blotter. Re-runnable with
+    <code>docker compose up -d --wait</code>.
+  </footer>
+
+</div>

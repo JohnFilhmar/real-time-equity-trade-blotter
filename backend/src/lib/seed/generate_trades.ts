@@ -1,37 +1,19 @@
 import { faker } from '@faker-js/faker';
-import type { TradeSide, TradeStatus } from '@blotter/shared';
-
-/** An instrument in the seeded universe, with the price level it trades around. */
-interface Instrument {
-  symbol: string;
-  base_price: number;
-  book: string;
-}
+import {
+  instruments,
+  type AmendableTrade,
+  type CreateTrade,
+  type Currency,
+  type TradeSide,
+  type TradeStatus,
+} from '@blotter/shared';
 
 /**
- * The seeded instrument universe.
+ * Trader codes in the brief's initial-plus-surname form.
  *
- * Price levels for AAPL, MSFT and TSLA are the brief's own sample figures. The rest sit at
- * plausible levels for the same period. Books follow the listing venue rather than being drawn
- * independently, because a London equities desk booking a US tech name to `EQUITIES_UK` is the
- * kind of detail that reads as random data.
+ * Kept here rather than in the shared package: the client has no use for the list, and publishing
+ * it would imply these are accounts rather than free-text desk codes.
  */
-const instruments: readonly Instrument[] = [
-  { symbol: 'AAPL', base_price: 227.45, book: 'EQUITIES_US' },
-  { symbol: 'MSFT', base_price: 534.22, book: 'EQUITIES_US' },
-  { symbol: 'TSLA', base_price: 341.75, book: 'TECH_GROWTH' },
-  { symbol: 'NVDA', base_price: 178.9, book: 'TECH_GROWTH' },
-  { symbol: 'AMZN', base_price: 231.6, book: 'EQUITIES_US' },
-  { symbol: 'META', base_price: 612.35, book: 'TECH_GROWTH' },
-  { symbol: 'GOOGL', base_price: 201.15, book: 'EQUITIES_US' },
-  { symbol: 'JPM', base_price: 268.4, book: 'FINANCIALS' },
-  { symbol: 'HSBA.L', base_price: 9.82, book: 'EQUITIES_UK' },
-  { symbol: 'BP.L', base_price: 4.36, book: 'EQUITIES_UK' },
-  { symbol: 'VOD.L', base_price: 0.78, book: 'EQUITIES_UK' },
-  { symbol: 'SHEL.L', base_price: 28.14, book: 'EQUITIES_UK' },
-];
-
-/** Trader codes in the brief's initial-plus-surname form. */
 const traders: readonly string[] = [
   'JSMITH',
   'ABROWN',
@@ -63,11 +45,43 @@ export interface GeneratedTrade {
   side: TradeSide;
   quantity: number;
   price: string;
+  currency: Currency;
   trader: string;
   book: string;
   counterparty: string;
   tradeTimestamp: Date;
   status: TradeStatus;
+}
+
+/**
+ * Builds a run of trading sessions, skipping weekends.
+ *
+ * Five consecutive calendar days from a Tuesday lands the fifth on a Saturday, and a weekend trade
+ * date is on the standard list of tells that a dataset was generated rather than observed. Walking
+ * forward and stepping over Saturday and Sunday costs four lines and removes it.
+ *
+ * Exchange holidays are not handled. That is a deliberate limit rather than an oversight: a real
+ * calendar is per-venue and this universe spans two.
+ *
+ * @param start - Midnight UTC of the first session to consider.
+ * @param count - How many trading days to produce.
+ * @returns `count` weekday sessions, earliest first.
+ */
+export function build_sessions(start: Date, count: number): Date[] {
+  const sessions: Date[] = [];
+  const day = new Date(start);
+
+  while (sessions.length < count) {
+    const weekday = day.getUTCDay();
+
+    if (weekday !== 0 && weekday !== 6) {
+      sessions.push(new Date(day));
+    }
+
+    day.setUTCDate(day.getUTCDate() + 1);
+  }
+
+  return sessions;
 }
 
 /**
@@ -96,11 +110,27 @@ function pick_session_time(session_day: Date): Date {
 }
 
 /**
+ * Picks a round-lot quantity skewed toward smaller tickets, the way a real blotter reads.
+ *
+ * @returns A share count that is always a multiple of 100.
+ */
+function pick_quantity(): number {
+  const lots = faker.helpers.weightedArrayElement([
+    { weight: 60, value: faker.number.int({ min: 1, max: 20 }) },
+    { weight: 30, value: faker.number.int({ min: 21, max: 100 }) },
+    { weight: 10, value: faker.number.int({ min: 101, max: 500 }) },
+  ]);
+
+  return lots * 100;
+}
+
+/**
  * Generates a realistic randomised trade population.
  *
- * Realism is the point rather than randomness: prices drift around each instrument's own level,
- * quantities are round lots skewed toward smaller tickets, and roughly one trade in twenty is
- * already cancelled so the status filter has something to find.
+ * Realism is the point rather than randomness: prices drift around each instrument's own level in
+ * that instrument's own quote currency, quantities are round lots skewed toward smaller tickets,
+ * sessions are weekdays only, and roughly one trade in twenty is already cancelled so the status
+ * filter has something to find.
  *
  * @param count - How many trades to generate. The brief asks for 100 to 1,000.
  * @param seed - Fixed so a given count always produces the same dataset.
@@ -109,11 +139,7 @@ function pick_session_time(session_day: Date): Date {
 export function generate_trades(count: number, seed = 20260818): GeneratedTrade[] {
   faker.seed(seed);
 
-  const sessions = Array.from({ length: 5 }, (_, index) => {
-    const day = new Date(Date.UTC(2026, 7, 18));
-    day.setUTCDate(day.getUTCDate() + index);
-    return day;
-  });
+  const sessions = build_sessions(new Date(Date.UTC(2026, 7, 18)), 5);
 
   const trades = Array.from({ length: count }, () => {
     const instrument = faker.helpers.arrayElement(instruments);
@@ -122,17 +148,12 @@ export function generate_trades(count: number, seed = 20260818): GeneratedTrade[
     const drift = faker.number.float({ min: -0.04, max: 0.04 });
     const price = instrument.base_price * (1 + drift);
 
-    const lots = faker.helpers.weightedArrayElement([
-      { weight: 60, value: faker.number.int({ min: 1, max: 20 }) },
-      { weight: 30, value: faker.number.int({ min: 21, max: 100 }) },
-      { weight: 10, value: faker.number.int({ min: 101, max: 500 }) },
-    ]);
-
     return {
       symbol: instrument.symbol,
       side: faker.helpers.arrayElement(['BUY', 'SELL']) as TradeSide,
-      quantity: lots * 100,
+      quantity: pick_quantity(),
       price: price.toFixed(6),
+      currency: instrument.currency,
       trader: faker.helpers.arrayElement(traders),
       book: instrument.book,
       counterparty: faker.helpers.arrayElement(counterparties),
@@ -144,4 +165,55 @@ export function generate_trades(count: number, seed = 20260818): GeneratedTrade[
   });
 
   return trades.sort((a, b) => a.tradeTimestamp.getTime() - b.tradeTimestamp.getTime());
+}
+
+/**
+ * Generates one trade, timestamped now, in the shape the create endpoint accepts.
+ *
+ * This deliberately does not reseed faker. The startup seed wants a reproducible dataset so a
+ * reviewer sees the same blotter twice, whereas a live feed that repeated itself every tick would
+ * not look live. It draws from the same instrument universe as the seed, so the feed cannot
+ * introduce a symbol the rest of the dataset has never heard of.
+ *
+ * The currency is absent because the create payload does not carry one: the server resolves it
+ * from the instrument, which is the rule that stops a trade disagreeing with its own symbol.
+ *
+ * @returns A create payload ready to hand to the trade service.
+ */
+export function generate_live_trade(): CreateTrade {
+  const instrument = faker.helpers.arrayElement(instruments);
+  const drift = faker.number.float({ min: -0.04, max: 0.04 });
+
+  return {
+    symbol: instrument.symbol,
+    side: faker.helpers.arrayElement(['BUY', 'SELL']) as TradeSide,
+    quantity: pick_quantity(),
+    price: Number((instrument.base_price * (1 + drift)).toFixed(6)),
+    trader: faker.helpers.arrayElement(traders),
+    book: instrument.book,
+    counterparty: faker.helpers.arrayElement(counterparties),
+    tradeTimestamp: new Date().toISOString(),
+  };
+}
+
+/**
+ * Produces the change an amendment should apply to an existing trade.
+ *
+ * Only quantity and price move, because those are the fields a desk actually corrects after
+ * booking. Re-pointing a trade at a different symbol or counterparty would be a rebooking, not an
+ * amendment, and the amendment schema refuses the first of those outright.
+ *
+ * @param current_price - The trade's present price, so the new one drifts from it rather than
+ * jumping to an unrelated level.
+ * @returns A partial amendment carrying quantity and price.
+ */
+export function generate_live_amendment(
+  current_price: number,
+): Pick<AmendableTrade, 'quantity' | 'price'> {
+  const price_drift = faker.number.float({ min: -0.01, max: 0.01 });
+
+  return {
+    quantity: pick_quantity(),
+    price: Number((current_price * (1 + price_drift)).toFixed(6)),
+  };
 }

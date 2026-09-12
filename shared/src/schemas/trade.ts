@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { currency_values, instrument_symbols } from '../reference/instruments.js';
 
 /** The two sides a trade can be executed on. */
 export const trade_side_values = ['BUY', 'SELL'] as const;
@@ -15,6 +16,15 @@ export const trade_status_values = ['ACTIVE', 'CANCELLED'] as const;
 export const trade_id_pattern = /^TRD-\d{6,}$/;
 
 /**
+ * How far ahead of the server's clock a trade timestamp may sit.
+ *
+ * A trade cannot execute in the future, but a client whose clock is a little fast is a normal
+ * condition rather than an error, so the bound allows a minute of skew and refuses anything past
+ * it. Without any bound a trade books in 2074.
+ */
+export const future_timestamp_tolerance_ms = 60_000;
+
+/**
  * The canonical trade model. Every other trade shape in the codebase is derived from this one,
  * so a field added here reaches the API contract, the client types and the validation together.
  *
@@ -25,14 +35,11 @@ export const trade_id_pattern = /^TRD-\d{6,}$/;
 export const trade_schema = z.object({
   id: z.uuid(),
   tradeId: z.string().regex(trade_id_pattern),
-  symbol: z
-    .string()
-    .min(1)
-    .max(12)
-    .regex(/^[A-Z][A-Z.]*$/, 'symbol must be upper case ticker characters'),
+  symbol: z.enum(instrument_symbols),
   side: z.enum(trade_side_values),
   quantity: z.int().positive().max(10_000_000),
-  price: z.number().positive().max(1_000_000),
+  price: z.number().positive().max(10_000_000),
+  currency: z.enum(currency_values),
   trader: z.string().trim().min(1).max(32),
   book: z.string().trim().min(1).max(64),
   counterparty: z.string().trim().min(1).max(128),
@@ -47,24 +54,66 @@ export const trade_schema = z.object({
  * Inbound shape for creating a trade.
  *
  * The server owns `id`, `tradeId`, `status`, `version` and the row timestamps, so a client cannot
- * set them.
+ * set them. `currency` is server-owned too: it is a property of the instrument, not of the ticket,
+ * so letting a client send it would allow a trade whose currency disagrees with its own symbol.
  */
-export const create_trade_schema = trade_schema.omit({
-  id: true,
-  tradeId: true,
-  status: true,
-  version: true,
-  createdAt: true,
-  updatedAt: true,
+export const create_trade_schema = trade_schema
+  .omit({
+    id: true,
+    tradeId: true,
+    currency: true,
+    status: true,
+    version: true,
+    createdAt: true,
+    updatedAt: true,
+  })
+  .refine(
+    (trade) =>
+      Date.parse(trade.tradeTimestamp) <= Date.now() + future_timestamp_tolerance_ms,
+    { message: 'tradeTimestamp cannot be in the future', path: ['tradeTimestamp'] },
+  );
+
+/**
+ * The fields an amendment may change.
+ *
+ * Deliberately narrower than the create payload. Re-pointing a trade at a different symbol, or
+ * flipping its side, is a rebooking rather than an amendment, and changing the execution time
+ * rewrites when the trade happened. Those three are refused; the economic terms and the booking
+ * details a desk genuinely corrects on trade date are allowed.
+ */
+export const amendable_trade_schema = trade_schema.pick({
+  quantity: true,
+  price: true,
+  counterparty: true,
+  book: true,
 });
 
 /**
  * Inbound shape for amending a trade. Every field is optional except `version`, which the client
  * echoes back so a concurrent amendment is rejected rather than silently overwritten.
  */
-export const amend_trade_schema = create_trade_schema.partial().extend({
+export const amend_trade_schema = amendable_trade_schema.partial().extend({
   version: z.int().positive(),
 });
+
+/**
+ * Every column the blotter can sort on.
+ *
+ * This is deliberately the full set of columns the grid displays. A sortable-looking header that
+ * the API rejects is worse than no sorting at all, so the two lists are kept the same length.
+ */
+export const trade_sort_columns = [
+  'tradeId',
+  'symbol',
+  'side',
+  'quantity',
+  'price',
+  'trader',
+  'book',
+  'counterparty',
+  'tradeTimestamp',
+  'status',
+] as const;
 
 /** Query parameters accepted by the blotter listing. */
 export const trade_query_schema = z.object({
@@ -73,10 +122,44 @@ export const trade_query_schema = z.object({
   status: z.enum(trade_status_values).optional(),
   trader: z.string().optional(),
   book: z.string().optional(),
-  sort_by: z.enum(['tradeTimestamp', 'symbol', 'quantity', 'price', 'trader']).default('tradeTimestamp'),
+  counterparty: z.string().optional(),
+  date_from: z.iso.datetime().optional(),
+  date_to: z.iso.datetime().optional(),
+  sort_by: z.enum(trade_sort_columns).default('tradeTimestamp'),
   sort_dir: z.enum(['asc', 'desc']).default('desc'),
   limit: z.coerce.number().int().min(1).max(1000).default(100),
-  offset: z.coerce.number().int().min(0).default(0),
+  /**
+   * Opaque position marker from a previous page's `next_cursor`.
+   *
+   * Keyset rather than offset: the blotter inserts rows all day, so an offset computed on one
+   * request no longer points at the same place on the next, which makes page two re-serve rows
+   * already seen and skip others. A cursor names a row, so inserts above it change nothing.
+   */
+  cursor: z.string().optional(),
+});
+
+/**
+ * Envelope returned by the blotter listing.
+ *
+ * The rows alone cannot tell the grid whether it is holding the last page or how many trades the
+ * current filters match, so the total and the window that produced it travel with them.
+ * `next_cursor` is null on the last page.
+ */
+export const trade_list_schema = z.object({
+  data: z.array(trade_schema),
+  total: z.int().nonnegative(),
+  limit: z.int().positive(),
+  next_cursor: z.string().nullable(),
+});
+
+/**
+ * Inbound shape for cancelling a trade.
+ *
+ * `version` is optional: a client holding the row echoes it back and gets a conflict rather than
+ * cancelling something it has not seen, while a client cancelling blind is still allowed to.
+ */
+export const cancel_trade_schema = z.object({
+  version: z.int().positive().optional(),
 });
 
 /** A trade as it appears over the wire and in the client. */
@@ -85,11 +168,23 @@ export type Trade = z.infer<typeof trade_schema>;
 /** Payload accepted by the create-trade endpoint. */
 export type CreateTrade = z.infer<typeof create_trade_schema>;
 
+/** The fields an amendment is permitted to touch. */
+export type AmendableTrade = z.infer<typeof amendable_trade_schema>;
+
 /** Payload accepted by the amend-trade endpoint. */
 export type AmendTrade = z.infer<typeof amend_trade_schema>;
 
 /** Parsed and defaulted blotter query parameters. */
 export type TradeQuery = z.infer<typeof trade_query_schema>;
+
+/** A page of trades plus the count of everything matching the same filters. */
+export type TradeList = z.infer<typeof trade_list_schema>;
+
+/** Payload accepted by the cancel-trade endpoint. */
+export type CancelTrade = z.infer<typeof cancel_trade_schema>;
+
+/** A column the blotter can sort on. */
+export type TradeSortColumn = (typeof trade_sort_columns)[number];
 
 /** A trade side. */
 export type TradeSide = (typeof trade_side_values)[number];
