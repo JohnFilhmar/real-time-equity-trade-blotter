@@ -533,3 +533,15 @@ to a later session.
 > 12A
 
 **Outcome:** Settled the twelve open choices in one reply: the redis container runs as the `redis` user, the frontend gets the recommended dependency set minus `concurrently` because development runs through docker compose, the source moves under `src/` with the proposed component tree and an in-app design system, the list is server-sorted and keyset-paged through an infinite query with socket events patched into the cache, sessions stay in memory and restore from the refresh cookie, connection state lives in a zustand store, filters and sort live in the URL, and the theme toggle offers system, dark and light. Scope grew on the server side by two endpoints, positions by symbol and a global event feed with an audit view, the phone layout and KPI strip stay in, the tooling is Lighthouse on two pages with no gate, k6 at four users inside the rate limits, and Playwright with the two-context journeys plus a 409 conflict, and there is no standalone seed script because the API already seeds an empty database and the feed keeps generating.
+
+---
+
+### 2026-09-12T11:10Z - take_the_exercise_to_submission_outcome
+
+**Prompt:** The kickoff prompt logged at 06:28Z above, continued once the decision batch at 06:52Z was answered. Appended rather than edited into that entry, per the append-only rule.
+
+**Outcome:** Built the blotter interface against the interface spec, added positions by symbol and a global event feed on the server, fixed the redis container, the feed's price precision, a ticket that adopted a concurrent version silently and a dialog that ignored Escape, then proved the whole stack through Docker with Playwright driving two browser contexts: seven journeys pass against the compose build, 238 unit and route tests, 35 integration tests, k6 at p95 78ms with no failures, and Lighthouse at 100 performance on both audited pages. Rewrote the README in the brief's order with a two-window image, root scripts for every tier, an API reference, the AI usage report and a line-by-line verification table, all on `worktree-submission` and pushed.
+
+**Artifact:** [Submission verification](../artifacts/submission_verification.html)
+
+**Commits:** `5f591f8` through `66908dc`
