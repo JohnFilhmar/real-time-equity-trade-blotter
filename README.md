@@ -229,7 +229,10 @@ The service and route tests run against `in_memory_trade_repository.ts`, a secon
 implementation of the repository port, rather than a mock. A test that passes there is asserting
 behaviour, not that a spy was called, and the same suite would pass against Postgres.
 
-The database-backed repository tier is separate, and only runs when you point it at a database:
+The database-backed repository tier is separate. It is excluded from `npm test` by the default
+vitest config and lives behind `vitest.integration.config.ts`, so the cheap tier runs identically
+everywhere instead of quietly changing shape when TEST_DATABASE_URL happens to be set. Run it by
+pointing it at a database:
 
 ```bash
 TEST_DATABASE_URL=postgresql://blotter:blotter@localhost:5432/blotter npm run test:integration --workspace backend
