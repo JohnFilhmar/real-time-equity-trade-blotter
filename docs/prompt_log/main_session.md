@@ -351,3 +351,38 @@ created over the network. Tests went from 93 to 152, with the database-backed ti
 append-only trigger and the currency migration in CI.
 
 **Commits:** `9d3c27e`
+
+---
+
+### 2026-09-12T03:40Z - build_authentication_before_handoff
+
+**Prompt**
+
+> we are going to handoff your session to a more reliable model for both the wiring and
+> implementation of the ui/ux, so i am going to need you to write your /context-handoff to a
+> markdownfile inside the repository then merge it to the default branch for that new agent to
+> continue on as a new context.
+
+Followed by, on being asked who should own the remaining work: "I build it now, before handing off",
+"Full baseline including Redis", and "Build real authentication" for D3.
+
+**Outcome:** Built authentication to the full `backend-security-baseline` shape rather than
+recording it as work for the incoming agent: rotating refresh tokens with replay detection in
+Redis, three roles mapped to named permissions, an authenticated socket handshake, and per-account
+lockout alongside Redis-backed tiered rate limiting. Tests went from 152 to 221, and a trade's
+trader now comes from the access token rather than the request body.
+
+**Commits:** `45b8315`
+
+---
+
+### 2026-09-12T04:25Z - write_the_backend_handoff_into_the_repository
+
+**Prompt:** The same prompt as above, for its first half: write the context handoff to a markdown
+file inside the repository and merge it to the default branch.
+
+**Outcome:** Wrote `docs/handoff/backend_server.md` describing the server as built and verified,
+including the nine API behaviours most likely to surprise an interface, every decision already
+taken so none is re-opened, and the gotchas that cost time. Deliberately breaks the usual rule
+against handoffs in a repository, because this one is being handed to a different agent rather than
+to a later session.
