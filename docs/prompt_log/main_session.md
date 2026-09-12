@@ -385,3 +385,19 @@ append-only trigger and the currency migration in CI.
 **Outcome:** Reversed decision 9 and, because ADMIN is meaningless unless TRADER is limited, decision 12 with it, after finding that `ProfileMobile.html` had specified the boundary since the design phase with "amend another trader's book, desk head only". Settled on six permissions checked by a `require_permission` guard, ownership enforced in the repository layer so a missed guard cannot leak, a scoped-out trade returning 404 rather than 403, and roles stored as three tables rather than the code map that was recommended.
 
 **Artifact:** [Trade API design](../superpowers/specs/2026-09-12-trade-api-design.md)
+
+---
+
+### 2026-09-12T04:10Z - write_ui_ux_handoff_into_the_repo
+
+**Prompt**
+
+> we are going to handoff your session to a more reliable model for the wiring of the backend server
+> and implementation of the ui/ux, so i am going to need you to write your /context-handoff to a
+> markdownfile inside the repository then merge it to the default branch for that new agent to
+> continue on as a new context. and that context should only be in your context which is planning
+> the whole ui/ux and its decisions.
+
+**Outcome:** Wrote the UI/UX planning handoff to `docs/handoff/ui_ux_planning.md` and merged it to `main`, deliberately inside the repository rather than under `~/.claude/handoff/` as the global rule requires, because the agent picking it up starts from a clone and cannot read a local path. Scoped to the interface: the A-plus-B-glass direction, the per-theme token architecture, the settled reversals that must not be re-litigated, the two MVP gap-analysis claims that were disproved, and the environment traps that cost time.
+
+**Artifact:** [UI/UX planning handoff](../handoff/ui_ux_planning.md)
