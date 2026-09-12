@@ -53,6 +53,20 @@ Significant prompts only, append-only, newest at the bottom. Rules: `/CLAUDE.md`
 
 ---
 
+### 2026-09-10T18:10Z - fix_remaining_scaffold_gaps
+
+**Prompt**
+
+> what are the remaining gaps besides the two that you have given a red banner BREAKS BUILD/RUN and
+> other gaps listed ? if there's nothing else, proceed fixing it and after finishing, merge it to
+> the default branch.
+
+**Outcome:** Found thirteen further gaps beyond the nine already listed, among them a missing root README, a healthcheck that never touched the database, and Prisma 7 requiring a driver adapter, a generator output path and a `prisma.config.ts` that the scaffold had never installed. Closed all twenty-two by restructuring the repository into npm workspaces with a shared zod contract, adding the Postgres schema, hand-authored migration and realistic seed, hardening the API, and rebuilding both Dockerfiles, then verified it by running the stack rather than asserting it.
+
+**Commits:** `12e5a5b`
+
+---
+
 ### 2026-09-10T18:45Z - align_plan_with_trade_model
 
 **Prompt**
@@ -71,17 +85,13 @@ Significant prompts only, append-only, newest at the bottom. Rules: `/CLAUDE.md`
 
 ---
 
-### 2026-09-10T18:10Z - fix_remaining_scaffold_gaps
+### 2026-09-11T01:09Z - verify_design_against_trade_shape
 
-**Prompt**
+**Prompt:** "continue blotter_ui_design and verify whether the design strictly follows the required data shape for the assessment markdown file in the root."
 
-> what are the remaining gaps besides the two that you have given a red banner BREAKS BUILD/RUN and
-> other gaps listed ? if there's nothing else, proceed fixing it and after finishing, merge it to
-> the default branch.
+**Outcome:** All ten fields of the brief's sample payload are rendered in every visual direction with values that pass the committed Zod constraints, but seven things diverge, the blocking one being `AMENDED` drawn as a third status badge against the two-value enum `shared/src/schemas/trade.ts` deliberately settled on. Fixed the single unambiguous board defect, the Light direction's STATUS filter displaying a date, and left the six contract questions open with a recommendation recorded against each.
 
-**Outcome:** Found thirteen further gaps beyond the nine already listed, among them a missing root README, a healthcheck that never touched the database, and Prisma 7 requiring a driver adapter, a generator output path and a `prisma.config.ts` that the scaffold had never installed. Closed all twenty-two by restructuring the repository into npm workspaces with a shared zod contract, adding the Postgres schema, hand-authored migration and realistic seed, hardening the API, and rebuilding both Dockerfiles, then verified it by running the stack rather than asserting it.
-
-**Commits:** `12e5a5b`
+**Artifact:** [Design Data Shape Audit](../artifacts/design_data_shape_conformance.html)
 
 ---
 
@@ -137,6 +147,16 @@ on their own, so the grid is seen updating rows in place rather than only growin
 
 ---
 
+### 2026-09-11T01:45Z - design_is_reference_not_spec
+
+**Prompt:** "this will be fine because ui/ux created will just be the base referrence of what the system is predictably should look like."
+
+**Outcome:** Settled that the six open divergences are acceptable, because the artboards are a reference for how the system should look rather than a contract the schema has to satisfy. Reclassified them from blocking design questions into implementation-time notes, the load-bearing one being that the design's `AMENDED` badge means "this trade was amended" and must be built as a version pill beside an `ACTIVE` badge, not as a third enum value.
+
+**Artifact:** [Design Data Shape Audit](../artifacts/design_data_shape_conformance.html)
+
+---
+
 ### 2026-09-11T01:50Z - build_phase_01_and_02
 
 **Prompt:** Implied by the decisions above, which authorised the build.
@@ -166,6 +186,25 @@ shutdown path.
 
 ---
 
+### 2026-09-11T02:05Z - build_interactive_hifi_prototype
+
+**Prompt**
+
+> i am going to choose A, but at the same time i am liking the colorization or the glass like accent
+> to B, so if possible let's fully select A while retaining the colorization only of B or its effects,
+> its either the color and effects or just effects of the glassy texture while retaining the color of A.
+> if you still need anything to verify with me, ask away, and I will answer with my opinion, if nothing
+> else, proceed creating the high fidelity designs. responsive for window views, tablet views, and
+> phone views and generally should be adapatable in size. having an interactive hi-fi output will make
+> the result even better so i can reflect on decisions on ui before its actually implemented in the
+> frontend rather than deciding after its implemented.
+
+**Outcome:** Chose Direction A's blue-slate neutrals and IBM Plex type with Direction B's glass material and semantics softened about 15% for legibility through blur, then built a working single-file prototype with sortable and filterable blotter, create/amend/cancel mutating real state, a synthetic mark feed driving positions and P&L, an accumulating audit trail and a device frame driven by container queries rather than media queries. Amendment renders as a version pill beside a two-state status badge, which settles D1 by demonstration.
+
+**Artifact:** [Fusion Blotter Prototype](../artifacts/fusion_blotter_prototype.html)
+
+---
+
 ### 2026-09-11T02:20Z - fix_graceful_shutdown_under_docker
 
 **Prompt** (answer to a question about how to fix the SIGTERM defect)
@@ -180,6 +219,40 @@ closing the HTTP server so the following `http_server.close()` failed with `ERR_
 and exited 1; the stop now logs `shutdown complete` and exits 0 in about a second.
 
 **Commits:** `c5611f6`
+
+---
+
+### 2026-09-11T02:20Z - add_theme_toggle_and_fix_opacity
+
+**Prompt:** "a theme toggle feature will also be better. so create a button for that too and also planning the actual colors to prevent opacity mismatch."
+
+**Outcome:** Replaced 44 inline `rgba()` values with a 58-token palette written out per theme, because glass is a different recipe in each: translucent dark with a light edge on dark, frosted white with a dark hairline on light, which re-alpha-ing a single base cannot express. Added a three-state System/Dark/Light control, sourced the light values from Direction C rather than inverting the dark ones, and verified token parity across all three theme blocks.
+
+**Artifact:** [Fusion Blotter Prototype](../artifacts/fusion_blotter_prototype.html)
+
+---
+
+### 2026-09-11T02:30Z - confirm_type_pairing
+
+**Prompt**
+
+> by the way i forgot in case you have not used it, to use fonts Roboto and Source Sans 3 since after
+> searching via brave ai, that's the first result. but if you think there's anything better than it,
+> give me your suggestions or options.
+
+**Outcome:** Argued that Roboto and Source Sans 3 are both neutral sans at the same optical weight, so pairing them gives no contrast, and that the axis a blotter needs is proportional against monospace; offered Source Sans 3 + Source Code Pro, Source Sans 3 + Roboto Mono, and keeping IBM Plex, and the user kept IBM Plex Sans + IBM Plex Mono. Verified in the browser that Plex Mono's zero is dotted by default, which makes `0` unambiguous against `O` with no font-feature CSS, correcting an earlier claim that a slashed zero was available behind the `zero` feature.
+
+**Artifact:** [Fusion Blotter Prototype](../artifacts/fusion_blotter_prototype.html)
+
+---
+
+### 2026-09-11T02:35Z - drop_cancellation_reason
+
+**Prompt:** "remove trade cancellation reason, because modern trade sites does not have that requiring users to explain the reason for the cancelation."
+
+**Outcome:** Removed the required reason field, its five canned values and every downstream reference across nine sites, leaving cancel as a plain confirm whose dialog now states what the transition does rather than asking for a justification. This closes audit divergence D3 by deleting the requirement instead of adding a `cancel_reason` column, and matches the brief's own line that a simple status transition is sufficient.
+
+**Artifact:** [Fusion Blotter Prototype](../artifacts/fusion_blotter_prototype.html)
 
 ---
 
@@ -247,6 +320,16 @@ word: the fifth session is Saturday 2026-08-22 and four London names are priced 
 sixteen choices to the user across four rounds instead of taking any of them.
 
 **Artifact:** [Blotter MVP Requirements](../artifacts/mvp_requirements_and_gap_analysis.html)
+
+---
+
+### 2026-09-12T02:10Z - plan_frontend_implementation
+
+**Prompt:** "can we start the implementation of the frontend properly within frontend using all skills necessary?"
+
+**Outcome:** Found that `backend/src/app.ts` mounts only the health router, so there was no API for a frontend to call, and put that plus seven further forks to the user as explicit questions rather than deciding any of them. He chose backend-first, a business-id URL shape with cancel as a named action, all four optional features, `TradeEvent` replacing `TradeAmendment`, in-memory marks, his full auth baseline with Postgres standing in for Redis, server-computed positions with client-side unrealised P&L, and the compose Postgres for the integration tier.
+
+**Artifact:** [Trade API design](../superpowers/specs/2026-09-12-trade-api-design.md)
 
 ---
 
