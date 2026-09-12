@@ -229,3 +229,42 @@ executed anywhere.
 **Outcome:** Four parallel research passes produced a sourced must/should/won't requirement list for the server and the interface, each line then checked against the code on the three unmerged branches rather than against the handoff notes. Found seventeen of twenty-three server musts already built, thirteen ranked gaps, five places where the backend and design plans disagree, and two verified data defects: a Saturday trade date in the seed and London names priced in pounds where the market quotes pence.
 
 **Artifact:** [Blotter MVP Requirements](../artifacts/mvp_requirements_and_gap_analysis.html)
+
+---
+
+### 2026-09-12T02:10Z - merge_research_and_raise_server_decisions
+
+**Prompt**
+
+> Pull the default branch before anything else. `main` moved to 550b2de and now carries a
+> requirements and gap analysis that was checked line by line against your branch at 69fc726 [...]
+> Your half of the gap list, by the IDs used in that document [...] Decisions D4 through D9 in that
+> document are yours to raise, not to take. [...] THE STANDING RULE HOLDS. Decide nothing.
+
+**Outcome:** Merged `origin/main`, keeping both sides of the expected prompt-log conflict in
+timestamp order, and independently confirmed the two seed defects rather than taking the document's
+word: the fifth session is Saturday 2026-08-22 and four London names are priced in pounds. Put
+sixteen choices to the user across four rounds instead of taking any of them.
+
+**Artifact:** [Blotter MVP Requirements](../artifacts/mvp_requirements_and_gap_analysis.html)
+
+---
+
+### 2026-09-12T03:20Z - close_the_server_gap_list
+
+**Prompt** (answers to sixteen questions across four rounds)
+
+> Keyset cursor on (tradeTimestamp DESC, id DESC). Wrap: { seq, emitted_at, trade }. Add currency,
+> price the .L names in GBX. Economic terms and booking details, not identity. Rename to trade_event
+> with action and source. Keep before-and-after pairs only. Migrate to application/problem+json.
+> Cheap tier, real HTTP and sockets, in-memory repository. One constant in @blotter/shared. All
+> three guard rails. pino and pino-http. A database trigger that raises on UPDATE or DELETE.
+> Composite index, socket Origin check, /v1 prefix. Prometheus text exposure format. Step the seed
+> over weekends, trade-date range filter. Merge after this work lands.
+
+**Outcome:** Closed every open server item on the gap list, including the two-client broadcast test
+that previously existed only in a temp directory and now proves an uninvolved tab sees a trade
+created over the network. Tests went from 93 to 152, with the database-backed tier covering the
+append-only trigger and the currency migration in CI.
+
+**Commits:** `9d3c27e`
