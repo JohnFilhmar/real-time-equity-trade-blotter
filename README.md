@@ -264,12 +264,16 @@ On 2026-09-11, against `docker compose up`:
 - `docker compose stop` logs `SIGTERM received, shutting down` then `shutdown complete` and exits
   0 in about a second, rather than waiting out the SIGKILL timeout.
 
-The audit trail and the widened query surface were added after that run, and the Docker engine was
-unavailable when they landed. Their 15 integration tests are written and **have not been executed**:
-the audit trail is proven against the in-memory repository and through the routes, but the Prisma
-transaction that writes the row, and the JSONB round trip, are unverified until someone runs
-`npm run test:integration --workspace backend` against a live Postgres. CI does exactly that on
-the next push.
+The audit trail and the widened query surface were added after that run, on a machine with no
+Docker engine available. CI covered the gap: its Postgres service container ran all 15
+database-backed tests, the seven new audit ones included, and they pass. The Prisma transaction
+that writes the amendment row, and the JSONB round trip through the shared schema, are therefore
+verified against a real database, just not against the compose stack on this machine.
+
+CI also caught a defect in the test wiring on its first run. `npm test` matched the integration
+suffix, and the job sets `TEST_DATABASE_URL`, so the skip guard never fired and the
+database-backed tests ran before the migrations had been applied. The two tiers now sit behind
+separate vitest configs, which is what the suffix was there for.
 
 Two defects were found by running the containers rather than reasoning about them, and both are
 fixed:
