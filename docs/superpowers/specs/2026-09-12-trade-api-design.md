@@ -138,6 +138,11 @@ The path parameter is `:trade_id` in snake_case per the global naming rule, and 
 `tradeId` field, which stays camelCase because `shared/src/schemas/trade.ts:20` documents that the
 model mirrors the brief's own payload.
 
+`trade_query_schema` gains two optional ISO datetime parameters, `from` and `to`, decided as C4 on
+2026-09-12. They derive from the canonical schema rather than being hand-written, and the existing
+`trade_status_timestamp_idx` already covers the range scan. There is no desk parameter: C5 dropped
+that chip because no desk field exists and `book` is a different concept.
+
 409 means the client sent a `version` that is no longer current. The response carries the current
 version so the client can show what changed rather than guess. 422 on cancel means the trade is
 already cancelled.
@@ -258,6 +263,11 @@ script says so rather than failing with a connection error.
 
 ## Frontend
 
-Not designed here. The frontend decisions, App Router layout, whether the design system becomes its
-own workspace package, TanStack Query and Zustand boundaries, and the token block ported from the
-prototype, come after this API lands and get their own questions.
+Interface behaviour is specified separately in
+[Interface behaviour design](2026-09-12-interface-behaviour-design.md), which records the decisions
+taken against the MVP gap analysis: TanStack Table headless for the grid, the live-update and
+connection-state behaviour, the ARIA grid and keyboard model, and the seven table states.
+
+Still undecided and due their own questions once this API lands: the App Router layout, whether the
+design system becomes its own workspace package, the TanStack Query and Zustand boundaries, and how
+the prototype's token block is ported into `globals.css`.
