@@ -180,3 +180,33 @@ closing the HTTP server so the following `http_server.close()` failed with `ERR_
 and exited 1; the stop now logs `shutdown complete` and exits 0 in about a second.
 
 **Commits:** `c5611f6`
+
+---
+
+### 2026-09-12T01:20Z - backend_remaining_work
+
+**Prompt:** "UI is after the backend has been properly established on what's needed. what's next on the backend server?"
+
+**Outcome:** Audited the backend against what the grid will actually ask of it and found three gaps
+in the code: `counterparty` had no filter, `sort_by` covered five of the ten displayed columns, and
+nothing read the `trade_amendment` table. Put those, plus the missing CI and lint scripts, to the
+user as choices rather than picking.
+
+---
+
+### 2026-09-12T01:45Z - close_contract_gaps_and_build_audit_trail
+
+**Prompt** (answers to seven questions across two rounds)
+
+> Contract: "Counterparty filter + full sort coverage". Quality: "CI workflow". Audit table:
+> "Implement the audit trail". Then: amended_by from "Payload trader, else the trade's trader";
+> changes stored as "Before and after per changed field"; history readable via
+> "GET /api/trades/:trade_id/amendments".
+
+**Outcome:** Widened the shared query schema so the API no longer describes less than the grid
+displays, and built the audit trail as a row written inside the same transaction as the update,
+recording both sides of every field that actually moved. Added a CI workflow that runs the
+integration tier against a Postgres service, which matters because those 15 tests still have not
+executed anywhere.
+
+**Commits:** `2bea289`
