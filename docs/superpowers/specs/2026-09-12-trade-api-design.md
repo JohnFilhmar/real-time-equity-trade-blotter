@@ -27,6 +27,11 @@ named with the decision.
 | 6 | Auth | Access plus rotated refresh, families in Postgres | `backend-security-baseline` |
 | 7 | Positions | Server computes, client recomputes unrealised from marks | `project-structure-conventions` |
 | 8 | Test datastore | The docker-compose Postgres, separate `blotter_test` database | `testing-stance` |
+| 9 | Roles and permissions | None. Token presence is the only gate | `backend-security-baseline`, simplified knowingly |
+| 10 | Guest access | None. Only `/health` and `/auth/login` are public | domain confidentiality, against the research's ranking |
+| 11 | Registration | None. Six seeded desk accounts | a trader code is issued, never self-claimed |
+| 12 | Trade ownership | Any authenticated trader may amend or cancel any trade | the audit trail records the actor |
+| 13 | Account control | Password change only | deletion would break audit attribution |
 
 Two deviations are deliberate and named rather than silent:
 
@@ -133,6 +138,10 @@ shape.
 | POST | `/auth/login` | `{ trader, password }` | 200 `{ access, refresh }` | 401 |
 | POST | `/auth/refresh` | `{ refresh }` | 200 `{ access, refresh }` | 401 |
 | POST | `/auth/logout` | `{ refresh }` | 204 | |
+| POST | `/auth/password` | `{ current, next }` | 204 | 400, 401 |
+
+Only `/health` and `/auth/login` are public. Every other route in this table, including
+`GET /trades`, requires a valid access token.
 
 The path parameter is `:trade_id` in snake_case per the global naming rule, and binds to the
 `tradeId` field, which stays camelCase because `shared/src/schemas/trade.ts:20` documents that the
@@ -188,26 +197,66 @@ sides import it, which is what keeps the duplication honest.
 
 ## Auth
 
-- Access token: 15 minutes, `{ sub: trader, role }`.
+Settled 2026-09-12. Six decisions, all taken by the repository owner.
+
+### No roles, no permissions
+
+There is no `role` column, no `role` claim and no permission matrix. The only gate is whether a
+request carries a valid access token. Authenticated means may read and may act; unauthenticated
+means may do neither.
+
+This is a genuine simplification rather than a shortcut past `backend-security-baseline`. That skill
+asks for RBAC on coarse gates and PBAC for the actual decision because a system with several kinds
+of user needs to distinguish them. This system has one kind. A permission matrix with a single row
+in it is ceremony, and a `role` claim that is always `TRADER` carries no information. Every other
+line of the baseline still applies in full.
+
+### Everything is behind auth
+
+The public list holds exactly two routes: `/health` and `/auth/login`. Nothing else, including
+`GET /trades`, is readable without a token. Guests do not read the blotter.
+
+The reason is domain correctness, not the rubric. A blotter carries counterparty names, sizes and
+prices, which is precisely the data a firm does not publish, and no desk serves one to anonymous
+readers. The MVP research does not make this argument: it ranks authentication 27th of 28 and scores
+it 1.5 out of 10, and its stated reason every time is that the rubric has no security line. It cites
+17 CFR 240.17a-3 and 17a-4 only for what a blotter is as a record and how long it is kept, which is
+retention rather than access control. The confidentiality argument stands on its own and was the
+owner's, taken with the research's contrary ranking in view.
+
+The README publishes a working trader code and password, which is normal for a take-home and removes
+the only real cost of locking the app down: a reviewer can still open it and watch it run.
+
+### No registration
+
+Accounts are the six trader codes the seed already uses, created with hashed passwords. There is no
+sign-up endpoint and no sign-up button. A trader code is issued by the desk, never self-claimed, and
+a "Sign up" control on a blotter reads as a misunderstanding of who uses one.
+
+### Tokens
+
+- Access token: 15 minutes, `{ sub: trader_code }`. No role claim.
 - Refresh token: 7 days, rotated on every use, stored as a SHA-256 hash.
 - Reuse of a consumed refresh token revokes the whole family.
-- `middleware/require_auth.ts` is mounted before the trade router so routes are protected by
-  default, with an explicit public list holding only `/health` and `/auth/login`. Never an opt-in
-  allowlist of guarded routes.
-- Login gets a strict `express-rate-limit` tier, separate from the existing read and write tiers.
+- `middleware/require_auth.ts` is mounted before every router but the public two, so routes are
+  protected by default. Never an opt-in allowlist of guarded routes.
+- Login and password change each get a strict `express-rate-limit` tier, separate from the existing
+  read and write tiers.
 - Failures return one message. No distinction between an unknown trader and a wrong password.
+- Passwords are hashed with argon2id.
 
-Passwords are hashed with argon2id. There is no registration endpoint, because the brief asks for
-login and nothing more.
+### Trade ownership
 
-**One simplification to confirm.** Your baseline asks for RBAC for coarse gates and PBAC for the
-actual decision, so a permission check reads `require_permission('trade.amend')` rather than
-`role === 'admin'`. This app has one role. Every authenticated trader may book, amend and cancel,
-and there is no second role for a permission to distinguish. The design therefore carries a `role`
-claim of `TRADER` and a single `require_auth` middleware, with no permission matrix behind it.
-Building a matrix with one row in it would be ceremony rather than security. Say if you would rather
-have the PBAC scaffolding in place anyway, for instance a read-only `VIEWER` role that the design's
-own Login board already hints at with its "read-only users see the blotter" line.
+Any authenticated trader may amend or cancel any trade, including one booked by someone else. This
+is how a desk works, since trades are amended by whoever is covering, and it is the reason the audit
+trail records an actor on every event. There is no ownership check in the repository layer, because
+there is no ownership rule to enforce.
+
+### Account control
+
+Password change and nothing else. No profile edit, no deletion. Deleting a trader whose code is
+stamped on historical trades would break attribution, which is the one thing an audit trail may
+never do, and the brief's bonus asks only for simple login capability.
 
 ## Module layout
 
