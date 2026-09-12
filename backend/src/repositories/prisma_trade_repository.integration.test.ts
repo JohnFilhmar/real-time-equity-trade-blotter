@@ -1,6 +1,13 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { trade_query_schema, trade_sort_columns } from '@blotter/shared';
+import {
+  find_instrument,
+  trade_event_query_schema,
+  trade_query_schema,
+  trade_sort_columns,
+  type Position,
+  type TradeEvent,
+} from '@blotter/shared';
 import { PrismaClient } from '../generated/prisma/client.js';
 import type { NewTrade, TradeRepository } from '../interfaces/trade_repository.js';
 import { create_prisma_trade_repository } from './prisma_trade_repository.js';
@@ -39,6 +46,27 @@ function a_new_trade(overrides: Partial<NewTrade> = {}): NewTrade {
     tradeTimestamp: '2026-08-18T09:15:23.000Z',
     ...overrides,
   };
+}
+
+/**
+ * Finds one symbol's position, or a zero position when nothing active is booked in it yet.
+ *
+ * @param positions - The rows the repository returned.
+ * @param symbol - The instrument to look for.
+ * @returns Its position, every figure zero when absent.
+ */
+function position_of(positions: Position[], symbol: string): Position {
+  return (
+    positions.find((position) => position.symbol === symbol) ?? {
+      symbol,
+      currency: 'USD',
+      netQuantity: 0,
+      buyQuantity: 0,
+      sellQuantity: 0,
+      grossNotional: 0,
+      tradeCount: 0,
+    }
+  );
 }
 
 describe.skipIf(test_database_url === undefined)('prisma trade repository', () => {
@@ -311,6 +339,63 @@ describe.skipIf(test_database_url === undefined)('prisma trade repository', () =
       const created = await repository.create(a_new_trade());
 
       await expect(repository.find_events(created.tradeId)).resolves.toEqual([]);
+    });
+  });
+
+  describe('the global event feed', () => {
+    it('lists newest first and walks the cursor one event at a time', async () => {
+      const created = await repository.create(a_new_trade());
+      await repository.amend(created.tradeId, 1, { quantity: 7500 }, api_context);
+      await repository.cancel(created.tradeId, 2, api_context);
+
+      const mine: TradeEvent[] = [];
+      let cursor: string | undefined;
+
+      // The shared database has a live feed writing to it, so other trades' events can sit above
+      // these two. The walk continues until both have been seen, bounded so a broken cursor fails
+      // the test instead of looping.
+      for (let page = 0; page < 50 && mine.length < 2; page += 1) {
+        const result = await repository.list_events(
+          trade_event_query_schema.parse({
+            limit: '1',
+            ...(cursor === undefined ? {} : { cursor }),
+          }),
+        );
+
+        expect(result.events).toHaveLength(1);
+        expect(result.total).toBeGreaterThanOrEqual(2);
+        mine.push(...result.events.filter((event) => event.tradeId === created.tradeId));
+
+        if (result.next_cursor === null) {
+          break;
+        }
+        cursor = result.next_cursor;
+      }
+
+      expect(mine.map((event) => event.action)).toEqual(['CANCELLED', 'AMENDED']);
+      expect(mine.map((event) => event.version)).toEqual([3, 2]);
+    });
+  });
+
+  describe('positions', () => {
+    it('adds a BUY and a SELL to the symbol position, in the instrument currency', async () => {
+      const symbol = 'NVDA';
+      const before = position_of(await repository.aggregate_positions(), symbol);
+
+      await repository.create(a_new_trade({ symbol, side: 'BUY', quantity: 5000, price: 178.9 }));
+      await repository.create(a_new_trade({ symbol, side: 'SELL', quantity: 3000, price: 180.25 }));
+
+      const after = position_of(await repository.aggregate_positions(), symbol);
+
+      expect(after.buyQuantity - before.buyQuantity).toBe(5000);
+      expect(after.sellQuantity - before.sellQuantity).toBe(3000);
+      expect(after.tradeCount - before.tradeCount).toBe(2);
+      expect(after.grossNotional - before.grossNotional).toBeCloseTo(
+        5000 * 178.9 + 3000 * 180.25,
+        2,
+      );
+      expect(after.netQuantity).toBe(after.buyQuantity - after.sellQuantity);
+      expect(after.currency).toBe(find_instrument(symbol)?.currency);
     });
   });
 

@@ -67,3 +67,26 @@ repository `CLAUDE.md` fallback puts the entry on the dispatcher in that case.
 > write trade-offs, and TP ICAP specifics.]
 
 **Outcome:** Ranked twenty-eight candidate work items by marks per hour against the weighted rubric, placing the two-client broadcast test at 9.5 and putting P&L last at 1 and authentication at 1.5, both of which the design work has already drawn. Confirmed that Engineering Quality, TypeScript and Full Stack Design are seventy percent of the mark and none of them is a feature count.
+
+---
+
+### 2026-09-12T07:05Z - build_positions_event_feed_and_price_precision
+
+**Prompt**
+
+> You are a backend subagent on a TypeScript trade blotter (Express 5, Prisma 7, Postgres, Socket.IO, zod 4, vitest 5). Work ONLY inside this git worktree and never cd out of it:
+>
+>   D:\My Folder\tp-icap-take-home-assessment\.claude\worktrees\submission
+>
+> THE STANDING RULE, verbatim from the repository owner: YOU DECIDE NOTHING. Every choice below has already been taken by the owner and is specified exactly. If you hit something this brief does not settle (a name, a shape, a threshold, a file location, an error message, a scope cut), do not pick one: finish everything that does not depend on it, then return the question with options, the cost of each, and your recommendation, and I will put it to the owner. "It was obvious" or "it was small" is not a reason to proceed.
+>
+> Ground rules (non-negotiable):
+> - Do NOT commit, push, stash or switch branches. I review the diff and commit.
+> - Do NOT touch README.md, database/README.md, docs/ai_usage_report.md, docker-compose.yaml, the frontend/ workspace, or any .env file. Never read, write, copy or delete .env, .env.*, keys or *.enc.
+> - No `any`, no `as` to silence an error, no @ts-ignore. `unknown` and narrow. Explicit return types on exported functions. JSDoc on every exported symbol, in the style already used in backend/src (read a couple of files first). snake_case for files, functions and variables; camelCase on the wire and for Prisma fields, matching the existing code.
+> - Match the existing patterns exactly: thin route handlers that parse a shared schema, call the service, answer; business rules in services/; persistence behind interfaces/trade_repository.ts with a Prisma implementation and an in-memory implementation used by tests; every inbound and outbound shape is one canonical zod schema in shared/src with types inferred by z.infer; no hand-written parallel types.
+> - Tests: colocated <subject>.test.ts (unit and supertest) and <subject>.integration.test.ts (real Postgres). One case per branch that can produce a wrong answer. Do not test pass-through mappers.
+>
+> [... truncated, ~8,500 characters omitted: the file-size and shell-guard rules, the read-first list, the three specified changes (positions by symbol at GET /api/v1/positions, the global event feed at GET /api/v1/trades/events with keyset paging and a new index migration, and two-decimal rounding of live-feed prices), the verification commands to run and report verbatim, the by-hand check against the running API, and this prompt log obligation.]
+
+**Outcome:** Added `GET /api/v1/positions` and `GET /api/v1/trades/events` with their shared schemas, both repository implementations, a keyset index migration and two-decimal rounding of live-feed prices; the unit tier went from 188 to 200 passing and the integration tier passed 35 against the compose Postgres, with both routes answering by hand from a local run of the changed code. The migration is written but not applied, because the permission classifier refused the deploy, and the frontend workspace typecheck fails inside in-progress UI work that imports nothing from this change.

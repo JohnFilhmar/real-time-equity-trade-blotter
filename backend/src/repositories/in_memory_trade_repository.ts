@@ -1,6 +1,15 @@
-import type { AmendableTrade, Trade, TradeEvent, TradeQuery } from '@blotter/shared';
+import type {
+  AmendableTrade,
+  Currency,
+  Position,
+  Trade,
+  TradeEvent,
+  TradeEventQuery,
+  TradeQuery,
+} from '@blotter/shared';
 import type {
   NewTrade,
+  TradeEventPage,
   TradePage,
   TradeChanges,
   TradeRepository,
@@ -87,6 +96,59 @@ function within_range(timestamp: string, query: TradeQuery): boolean {
   const after = query.date_from === undefined || at >= Date.parse(query.date_from);
   const before = query.date_to === undefined || at <= Date.parse(query.date_to);
   return after && before;
+}
+
+/**
+ * Orders events newest first, falling back to the row id so two events written in the same
+ * millisecond keep one order between requests, which is what cursor paging depends on.
+ *
+ * @param a - Left event.
+ * @param b - Right event.
+ * @returns Negative when `a` is newer, positive when `b` is, as a comparator.
+ */
+function newest_first(a: TradeEvent, b: TradeEvent): number {
+  const by_time = b.occurredAt.localeCompare(a.occurredAt);
+  return by_time === 0 ? b.id.localeCompare(a.id) : by_time;
+}
+
+/**
+ * The position an instrument holds before any trade is counted.
+ *
+ * @param symbol - The instrument.
+ * @param currency - Its quote currency.
+ * @returns A position with every figure at zero.
+ */
+function empty_position(symbol: string, currency: Currency): Position {
+  return {
+    symbol,
+    currency,
+    netQuantity: 0,
+    buyQuantity: 0,
+    sellQuantity: 0,
+    grossNotional: 0,
+    tradeCount: 0,
+  };
+}
+
+/**
+ * Folds one active trade into the running position for its instrument.
+ *
+ * @param position - The position so far.
+ * @param trade - The trade to count.
+ * @returns The position with the trade added.
+ */
+function add_to_position(position: Position, trade: Trade): Position {
+  const bought = trade.side === 'BUY' ? trade.quantity : 0;
+  const sold = trade.side === 'SELL' ? trade.quantity : 0;
+
+  return {
+    ...position,
+    netQuantity: position.netQuantity + bought - sold,
+    buyQuantity: position.buyQuantity + bought,
+    sellQuantity: position.sellQuantity + sold,
+    grossNotional: position.grossNotional + trade.quantity * trade.price,
+    tradeCount: position.tradeCount + 1,
+  };
 }
 
 /**
@@ -273,6 +335,40 @@ export function create_in_memory_trade_repository(initial: Trade[] = []): TradeR
       return events
         .filter((event) => event.tradeId === trade_id)
         .sort((a, b) => a.version - b.version);
+    },
+
+    async list_events(query: TradeEventQuery): Promise<TradeEventPage> {
+      const ordered = [...events].sort(newest_first);
+
+      const cursor_id = decode_cursor(query.cursor);
+      const start =
+        cursor_id === undefined ? 0 : ordered.findIndex((event) => event.id === cursor_id) + 1;
+
+      const page = ordered.slice(start, start + query.limit);
+      const last = page.at(-1);
+
+      return {
+        events: page,
+        total: ordered.length,
+        next_cursor:
+          page.length === query.limit && last !== undefined ? encode_cursor(last.id) : null,
+      };
+    },
+
+    async aggregate_positions(): Promise<Position[]> {
+      const positions = new Map<string, Position>();
+
+      for (const trade of trades.values()) {
+        if (trade.status !== 'ACTIVE') {
+          continue;
+        }
+
+        const key = `${trade.symbol}|${trade.currency}`;
+        const so_far = positions.get(key) ?? empty_position(trade.symbol, trade.currency);
+        positions.set(key, add_to_position(so_far, trade));
+      }
+
+      return [...positions.values()].sort((a, b) => a.symbol.localeCompare(b.symbol));
     },
 
     async find_random_active(): Promise<Trade | null> {

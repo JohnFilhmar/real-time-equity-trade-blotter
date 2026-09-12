@@ -1,7 +1,8 @@
-import type { Trade, TradeEvent, TradeQuery } from '@blotter/shared';
+import type { Position, Trade, TradeEvent, TradeEventQuery, TradeQuery } from '@blotter/shared';
 import type { PrismaClient } from '../generated/prisma/client.js';
 import type {
   NewTrade,
+  TradeEventPage,
   TradePage,
   TradeChanges,
   TradeRepository,
@@ -11,6 +12,7 @@ import {
   build_cancellation_change_set,
   build_change_set,
 } from '../lib/audit/build_change_set.js';
+import { to_wire_position, type PositionRow } from '../lib/mappers/position_mapper.js';
 import { to_wire_event } from '../lib/mappers/trade_event_mapper.js';
 import { to_wire_trade } from '../lib/mappers/trade_mapper.js';
 import { decode_cursor, encode_cursor } from '../lib/paging/cursor.js';
@@ -293,6 +295,50 @@ export function create_prisma_trade_repository(prisma: PrismaClient): TradeRepos
       });
 
       return rows.map((row) => to_wire_event(row, trade_id));
+    },
+
+    async list_events(query: TradeEventQuery): Promise<TradeEventPage> {
+      const cursor_id = decode_cursor(query.cursor);
+
+      const [rows, total] = await prisma.$transaction([
+        prisma.tradeEvent.findMany({
+          include: { trade: { select: { tradeId: true } } },
+          orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
+          take: query.limit,
+          ...(cursor_id === undefined ? {} : { cursor: { id: cursor_id }, skip: 1 }),
+        }),
+        prisma.tradeEvent.count(),
+      ]);
+
+      const last = rows.at(-1);
+
+      return {
+        events: rows.map((row) => to_wire_event(row, row.trade.tradeId)),
+        total,
+        next_cursor:
+          rows.length === query.limit && last !== undefined ? encode_cursor(last.id) : null,
+      };
+    },
+
+    async aggregate_positions(): Promise<Position[]> {
+      // The two quantity sums are cast to int because Postgres widens a summed integer to bigint.
+      // The notional is left as numeric so the mapper converts it exactly the way it converts a
+      // price.
+      const rows = await prisma.$queryRaw<PositionRow[]>`
+        SELECT
+          "symbol",
+          "currency",
+          SUM(CASE WHEN "side" = 'BUY' THEN "quantity" ELSE 0 END)::int AS "buyQuantity",
+          SUM(CASE WHEN "side" = 'SELL' THEN "quantity" ELSE 0 END)::int AS "sellQuantity",
+          SUM("quantity" * "price") AS "grossNotional",
+          COUNT(*)::int AS "tradeCount"
+        FROM "trade"
+        WHERE "status" = 'ACTIVE'
+        GROUP BY "symbol", "currency"
+        ORDER BY "symbol" ASC
+      `;
+
+      return rows.map(to_wire_position);
     },
 
     async find_random_active(): Promise<Trade | null> {

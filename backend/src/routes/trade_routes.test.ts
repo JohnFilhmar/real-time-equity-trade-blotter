@@ -1,13 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import type { Express } from 'express';
 import {
   problem_schema,
+  trade_event_list_schema,
   trade_event_schema,
   trade_list_schema,
   trade_schema,
   trade_sort_columns,
   type Trade,
+  type TradeEvent,
 } from '@blotter/shared';
 import { api_prefix } from '../app.js';
 import { bearer, build_test_app, token_for } from '../lib/testing/test_app.js';
@@ -43,6 +45,47 @@ async function create_trade(app: Express, token: string): Promise<Trade> {
     .send(a_trade_body);
 
   return trade_schema.parse(response.body);
+}
+
+/**
+ * Creates a trade and changes it three times, so the feed has a history to page through.
+ *
+ * The in-memory repository stamps each event from the clock, so the clock is moved a second
+ * between writes. Three requests can otherwise land inside one millisecond, and two events with
+ * the same timestamp are ordered by id, which is random.
+ *
+ * @param app - The app under test.
+ * @param token - The bearer token to write under.
+ * @returns The trade as created, before the changes.
+ */
+async function make_history(app: Express, token: string): Promise<Trade> {
+  const created = await create_trade(app, token);
+  const start = Date.now();
+  vi.useFakeTimers({ toFake: ['Date'] });
+
+  try {
+    vi.setSystemTime(start);
+    await request(app)
+      .patch(`${trades_path}/${created.tradeId}`)
+      .set('Authorization', bearer(token))
+      .send({ version: 1, quantity: 100 });
+
+    vi.setSystemTime(start + 1000);
+    await request(app)
+      .patch(`${trades_path}/${created.tradeId}`)
+      .set('Authorization', bearer(token))
+      .send({ version: 2, quantity: 200 });
+
+    vi.setSystemTime(start + 2000);
+    await request(app)
+      .post(`${trades_path}/${created.tradeId}/cancel`)
+      .set('Authorization', bearer(token))
+      .send({});
+  } finally {
+    vi.useRealTimers();
+  }
+
+  return created;
 }
 
 describe('authentication', () => {
@@ -447,6 +490,83 @@ describe(`GET ${api_prefix}/trades/:trade_id/events`, () => {
 
     expect(response.body[0].action).toBe('CANCELLED');
     expect(response.body[0].actor).toBe('MJONES');
+  });
+});
+
+describe(`GET ${api_prefix}/trades/events`, () => {
+  it('refuses the request without a token', async () => {
+    const { app } = build_test_app();
+
+    const response = await request(app).get(`${trades_path}/events`);
+
+    expect(response.status).toBe(401);
+    expect(response.body.code).toBe('unauthenticated');
+  });
+
+  it('lets a viewer read, and the envelope satisfies the shared contract', async () => {
+    const { app } = build_test_app();
+    const created = await make_history(app, token_for(own_desk));
+
+    const response = await request(app)
+      .get(`${trades_path}/events`)
+      .set('Authorization', bearer(token_for('VIEWER', 'VIEWER')));
+
+    expect(response.status).toBe(200);
+    expect(() => trade_event_list_schema.parse(response.body)).not.toThrow();
+    expect(response.body.total).toBe(3);
+    expect(response.body.next_cursor).toBeNull();
+    expect(response.body.data.every((event: TradeEvent) => event.tradeId === created.tradeId)).toBe(
+      true,
+    );
+  });
+
+  it('lists the newest event first', async () => {
+    const { app } = build_test_app();
+    const token = token_for(own_desk);
+    await make_history(app, token);
+
+    const response = await request(app)
+      .get(`${trades_path}/events`)
+      .set('Authorization', bearer(token));
+
+    expect(response.body.data.map((event: TradeEvent) => event.version)).toEqual([4, 3, 2]);
+    expect(response.body.data[0].action).toBe('CANCELLED');
+  });
+
+  it('respects the limit', async () => {
+    const { app } = build_test_app();
+    const token = token_for(own_desk);
+    await make_history(app, token);
+
+    const response = await request(app)
+      .get(`${trades_path}/events?limit=2`)
+      .set('Authorization', bearer(token));
+
+    expect(response.body.data).toHaveLength(2);
+    expect(response.body.limit).toBe(2);
+    expect(response.body.total).toBe(3);
+    expect(response.body.next_cursor).not.toBeNull();
+  });
+
+  it('hands back a cursor that fetches the rest without overlap and then ends', async () => {
+    const { app } = build_test_app();
+    const token = token_for(own_desk);
+    await make_history(app, token);
+
+    const first = await request(app)
+      .get(`${trades_path}/events?limit=2`)
+      .set('Authorization', bearer(token));
+    const second = await request(app)
+      .get(`${trades_path}/events?limit=2&cursor=${String(first.body.next_cursor)}`)
+      .set('Authorization', bearer(token));
+
+    const first_ids = first.body.data.map((event: TradeEvent) => event.id);
+    const second_ids = second.body.data.map((event: TradeEvent) => event.id);
+
+    expect(second_ids).toHaveLength(1);
+    expect(second_ids.filter((id: string) => first_ids.includes(id))).toEqual([]);
+    expect(second.body.data[0].version).toBe(2);
+    expect(second.body.next_cursor).toBeNull();
   });
 });
 

@@ -8,6 +8,7 @@ import type { TradeService } from './services/trade_service.js';
 import { create_auth_router, create_public_auth_router } from './routes/auth_routes.js';
 import { create_health_router } from './routes/health_routes.js';
 import { create_metrics_router } from './routes/metrics_routes.js';
+import { create_position_router } from './routes/position_routes.js';
 import { create_trade_router } from './routes/trade_routes.js';
 import { error_handler, not_found_handler } from './middleware/error_handler.js';
 import { read_rate_limit } from './middleware/rate_limit.js';
@@ -75,6 +76,7 @@ export function create_app(dependencies: AppDependencies): Express {
 
   app.use(api_prefix, create_auth_router(dependencies.auth_service));
   app.use(`${api_prefix}/trades`, create_trade_router(dependencies.trade_service));
+  app.use(`${api_prefix}/positions`, create_position_router(dependencies.trade_service));
 
   app.use(not_found_handler);
   app.use(error_handler);

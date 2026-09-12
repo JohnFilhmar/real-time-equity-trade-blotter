@@ -4,9 +4,12 @@ import {
   type AmendTrade,
   type CreateTrade,
   type Currency,
+  type Position,
   type Role,
   type Trade,
   type TradeEvent,
+  type TradeEventList,
+  type TradeEventQuery,
   type TradeEventSource,
   type TradeList,
   type TradeQuery,
@@ -106,6 +109,21 @@ export interface TradeService {
    * "never changed" rather than "no such trade".
    */
   list_events(trade_id: string): Promise<TradeEvent[]>;
+
+  /**
+   * Reads a page of every trade's history, newest first.
+   *
+   * @param query - Already parsed by `trade_event_query_schema`.
+   * @returns The page, with the count of every event and the cursor for the next page.
+   */
+  list_all_events(query: TradeEventQuery): Promise<TradeEventList>;
+
+  /**
+   * Reads the net position in every instrument that has at least one active trade.
+   *
+   * @returns Positions sorted by symbol. Empty when the blotter holds no active trades.
+   */
+  list_positions(): Promise<Position[]>;
 }
 
 /**
@@ -312,6 +330,21 @@ export function create_trade_service(
     async list_events(trade_id: string): Promise<TradeEvent[]> {
       await require_trade(trade_id);
       return repository.find_events(trade_id);
+    },
+
+    async list_all_events(query: TradeEventQuery): Promise<TradeEventList> {
+      const page = await repository.list_events(query);
+
+      return {
+        data: page.events,
+        total: page.total,
+        limit: query.limit,
+        next_cursor: page.next_cursor,
+      };
+    },
+
+    async list_positions(): Promise<Position[]> {
+      return repository.aggregate_positions();
     },
   };
 }

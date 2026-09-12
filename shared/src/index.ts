@@ -28,6 +28,8 @@ export type {
 
 export {
   trade_event_schema,
+  trade_event_query_schema,
+  trade_event_list_schema,
   trade_change_schema,
   trade_change_set_schema,
   trade_event_actions,
@@ -36,11 +38,17 @@ export {
 
 export type {
   TradeEvent,
+  TradeEventQuery,
+  TradeEventList,
   TradeChange,
   TradeChangeSet,
   TradeEventAction,
   TradeEventSource,
 } from './schemas/trade_event.js';
+
+export { position_schema } from './schemas/position.js';
+
+export type { Position } from './schemas/position.js';
 
 export {
   login_request_schema,

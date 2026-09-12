@@ -2,8 +2,10 @@ import type {
   AmendableTrade,
   CreateTrade,
   Currency,
+  Position,
   Trade,
   TradeEvent,
+  TradeEventQuery,
   TradeEventSource,
   TradeQuery,
 } from '@blotter/shared';
@@ -14,6 +16,18 @@ export interface TradePage {
   trades: Trade[];
 
   /** How many trades match the filters, ignoring the page window. */
+  total: number;
+
+  /** Cursor for the next page, or `null` when this was the last one. */
+  next_cursor: string | null;
+}
+
+/** A page of the global event feed, the count of every event, and where the next page starts. */
+export interface TradeEventPage {
+  /** The events in the requested window, newest first, already in wire shape. */
+  events: TradeEvent[];
+
+  /** How many events exist in total, ignoring the page window. */
   total: number;
 
   /** Cursor for the next page, or `null` when this was the last one. */
@@ -119,6 +133,25 @@ export interface TradeRepository {
    * @returns The events. Empty when the trade exists but has never changed.
    */
   find_events(trade_id: string): Promise<TradeEvent[]>;
+
+  /**
+   * Reads a cursor-paged slice of every trade's history, newest first.
+   *
+   * Ordered on `occurredAt` descending with the row id as the tiebreaker, so two events written
+   * in the same millisecond keep one order between requests and a cursor always means the same
+   * place.
+   *
+   * @param query - Already parsed and defaulted by `trade_event_query_schema`.
+   * @returns The events in the window, the count of every event, and the next cursor.
+   */
+  list_events(query: TradeEventQuery): Promise<TradeEventPage>;
+
+  /**
+   * Sums the `ACTIVE` trades into one net position per instrument.
+   *
+   * @returns One position per symbol, sorted by symbol ascending. Empty when nothing is active.
+   */
+  aggregate_positions(): Promise<Position[]>;
 
   /**
    * Picks one `ACTIVE` trade at random, used by the live feed to choose something to amend or

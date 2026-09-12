@@ -50,6 +50,32 @@ export const trade_event_schema = z.object({
   occurredAt: z.iso.datetime(),
 });
 
+/**
+ * Query parameters accepted by the global event feed.
+ *
+ * Keyset rather than offset, for the same reason as the blotter listing: the feed grows every few
+ * seconds, so an offset computed on one request points somewhere else on the next. The page is
+ * capped at 500 because the feed is read newest first and a client that wants more is catching up,
+ * not browsing.
+ */
+export const trade_event_query_schema = z.object({
+  limit: z.coerce.number().int().min(1).max(500).default(100),
+  cursor: z.string().optional(),
+});
+
+/**
+ * Envelope returned by the global event feed.
+ *
+ * Deliberately the same shape as `trade_list_schema`, so a client that already pages the blotter
+ * pages the feed with the same code. `next_cursor` is null on the last page.
+ */
+export const trade_event_list_schema = z.object({
+  data: z.array(trade_event_schema),
+  total: z.int().nonnegative(),
+  limit: z.int().positive(),
+  next_cursor: z.string().nullable(),
+});
+
 /** One field's movement in an event. */
 export type TradeChange = z.infer<typeof trade_change_schema>;
 
@@ -58,6 +84,12 @@ export type TradeChangeSet = z.infer<typeof trade_change_set_schema>;
 
 /** One entry in a trade's history. */
 export type TradeEvent = z.infer<typeof trade_event_schema>;
+
+/** Parsed and defaulted global event feed query parameters. */
+export type TradeEventQuery = z.infer<typeof trade_event_query_schema>;
+
+/** A page of the global event feed plus the count of every event in it. */
+export type TradeEventList = z.infer<typeof trade_event_list_schema>;
 
 /** What happened to the trade. */
 export type TradeEventAction = (typeof trade_event_actions)[number];

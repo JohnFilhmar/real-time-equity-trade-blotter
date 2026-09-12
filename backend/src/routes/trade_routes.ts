@@ -5,6 +5,7 @@ import {
   amend_trade_schema,
   cancel_trade_schema,
   create_trade_schema,
+  trade_event_query_schema,
   trade_id_pattern,
   trade_query_schema,
 } from '@blotter/shared';
@@ -65,6 +66,13 @@ export function create_trade_router(service: TradeService): Router {
   router.get('/', require_permission('trade.read'), async (req, res) => {
     const query = trade_query_schema.parse(req.query);
     res.json(await service.list(query));
+  });
+
+  // Declared ahead of the parameter routes, or Express would read "events" as a trade id and
+  // answer 422.
+  router.get('/events', require_permission('trade.read'), async (req, res) => {
+    const query = trade_event_query_schema.parse(req.query);
+    res.json(await service.list_all_events(query));
   });
 
   router.get('/:trade_id', require_permission('trade.read'), async (req, res) => {

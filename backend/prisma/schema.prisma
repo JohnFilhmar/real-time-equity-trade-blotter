@@ -90,6 +90,7 @@ model TradeEvent {
   trade Trade @relation(fields: [tradeUuid], references: [id], onDelete: Cascade)
 
   @@index([tradeUuid, version], map: "trade_event_trade_version_idx")
+  @@index([occurredAt(sort: Desc), id(sort: Desc)], map: "trade_event_occurred_idx")
   @@map("trade_event")
 }
 
