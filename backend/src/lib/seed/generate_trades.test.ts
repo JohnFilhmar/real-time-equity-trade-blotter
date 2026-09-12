@@ -35,9 +35,9 @@ describe('generate_trades', () => {
     }
   });
 
-  it('quotes prices to six decimal places, matching the column scale', () => {
+  it('quotes prices to two decimal places, as the screen shows them', () => {
     for (const trade of generate_trades(50)) {
-      expect(trade.price).toMatch(/^\d+\.\d{6}$/);
+      expect(trade.price).toMatch(/^\d+\.\d{2}$/);
     }
   });
 

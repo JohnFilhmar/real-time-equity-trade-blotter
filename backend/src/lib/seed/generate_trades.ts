@@ -134,9 +134,9 @@ function pick_quantity(): number {
  * Generates a realistic randomised trade population.
  *
  * Realism is the point rather than randomness: prices drift around each instrument's own level in
- * that instrument's own quote currency, quantities are round lots skewed toward smaller tickets,
- * sessions are weekdays only, and roughly one trade in twenty is already cancelled so the status
- * filter has something to find.
+ * that instrument's own quote currency and are quoted to two decimal places as the screen shows
+ * them, quantities are round lots skewed toward smaller tickets, sessions are weekdays only, and
+ * roughly one trade in twenty is already cancelled so the status filter has something to find.
  *
  * @param count - How many trades to generate. The brief asks for 100 to 1,000.
  * @param seed - Fixed so a given count always produces the same dataset.
@@ -158,7 +158,7 @@ export function generate_trades(count: number, seed = 20260818): GeneratedTrade[
       symbol: instrument.symbol,
       side: faker.helpers.arrayElement(['BUY', 'SELL']) as TradeSide,
       quantity: pick_quantity(),
-      price: price.toFixed(6),
+      price: price.toFixed(2),
       currency: instrument.currency,
       trader: faker.helpers.arrayElement(traders),
       book: instrument.book,
