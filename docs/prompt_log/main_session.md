@@ -82,3 +82,13 @@ Significant prompts only, append-only, newest at the bottom. Rules: `/CLAUDE.md`
 **Outcome:** Found thirteen further gaps beyond the nine already listed, among them a missing root README, a healthcheck that never touched the database, and Prisma 7 requiring a driver adapter, a generator output path and a `prisma.config.ts` that the scaffold had never installed. Closed all twenty-two by restructuring the repository into npm workspaces with a shared zod contract, adding the Postgres schema, hand-authored migration and realistic seed, hardening the API, and rebuilding both Dockerfiles, then verified it by running the stack rather than asserting it.
 
 **Commits:** `12e5a5b`
+
+---
+
+### 2026-09-12T02:10Z - plan_frontend_implementation
+
+**Prompt:** "can we start the implementation of the frontend properly within frontend using all skills necessary?"
+
+**Outcome:** Found that `backend/src/app.ts` mounts only the health router, so there was no API for a frontend to call, and put that plus seven further forks to the user as explicit questions rather than deciding any of them. He chose backend-first, a business-id URL shape with cancel as a named action, all four optional features, `TradeEvent` replacing `TradeAmendment`, in-memory marks, his full auth baseline with Postgres standing in for Redis, server-computed positions with client-side unrealised P&L, and the compose Postgres for the integration tier.
+
+**Artifact:** [Trade API design](../superpowers/specs/2026-09-12-trade-api-design.md)
