@@ -545,3 +545,19 @@ to a later session.
 **Artifact:** [Submission verification](../artifacts/submission_verification.html)
 
 **Commits:** `5f591f8` through `66908dc`
+
+---
+
+### 2026-09-12T11:30Z - answer_the_follow_up_questions_and_merge
+
+**Prompt**
+
+> 1. b
+> 2.recommended
+> 3.recommended
+> 4.its fine
+> 5.merge without review
+
+**Outcome:** Settled the five questions left open by the submission pass: the three backend files over the house limit are split into directories as their own change, the startup seed rounds its prices to two decimals like the feed, the positions integration test keeps its rare race with the feed and says so, the position mapper stays where it is, and the branch merges to `main` without a pull request. The split and the rounding landed as separate commits, verified by the full unit, integration and browser tiers, before the merge.
+
+**Commits:** `4c8bcb4` (seed rounding), `55257e4` (split); `main` fast-forwarded to the branch tip

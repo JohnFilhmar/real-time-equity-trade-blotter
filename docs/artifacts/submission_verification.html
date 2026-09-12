@@ -145,7 +145,7 @@
     <div class="scroller"><table>
       <thead><tr><th>Expectation</th><th>Result</th><th>Evidence</th></tr></thead>
       <tbody>
-        <tr><td>Clean code</td><td><span class="flag pass">pass</span></td><td>Typecheck and lint clean in every workspace; one canonical schema per model; routes parse, delegate, answer; JSDoc on every export. Three backend files exceed the 250-line house limit (see gaps).</td></tr>
+        <tr><td>Clean code</td><td><span class="flag pass">pass</span></td><td>Typecheck and lint clean in every workspace; one canonical schema per model; routes parse, delegate, answer; JSDoc on every export; no source file over 250 lines after the repositories and the trade service were split into directories.</td></tr>
         <tr><td>Unit tests</td><td><span class="flag pass">pass</span></td><td><code>npm test</code>: 238 pass (30 shared, 170 backend, 38 frontend), no skips.</td></tr>
         <tr><td>Sensible architecture</td><td><span class="flag pass">pass</span></td><td>Shared contract package; service layer behind repository ports with an in-memory and a Prisma implementation; broadcaster port; providers at the root, server state in TanStack Query, one cache-patch function for sockets and mutations alike.</td></tr>
         <tr><td>Appropriate use of TypeScript</td><td><span class="flag pass">pass</span></td><td>No <code>any</code>, no silencing casts; types inferred from schemas; typed socket event maps on both sides; <code>unknown</code> narrowed at every boundary.</td></tr>
@@ -226,8 +226,6 @@
     <div class="callout warn">
       <ul>
         <li>P&amp;L is not built; notional by symbol stands in and is labelled.</li>
-        <li>Three backend files (<code>prisma_trade_repository.ts</code>, <code>in_memory_trade_repository.ts</code>, <code>trade_service.ts</code>) are over the 250-line house limit. Splitting them is its own change and is awaiting the owner's call.</li>
-        <li>The seeded (startup) generator still emits six-decimal prices; only the live feed was rounded. Awaiting the owner's call, since rounding changes the deterministic dataset.</li>
         <li>The positions integration test races the simulated feed on a shared database. Possible, rare, noted.</li>
         <li>macOS was not run. Windows observed; Ubuntu through CI.</li>
         <li>Lighthouse and the browser tier run locally against the built stack, not in CI.</li>
