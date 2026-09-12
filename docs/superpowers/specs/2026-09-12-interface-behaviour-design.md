@@ -153,6 +153,31 @@ The "Desk: LONDON" chip is dropped. There is no desk field, and `book` values ar
 `EQUITIES_US` and `TECH_GROWTH`, none of which is a desk. Aliasing one to the other was rejected
 because a reader who knows the domain reads desk and book as genuinely different things.
 
+## Permission-aware UI
+
+Added 2026-09-12 when roles were reinstated. Three roles, `VIEWER`, `TRADER` and `ADMIN`; the API
+spec holds the permission table.
+
+`web-design-system` is explicit that this is UX only and the server re-checks every time, so nothing
+below is a security control. The server already refuses a `VIEWER` write with 403 and a `TRADER`
+writing another trader's row with 404 whether or not the button was rendered.
+
+- **Hidden, not disabled, for a missing capability.** The Login board already specifies it: "book,
+  amend and cancel stay hidden unless your desk role allows them". A `VIEWER` does not see New
+  trade, the FAB, or the Amend and Cancel buttons in the detail drawer at all. Showing a permanently
+  disabled control for a capability the account will never have is noise.
+- **Disabled, not hidden, for a temporary block.** The disconnected state from the U-M8 decision
+  disables the same controls with a reason, because that block will lift. The two cases look
+  different on purpose: gone means never, greyed means not right now.
+- **Ownership is per row, so it is disabled rather than hidden.** A `TRADER` looking at another
+  trader's trade sees Amend and Cancel greyed with "Booked by ABROWN, desk head only", which is the
+  ProfileMobile wording. Hiding them per row would make the drawer's controls appear and disappear
+  as the selection moves, which reads as a bug.
+- **`ADMIN` sees no extra chrome.** The only difference is that nothing is greyed. There is no admin
+  screen, because the desk head's extra power is scope, not a new feature.
+- The empty and no-results copy differs for a `VIEWER`: it never offers "book the first one", since
+  that account cannot.
+
 ## Unchanged and not to be revisited
 
 - The static artboards are not reworked for D1 through D6. The prototype supersedes them wherever
