@@ -34,9 +34,27 @@ jobs:
           --health-timeout 5s
           --health-retries 10
 
+      # The refresh token store and the rate limiter both live in Redis, and their behaviour under
+      # concurrency is the part worth testing, so the integration tier needs a real server.
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
     env:
       DATABASE_URL: postgresql://blotter:blotter@localhost:5432/blotter?schema=public
       TEST_DATABASE_URL: postgresql://blotter:blotter@localhost:5432/blotter?schema=public
+      REDIS_URL: redis://localhost:6379
+      TEST_REDIS_URL: redis://localhost:6379
+      # CI-only values. The env schema refuses anything under 32 characters, which is what stops a
+      # placeholder from quietly becoming a real signing key.
+      JWT_ACCESS_SECRET: ci-access-secret-0123456789abcdefghijklmnop
+      JWT_REFRESH_SECRET: ci-refresh-secret-0123456789abcdefghijklmnop
 
     steps:
       - uses: actions/checkout@v4

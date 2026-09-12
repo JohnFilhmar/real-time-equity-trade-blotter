@@ -9,7 +9,7 @@ import {
 import type { TradeBroadcaster } from '../interfaces/trade_broadcaster.js';
 import { create_in_memory_trade_repository } from '../repositories/in_memory_trade_repository.js';
 import { AppError } from '../lib/errors/app_error.js';
-import { create_trade_service, type TradeService } from './trade_service.js';
+import { create_trade_service, type TradeActor, type TradeService } from './trade_service.js';
 
 /** A broadcaster that remembers what it was asked to announce. */
 interface RecordingBroadcaster extends TradeBroadcaster {
@@ -45,12 +45,32 @@ function a_create_payload(overrides: Partial<CreateTrade> = {}): CreateTrade {
     side: 'BUY',
     quantity: 5000,
     price: 227.45,
-    trader: 'JSMITH',
     book: 'EQUITIES_US',
     counterparty: 'Goldman Sachs',
     tradeTimestamp: '2026-08-18T09:15:23.000Z',
     ...overrides,
   };
+}
+
+/**
+ * The actor most tests run as: an ordinary trader booking under their own desk code.
+ */
+const trader_actor: TradeActor = { trader_code: 'JSMITH', role: 'TRADER', source: 'API' };
+
+/**
+ * Builds an actor for a specific desk code and role.
+ *
+ * @param trader_code - The desk code.
+ * @param role - The role held.
+ * @param source - Which path the change arrived through.
+ * @returns The actor.
+ */
+function actor_for(
+  trader_code: string,
+  role: TradeActor['role'] = 'TRADER',
+  source: TradeActor['source'] = 'API',
+): TradeActor {
+  return { trader_code, role, source };
 }
 
 describe('trade service', () => {
@@ -64,7 +84,7 @@ describe('trade service', () => {
 
   describe('create', () => {
     it('stores the trade as ACTIVE at version 1', async () => {
-      const trade = await service.create(a_create_payload());
+      const trade = await service.create(a_create_payload(), trader_actor);
 
       expect(trade.status).toBe('ACTIVE');
       expect(trade.version).toBe(1);
@@ -72,22 +92,22 @@ describe('trade service', () => {
     });
 
     it('resolves the currency from the instrument rather than the ticket', async () => {
-      const us = await service.create(a_create_payload({ symbol: 'AAPL' }));
-      const london = await service.create(a_create_payload({ symbol: 'VOD.L', price: 78 }));
+      const us = await service.create(a_create_payload({ symbol: 'AAPL' }), trader_actor);
+      const london = await service.create(a_create_payload({ symbol: 'VOD.L', price: 78 }), trader_actor);
 
       expect(us.currency).toBe('USD');
       expect(london.currency).toBe('GBX');
     });
 
     it('announces the new trade', async () => {
-      const trade = await service.create(a_create_payload());
+      const trade = await service.create(a_create_payload(), trader_actor);
 
       expect(broadcaster.sent).toEqual([{ event: 'trade.created', trade }]);
     });
 
     it('refuses a ticket over the desk notional limit', async () => {
       await expect(
-        service.create(a_create_payload({ quantity: 1_000_000, price: 100 })),
+        service.create(a_create_payload({ quantity: 1_000_000, price: 100 }), trader_actor),
       ).rejects.toMatchObject({ status: 422 });
     });
 
@@ -95,6 +115,7 @@ describe('trade service', () => {
       // 1,000,000 x 2814 GBX is 2.8bn GBX, inside the GBX ceiling and far outside the USD one.
       const london = await service.create(
         a_create_payload({ symbol: 'SHEL.L', quantity: 1_000_000, price: 2814 }),
+        trader_actor,
       );
 
       expect(london.currency).toBe('GBX');
@@ -102,7 +123,7 @@ describe('trade service', () => {
 
     it('announces nothing when the limit refuses the ticket', async () => {
       await expect(
-        service.create(a_create_payload({ quantity: 1_000_000, price: 100 })),
+        service.create(a_create_payload({ quantity: 1_000_000, price: 100 }), trader_actor),
       ).rejects.toThrow();
 
       expect(broadcaster.sent).toEqual([]);
@@ -111,7 +132,7 @@ describe('trade service', () => {
 
   describe('get', () => {
     it('returns the trade', async () => {
-      const created = await service.create(a_create_payload());
+      const created = await service.create(a_create_payload(), trader_actor);
 
       await expect(service.get(created.tradeId)).resolves.toEqual(created);
     });
@@ -123,9 +144,9 @@ describe('trade service', () => {
 
   describe('list', () => {
     it('returns the window alongside the unpaged total', async () => {
-      await service.create(a_create_payload({ symbol: 'AAPL' }));
-      await service.create(a_create_payload({ symbol: 'MSFT' }));
-      await service.create(a_create_payload({ symbol: 'TSLA' }));
+      await service.create(a_create_payload({ symbol: 'AAPL' }), trader_actor);
+      await service.create(a_create_payload({ symbol: 'MSFT' }), trader_actor);
+      await service.create(a_create_payload({ symbol: 'TSLA' }), trader_actor);
 
       const page = await service.list(trade_query_schema.parse({ limit: '2' }));
 
@@ -136,8 +157,8 @@ describe('trade service', () => {
     });
 
     it('filters case-insensitively on a substring', async () => {
-      await service.create(a_create_payload({ book: 'EQUITIES_UK' }));
-      await service.create(a_create_payload({ book: 'TECH_GROWTH' }));
+      await service.create(a_create_payload({ book: 'EQUITIES_UK' }), trader_actor);
+      await service.create(a_create_payload({ book: 'TECH_GROWTH' }), trader_actor);
 
       const page = await service.list(trade_query_schema.parse({ book: 'equities' }));
 
@@ -146,8 +167,8 @@ describe('trade service', () => {
     });
 
     it('filters on counterparty', async () => {
-      await service.create(a_create_payload({ counterparty: 'Goldman Sachs' }));
-      await service.create(a_create_payload({ counterparty: 'JP Morgan' }));
+      await service.create(a_create_payload({ counterparty: 'Goldman Sachs' }), trader_actor);
+      await service.create(a_create_payload({ counterparty: 'JP Morgan' }), trader_actor);
 
       const page = await service.list(trade_query_schema.parse({ counterparty: 'morgan' }));
 
@@ -155,8 +176,8 @@ describe('trade service', () => {
     });
 
     it('filters on a trade-date range', async () => {
-      await service.create(a_create_payload({ tradeTimestamp: '2026-08-18T09:00:00.000Z' }));
-      await service.create(a_create_payload({ tradeTimestamp: '2026-08-20T09:00:00.000Z' }));
+      await service.create(a_create_payload({ tradeTimestamp: '2026-08-18T09:00:00.000Z' }), trader_actor);
+      await service.create(a_create_payload({ tradeTimestamp: '2026-08-20T09:00:00.000Z' }), trader_actor);
 
       const page = await service.list(
         trade_query_schema.parse({
@@ -170,9 +191,9 @@ describe('trade service', () => {
     });
 
     it('sorts on the requested column and direction', async () => {
-      await service.create(a_create_payload({ quantity: 300 }));
-      await service.create(a_create_payload({ quantity: 100 }));
-      await service.create(a_create_payload({ quantity: 200 }));
+      await service.create(a_create_payload({ quantity: 300 }), trader_actor);
+      await service.create(a_create_payload({ quantity: 100 }), trader_actor);
+      await service.create(a_create_payload({ quantity: 200 }), trader_actor);
 
       const page = await service.list(
         trade_query_schema.parse({ sort_by: 'quantity', sort_dir: 'asc' }),
@@ -182,8 +203,8 @@ describe('trade service', () => {
     });
 
     it('sorts on every column the grid can display', async () => {
-      await service.create(a_create_payload({ symbol: 'MSFT' }));
-      await service.create(a_create_payload({ symbol: 'AAPL' }));
+      await service.create(a_create_payload({ symbol: 'MSFT' }), trader_actor);
+      await service.create(a_create_payload({ symbol: 'AAPL' }), trader_actor);
 
       for (const column of trade_sort_columns) {
         const page = await service.list(trade_query_schema.parse({ sort_by: column }));
@@ -196,7 +217,7 @@ describe('trade service', () => {
   describe('cursor paging', () => {
     it('walks the whole set without repeating or skipping a row', async () => {
       for (let index = 0; index < 7; index += 1) {
-        await service.create(a_create_payload({ quantity: (index + 1) * 100 }));
+        await service.create(a_create_payload({ quantity: (index + 1) * 100 }), trader_actor);
       }
 
       const seen: string[] = [];
@@ -216,14 +237,14 @@ describe('trade service', () => {
 
     it('does not re-serve a row when trades are inserted between pages', async () => {
       for (let index = 0; index < 6; index += 1) {
-        await service.create(a_create_payload({ quantity: (index + 1) * 100 }));
+        await service.create(a_create_payload({ quantity: (index + 1) * 100 }), trader_actor);
       }
 
       const first = await service.list(trade_query_schema.parse({ limit: '3' }));
 
       // The blotter inserts all day. This is exactly what breaks offset paging.
-      await service.create(a_create_payload({ quantity: 9999 }));
-      await service.create(a_create_payload({ quantity: 8888 }));
+      await service.create(a_create_payload({ quantity: 9999 }), trader_actor);
+      await service.create(a_create_payload({ quantity: 8888 }), trader_actor);
 
       const second = await service.list(
         trade_query_schema.parse({ limit: '3', cursor: first.next_cursor ?? '' }),
@@ -236,7 +257,7 @@ describe('trade service', () => {
     });
 
     it('treats an unreadable cursor as the first page rather than an error', async () => {
-      await service.create(a_create_payload());
+      await service.create(a_create_payload(), trader_actor);
 
       const page = await service.list(trade_query_schema.parse({ cursor: 'not-a-cursor' }));
 
@@ -246,12 +267,12 @@ describe('trade service', () => {
 
   describe('amend', () => {
     it('applies the change, bumps the version and announces it', async () => {
-      const created = await service.create(a_create_payload());
+      const created = await service.create(a_create_payload(), trader_actor);
 
       const amended = await service.amend(
         created.tradeId,
         { version: created.version, quantity: 7500 },
-        'API',
+        trader_actor,
       );
 
       expect(amended.quantity).toBe(7500);
@@ -260,33 +281,33 @@ describe('trade service', () => {
     });
 
     it('rejects an amendment that changes nothing', async () => {
-      const created = await service.create(a_create_payload());
+      const created = await service.create(a_create_payload(), trader_actor);
 
       await expect(
-        service.amend(created.tradeId, { version: created.version }, 'API'),
+        service.amend(created.tradeId, { version: created.version }, trader_actor),
       ).rejects.toMatchObject({ status: 422 });
     });
 
     it('refuses an amendment that would breach the notional limit', async () => {
-      const created = await service.create(a_create_payload());
+      const created = await service.create(a_create_payload(), trader_actor);
 
       await expect(
-        service.amend(created.tradeId, { version: 1, quantity: 1_000_000, price: 100 }, 'API'),
+        service.amend(created.tradeId, { version: 1, quantity: 1_000_000, price: 100 }, trader_actor),
       ).rejects.toMatchObject({ status: 422 });
     });
 
     it('reports 404 for a trade that does not exist', async () => {
       await expect(
-        service.amend('TRD-999999', { version: 1, quantity: 100 }, 'API'),
+        service.amend('TRD-999999', { version: 1, quantity: 100 }, trader_actor),
       ).rejects.toMatchObject({ status: 404 });
     });
 
     it('reports 409 when the client version is stale', async () => {
-      const created = await service.create(a_create_payload());
-      await service.amend(created.tradeId, { version: 1, quantity: 200 }, 'API');
+      const created = await service.create(a_create_payload(), trader_actor);
+      await service.amend(created.tradeId, { version: 1, quantity: 200 }, trader_actor);
 
       const conflict = await service
-        .amend(created.tradeId, { version: 1, quantity: 300 }, 'API')
+        .amend(created.tradeId, { version: 1, quantity: 300 }, trader_actor)
         .catch((error: unknown) => error);
 
       expect(conflict).toBeInstanceOf(AppError);
@@ -297,11 +318,11 @@ describe('trade service', () => {
     });
 
     it('reports 409 when the trade is already cancelled', async () => {
-      const created = await service.create(a_create_payload());
-      await service.cancel(created.tradeId, undefined, 'API');
+      const created = await service.create(a_create_payload(), trader_actor);
+      await service.cancel(created.tradeId, undefined, trader_actor);
 
       const conflict = await service
-        .amend(created.tradeId, { version: 2, quantity: 300 }, 'API')
+        .amend(created.tradeId, { version: 2, quantity: 300 }, trader_actor)
         .catch((error: unknown) => error);
 
       expect(conflict).toBeInstanceOf(AppError);
@@ -312,11 +333,11 @@ describe('trade service', () => {
     });
 
     it('does not announce anything when the amendment fails', async () => {
-      const created = await service.create(a_create_payload());
+      const created = await service.create(a_create_payload(), trader_actor);
       broadcaster.sent.length = 0;
 
       await expect(
-        service.amend(created.tradeId, { version: 99, quantity: 300 }, 'API'),
+        service.amend(created.tradeId, { version: 99, quantity: 300 }, trader_actor),
       ).rejects.toThrow();
 
       expect(broadcaster.sent).toEqual([]);
@@ -325,9 +346,9 @@ describe('trade service', () => {
 
   describe('cancel', () => {
     it('moves the trade to CANCELLED and announces it', async () => {
-      const created = await service.create(a_create_payload());
+      const created = await service.create(a_create_payload(), trader_actor);
 
-      const cancelled = await service.cancel(created.tradeId, undefined, 'API');
+      const cancelled = await service.cancel(created.tradeId, undefined, trader_actor);
 
       expect(cancelled.status).toBe('CANCELLED');
       expect(cancelled.version).toBe(2);
@@ -335,24 +356,24 @@ describe('trade service', () => {
     });
 
     it('honours the version guard when one is supplied', async () => {
-      const created = await service.create(a_create_payload());
+      const created = await service.create(a_create_payload(), trader_actor);
 
-      await expect(service.cancel(created.tradeId, 99, 'API')).rejects.toMatchObject({
+      await expect(service.cancel(created.tradeId, 99, trader_actor)).rejects.toMatchObject({
         status: 409,
       });
     });
 
     it('reports 409 when the trade is already cancelled', async () => {
-      const created = await service.create(a_create_payload());
-      await service.cancel(created.tradeId, undefined, 'API');
+      const created = await service.create(a_create_payload(), trader_actor);
+      await service.cancel(created.tradeId, undefined, trader_actor);
 
-      await expect(service.cancel(created.tradeId, undefined, 'API')).rejects.toMatchObject({
+      await expect(service.cancel(created.tradeId, undefined, trader_actor)).rejects.toMatchObject({
         status: 409,
       });
     });
 
     it('reports 404 for a trade that does not exist', async () => {
-      await expect(service.cancel('TRD-999999', undefined, 'API')).rejects.toMatchObject({
+      await expect(service.cancel('TRD-999999', undefined, trader_actor)).rejects.toMatchObject({
         status: 404,
       });
     });
@@ -360,7 +381,7 @@ describe('trade service', () => {
 
   describe('history', () => {
     it('is empty for a trade that has never changed', async () => {
-      const created = await service.create(a_create_payload());
+      const created = await service.create(a_create_payload(), trader_actor);
 
       await expect(service.list_events(created.tradeId)).resolves.toEqual([]);
     });
@@ -370,8 +391,8 @@ describe('trade service', () => {
     });
 
     it('records an amendment with both sides of what moved', async () => {
-      const created = await service.create(a_create_payload({ quantity: 5000 }));
-      await service.amend(created.tradeId, { version: 1, quantity: 7500 }, 'API');
+      const created = await service.create(a_create_payload({ quantity: 5000 }), trader_actor);
+      await service.amend(created.tradeId, { version: 1, quantity: 7500 }, trader_actor);
 
       const [event] = await service.list_events(created.tradeId);
 
@@ -381,8 +402,8 @@ describe('trade service', () => {
     });
 
     it('records a cancellation, so a cancelled trade has a trace of who cancelled it', async () => {
-      const created = await service.create(a_create_payload({ trader: 'MJONES' }));
-      await service.cancel(created.tradeId, undefined, 'API');
+      const created = await service.create(a_create_payload(), actor_for('MJONES'));
+      await service.cancel(created.tradeId, undefined, actor_for('MJONES'));
 
       const [event] = await service.list_events(created.tradeId);
 
@@ -392,9 +413,9 @@ describe('trade service', () => {
     });
 
     it('records where the change came in from', async () => {
-      const created = await service.create(a_create_payload());
-      await service.amend(created.tradeId, { version: 1, quantity: 100 }, 'API');
-      await service.cancel(created.tradeId, undefined, 'LIVE_FEED');
+      const created = await service.create(a_create_payload(), trader_actor);
+      await service.amend(created.tradeId, { version: 1, quantity: 100 }, trader_actor);
+      await service.cancel(created.tradeId, undefined, actor_for('JSMITH', 'TRADER', 'LIVE_FEED'));
 
       const history = await service.list_events(created.tradeId);
 
@@ -402,10 +423,10 @@ describe('trade service', () => {
     });
 
     it('accumulates one row per change, oldest first', async () => {
-      const created = await service.create(a_create_payload());
-      await service.amend(created.tradeId, { version: 1, quantity: 100 }, 'API');
-      await service.amend(created.tradeId, { version: 2, quantity: 200 }, 'API');
-      await service.cancel(created.tradeId, undefined, 'API');
+      const created = await service.create(a_create_payload(), trader_actor);
+      await service.amend(created.tradeId, { version: 1, quantity: 100 }, trader_actor);
+      await service.amend(created.tradeId, { version: 2, quantity: 200 }, trader_actor);
+      await service.cancel(created.tradeId, undefined, trader_actor);
 
       const history = await service.list_events(created.tradeId);
 
@@ -414,10 +435,10 @@ describe('trade service', () => {
     });
 
     it('writes nothing when the change is rejected', async () => {
-      const created = await service.create(a_create_payload());
+      const created = await service.create(a_create_payload(), trader_actor);
 
       await expect(
-        service.amend(created.tradeId, { version: 99, quantity: 300 }, 'API'),
+        service.amend(created.tradeId, { version: 99, quantity: 300 }, trader_actor),
       ).rejects.toThrow();
 
       await expect(service.list_events(created.tradeId)).resolves.toEqual([]);

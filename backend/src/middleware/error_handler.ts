@@ -14,6 +14,8 @@ import { logger, request_id_of } from '../lib/logging/logger.js';
 /** Human-readable titles, one per code, so a problem document never invents its own wording. */
 const titles: Readonly<Record<ProblemCode, string>> = {
   validation_failed: 'Request validation failed',
+  unauthenticated: 'Authentication required',
+  forbidden: 'Not permitted',
   not_found: 'Resource not found',
   conflict: 'Conflict',
   rate_limited: 'Too many requests',

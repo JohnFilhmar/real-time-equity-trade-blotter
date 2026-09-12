@@ -92,3 +92,31 @@ model TradeEvent {
   @@index([tradeUuid, version], map: "trade_event_trade_version_idx")
   @@map("trade_event")
 }
+
+/// Coarse role gate. The actual authorisation decision is made on a permission, which the shared
+/// package derives from this, never on a comparison against this column.
+enum Role {
+  VIEWER
+  TRADER
+  ADMIN
+
+  @@map("user_role")
+}
+
+/// A person who can sign in and book trades.
+///
+/// Named app_user because user is reserved in Postgres, and quoting a reserved word forever is a
+/// worse trade than one unusual table name.
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  username     String   @unique @db.VarChar(64)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  displayName  String   @map("display_name") @db.VarChar(128)
+  traderCode   String   @map("trader_code") @db.VarChar(32)
+  role         Role     @default(TRADER)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([traderCode], map: "app_user_trader_code_idx")
+  @@map("app_user")
+}

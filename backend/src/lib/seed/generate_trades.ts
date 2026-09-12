@@ -14,7 +14,7 @@ import {
  * Kept here rather than in the shared package: the client has no use for the list, and publishing
  * it would imply these are accounts rather than free-text desk codes.
  */
-const traders: readonly string[] = [
+export const traders: readonly string[] = [
   'JSMITH',
   'ABROWN',
   'MJONES',
@@ -38,6 +38,12 @@ const counterparties: readonly string[] = [
   'Nomura',
   'Jefferies',
 ];
+
+/** A trade the live feed wants booked, with the desk code to book it under. */
+export interface GeneratedLiveTrade {
+  payload: CreateTrade;
+  trader: string;
+}
 
 /** A generated trade, before the database assigns identifiers and row timestamps. */
 export interface GeneratedTrade {
@@ -175,24 +181,27 @@ export function generate_trades(count: number, seed = 20260818): GeneratedTrade[
  * not look live. It draws from the same instrument universe as the seed, so the feed cannot
  * introduce a symbol the rest of the dataset has never heard of.
  *
- * The currency is absent because the create payload does not carry one: the server resolves it
- * from the instrument, which is the rule that stops a trade disagreeing with its own symbol.
+ * Neither the currency nor the trader is on the payload: the server resolves the currency from the
+ * instrument and takes the trader from whoever is booking, which is why the desk code comes back
+ * alongside the payload rather than inside it.
  *
- * @returns A create payload ready to hand to the trade service.
+ * @returns A create payload and the desk code to book it under.
  */
-export function generate_live_trade(): CreateTrade {
+export function generate_live_trade(): GeneratedLiveTrade {
   const instrument = faker.helpers.arrayElement(instruments);
   const drift = faker.number.float({ min: -0.04, max: 0.04 });
 
   return {
-    symbol: instrument.symbol,
-    side: faker.helpers.arrayElement(['BUY', 'SELL']) as TradeSide,
-    quantity: pick_quantity(),
-    price: Number((instrument.base_price * (1 + drift)).toFixed(6)),
+    payload: {
+      symbol: instrument.symbol,
+      side: faker.helpers.arrayElement(['BUY', 'SELL']) as TradeSide,
+      quantity: pick_quantity(),
+      price: Number((instrument.base_price * (1 + drift)).toFixed(6)),
+      book: instrument.book,
+      counterparty: faker.helpers.arrayElement(counterparties),
+      tradeTimestamp: new Date().toISOString(),
+    },
     trader: faker.helpers.arrayElement(traders),
-    book: instrument.book,
-    counterparty: faker.helpers.arrayElement(counterparties),
-    tradeTimestamp: new Date().toISOString(),
   };
 }
 

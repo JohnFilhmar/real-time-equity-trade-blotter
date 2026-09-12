@@ -23,10 +23,11 @@ export interface TradePage {
 /**
  * A trade ready to store.
  *
- * `currency` is not on the create payload because it belongs to the instrument rather than the
- * ticket, so the service resolves it and hands the repository a complete row.
+ * Neither `trader` nor `currency` is on the create payload: the trader comes from the access token
+ * and the currency from the instrument, so the service resolves both and hands the repository a
+ * complete row.
  */
-export type NewTrade = CreateTrade & { currency: Currency };
+export type NewTrade = CreateTrade & { trader: string; currency: Currency };
 
 /** The fields an amendment is allowed to change. */
 export type TradeChanges = { [K in keyof AmendableTrade]?: AmendableTrade[K] | undefined };

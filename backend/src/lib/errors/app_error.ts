@@ -72,4 +72,41 @@ export class AppError extends Error {
   static validation_failed(message: string, details?: unknown): AppError {
     return new AppError(422, error_codes.validation_failed, message, details);
   }
+
+  /**
+   * Builds a 401.
+   *
+   * The message is deliberately the same whichever way authentication failed. Distinguishing "no
+   * such user" from "wrong password" hands an attacker a way to enumerate accounts.
+   *
+   * @param message - What the client should be told. Keep it generic.
+   * @returns An `AppError` with status 401.
+   */
+  static unauthenticated(message = 'Authentication is required'): AppError {
+    return new AppError(401, error_codes.unauthenticated, message);
+  }
+
+  /**
+   * Builds a 403, used when a caller is known but not permitted.
+   *
+   * @param message - What was refused, in terms the client can act on.
+   * @returns An `AppError` with status 403.
+   */
+  static forbidden(message: string): AppError {
+    return new AppError(403, error_codes.forbidden, message);
+  }
+
+  /**
+   * Builds a 429 for an account-level lockout, as distinct from the request rate limiter.
+   *
+   * @param seconds - How long until the account unlocks.
+   * @returns An `AppError` with status 429.
+   */
+  static locked_out(seconds: number): AppError {
+    return new AppError(
+      429,
+      error_codes.rate_limited,
+      `Too many failed attempts. Try again in ${seconds.toString()} seconds.`,
+    );
+  }
 }
