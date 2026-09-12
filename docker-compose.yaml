@@ -37,6 +37,11 @@ services:
     # lost on a restart: everyone signs in again. Persisting them would mean a disk full of
     # credentials-adjacent state for no gain.
     command: ["redis-server", "--save", "", "--appendonly", "no"]
+    # The image's entrypoint starts as root and uses setpriv to drop to the redis user, which needs
+    # the SETUID and SETGID capabilities that cap_drop removes. Starting as the redis user skips that
+    # step entirely, so the container never runs as root and keeps every capability dropped. Found
+    # by running the stack: the container crash-looped on "setresuid failed" and never got healthy.
+    user: redis
     ports:
       - "${REDIS_PORT:-6379}:6379"
     networks:
@@ -161,7 +166,9 @@ services:
       PORT: "3000"
       HOSTNAME: 0.0.0.0
       NEXT_TELEMETRY_DISABLED: "1"
-      API_URL: http://backend:5000
+      # The browser talks to the API directly, for HTTP and for the socket, so this is the only
+      # address the web app needs. It is baked in at build time, which is why the Dockerfile reads
+      # it as a build argument as well.
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5000}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
