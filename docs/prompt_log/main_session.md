@@ -639,3 +639,15 @@ Followed by:
 > new worktree since this is a new scope
 
 **Outcome:** Reversed the earlier "notional, not P&L" narrowing: the server-side mark feed from decision D2 is built, positions gain average cost and realised P&L from one walk in `shared/`, unrealised P&L is marked on the client, and every screen says the marks are simulated. The refetch storm is fixed by broadcasting the audit event and the recomputed position on the same sequence as trades, so the audit trail and positions are fed by the socket and make no requests while the link is healthy; the password reveal is a lucide eye icon on a real button; and `database/` becomes the database's own unit holding the container definition, the Prisma schema, the migrations, the migration runner image and the documentation, with the API keeping only `DATABASE_URL` from a root `.env` the owner creates himself.
+
+---
+
+### 2026-09-13T06:48Z - harden_for_submission_outcome
+
+**Prompt:** The hardening prompt logged at 00:40Z (written about 05:05Z) above, continued once the two answer batches were in. Appended rather than edited, per the append-only rule.
+
+**Outcome:** The audit trail and positions are now fed by the socket: the server broadcasts the audit row and the recomputed position on the trade sequence, the client patches its caches, and the owner's repro of two windows with 400 audit rows loaded made 0 API requests in 90 seconds where it had made 96. The login form no longer moves on error, the password field reveals through a real button, positions carry average cost, realised and marked-to-simulated-feed unrealised P&L with a trend line, and `database/` is the database's own unit with the image, schema, migrations, runner and a README with an entity diagram, all verified by every tier (268 unit, 38 integration, 7 browser) and a compose run from the merged tree.
+
+**Artifact:** [Submission verification](../artifacts/submission_verification.html)
+
+**Commits:** `5847bd6` through the merge `27f69d1`, then `adf1c83` and `4899a0d`, on `worktree-hardening`
