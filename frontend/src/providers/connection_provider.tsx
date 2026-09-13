@@ -12,6 +12,7 @@ import { event_feed_keys, position_keys, trade_keys } from '@/lib/query/keys';
 import { settle_event, settle_position } from '@/lib/query/settle_event';
 import { settle_trade } from '@/lib/query/settle_trade';
 import { create_socket, type BlotterSocket } from '@/lib/socket/create_socket';
+import { is_next_in_sequence, order_by_seq } from '@/lib/socket/sequence';
 import { useConnectionStore } from '@/lib/stores/connection_store';
 import { useMarkStore } from '@/lib/stores/mark_store';
 import { useAccessToken } from '@/providers/session_provider';
@@ -106,16 +107,16 @@ export function ConnectionProvider({ children }: { children: ReactNode }): React
 
     const flush = (): void => {
       frame = null;
-      const batch = queue.sort((a, b) => a.envelope.seq - b.envelope.seq);
+      const batch = order_by_seq(queue);
       queue = [];
 
       for (const pending of batch) {
         const store = useConnectionStore.getState();
         const seq = pending.envelope.seq;
-        const expected = store.last_seq === null ? seq : store.last_seq + 1;
+        const in_sequence = is_next_in_sequence(store.last_seq, seq);
         store.record_event(seq, pending.envelope.emitted_at);
 
-        if (seq !== expected) {
+        if (!in_sequence) {
           // Missed one, or the server restarted and the counter went backwards. Either way the
           // cache cannot be trusted to converge on its own.
           start_resync();

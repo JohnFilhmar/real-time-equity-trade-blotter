@@ -1,7 +1,7 @@
 import { flexRender, type Row } from '@tanstack/react-table';
 import { memo, type ReactNode } from 'react';
 import type { Trade } from '@blotter/shared';
-import type { FlashKind } from '@/hooks/use_flash';
+import type { FlashKind } from '@/lib/grid/flash';
 import { grid_template_classes, row_height } from './columns';
 
 /** Props for {@link TradeRow}. */

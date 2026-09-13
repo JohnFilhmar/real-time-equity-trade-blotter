@@ -2,43 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { Trade } from '@blotter/shared';
-
-/** What a row flash means: a new arrival, or a price that moved up or down. */
-export type FlashKind = 'new' | 'up' | 'down' | 'changed';
-
-/** A row may not begin a new flash within this many milliseconds of its last one. WCAG 2.3.1. */
-export const flash_throttle_ms = 333;
-
-/** How long a flash animation runs before the attribute is removed. */
-export const flash_duration_ms = 1200;
-
-interface Snapshot {
-  version: number;
-  price: number;
-}
-
-/**
- * Decides what flash a changed row deserves.
- *
- * @param previous - The row as last seen, or `undefined` when it is new.
- * @param next - The row now.
- * @returns The flash kind, or `null` when nothing visible changed.
- */
-function flash_for(previous: Snapshot | undefined, next: Trade): FlashKind | null {
-  if (previous === undefined) {
-    return 'new';
-  }
-  if (next.version <= previous.version) {
-    return null;
-  }
-  if (next.price > previous.price) {
-    return 'up';
-  }
-  if (next.price < previous.price) {
-    return 'down';
-  }
-  return 'changed';
-}
+import { flash_duration_ms, flash_for, is_flash_throttled, type FlashKind, type FlashSnapshot } from '@/lib/grid/flash';
 
 /**
  * Tracks which rows changed since the last render and what flash each should show.
@@ -54,13 +18,13 @@ function flash_for(previous: Snapshot | undefined, next: Trade): FlashKind | nul
  * @returns A map from row id to the flash it should show right now.
  */
 export function useFlash(rows: readonly Trade[]): ReadonlyMap<string, FlashKind> {
-  const snapshots = useRef<Map<string, Snapshot> | null>(null);
+  const snapshots = useRef<Map<string, FlashSnapshot> | null>(null);
   const last_flash_at = useRef<Map<string, number>>(new Map());
   const timers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const [flashes, set_flashes] = useState<ReadonlyMap<string, FlashKind>>(new Map());
 
   useEffect(() => {
-    const next_snapshots = new Map<string, Snapshot>();
+    const next_snapshots = new Map<string, FlashSnapshot>();
     for (const row of rows) {
       next_snapshots.set(row.id, { version: row.version, price: row.price });
     }
@@ -80,8 +44,7 @@ export function useFlash(rows: readonly Trade[]): ReadonlyMap<string, FlashKind>
       if (kind === null) {
         continue;
       }
-      const last = last_flash_at.current.get(row.id) ?? 0;
-      if (now - last < flash_throttle_ms) {
+      if (is_flash_throttled(last_flash_at.current.get(row.id), now)) {
         continue;
       }
       last_flash_at.current.set(row.id, now);
