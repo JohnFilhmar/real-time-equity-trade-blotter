@@ -1,35 +1,11 @@
 name: tp-icap-blotter
 
-services:
-  database:
-    image: postgres:17-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-blotter}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-blotter}
-      POSTGRES_DB: ${POSTGRES_DB:-blotter}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
-    volumes:
-      - database_data:/var/lib/postgresql/data
-    networks:
-      - blotter
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - pg_isready -U ${POSTGRES_USER:-blotter} -d ${POSTGRES_DB:-blotter}
-      interval: 10s
-      timeout: 5s
-      start_period: 20s
-      retries: 5
-    security_opt:
-      - no-new-privileges:true
-    deploy:
-      resources:
-        limits:
-          cpus: "1.0"
-          memory: 512M
+# The database is its own unit. Postgres, the migrations and the image that applies them are defined
+# next to the schema they serve, and merged in here so backend can still depend on both services.
+include:
+  - path: database/compose.yaml
 
+services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
@@ -63,34 +39,6 @@ services:
           cpus: "0.5"
           memory: 256M
 
-  # Migrations run once, to completion, before the API starts. Keeping them out of the API's own
-  # start command is what lets node be PID 1 there and handle SIGTERM, and it means a failed
-  # migration stops the rollout instead of crash-looping the API.
-  migrate:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-      target: prod
-    image: tp-icap/backend:local
-    pull_policy: build
-    restart: "no"
-    command: ["npx", "prisma", "migrate", "deploy"]
-    environment:
-      NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-blotter}:${POSTGRES_PASSWORD:-blotter}@database:5432/${POSTGRES_DB:-blotter}?schema=public
-    depends_on:
-      database:
-        condition: service_healthy
-    networks:
-      - blotter
-    read_only: true
-    tmpfs:
-      - /tmp
-    cap_drop:
-      - ALL
-    security_opt:
-      - no-new-privileges:true
-
   backend:
     build:
       context: .
@@ -100,7 +48,7 @@ services:
     pull_policy: build
     restart: unless-stopped
     env_file:
-      - path: ./backend/.env
+      - path: ./.env
         required: false
     environment:
       NODE_ENV: production
@@ -202,6 +150,3 @@ services:
 networks:
   blotter:
     driver: bridge
-
-volumes:
-  database_data:

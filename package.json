@@ -10,6 +10,7 @@
   },
   "workspaces": [
     "shared",
+    "database",
     "backend",
     "frontend"
   ],
@@ -31,8 +32,9 @@
     "test:load": "k6 run load-testing/api_load.js",
     "test:lighthouse": "npm run test:lighthouse --workspace frontend",
     "test:all": "npm test && npm run test:integration && npm run test:e2e",
-    "db:generate": "node scripts/with_build_env.mjs run prisma:generate --workspace backend",
-    "db:migrate": "npm run prisma:migrate --workspace backend",
+    "db:generate": "node scripts/with_build_env.mjs run generate --workspace @blotter/database",
+    "db:migrate": "npm run migrate --workspace @blotter/database",
+    "db:status": "npm run migrate:status --workspace @blotter/database",
     "capture:readme": "npm run capture:readme --workspace frontend"
   }
 }

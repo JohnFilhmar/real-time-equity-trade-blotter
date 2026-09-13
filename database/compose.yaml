@@ -1,0 +1,65 @@
+# Included by the root docker-compose.yaml. Paths in an included file resolve relative to the file,
+# so both build contexts point one level up, at the repository root, where the lockfile and every
+# workspace manifest live. The blotter network is defined in the root file and merged in.
+services:
+  database:
+    build:
+      context: ..
+      dockerfile: database/postgres/Dockerfile
+    image: tp-icap/database:local
+    pull_policy: build
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-blotter}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-blotter}
+      POSTGRES_DB: ${POSTGRES_DB:-blotter}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - database_data:/var/lib/postgresql/data
+    networks:
+      - blotter
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${POSTGRES_USER:-blotter} -d ${POSTGRES_DB:-blotter}
+      interval: 10s
+      timeout: 5s
+      start_period: 20s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+
+  # Migrations run once, to completion, before the API starts. Keeping them out of the API's own
+  # start command is what lets node be PID 1 there and handle SIGTERM, and it means a failed
+  # migration stops the rollout instead of crash-looping the API.
+  migrate:
+    build:
+      context: ..
+      dockerfile: database/Dockerfile
+    image: tp-icap/database-migrate:local
+    pull_policy: build
+    restart: "no"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-blotter}:${POSTGRES_PASSWORD:-blotter}@database:5432/${POSTGRES_DB:-blotter}?schema=public
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - blotter
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  database_data:

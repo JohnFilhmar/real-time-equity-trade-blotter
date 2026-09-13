@@ -73,7 +73,7 @@ jobs:
         run: npm run build:shared
 
       - name: Generate the Prisma client
-        run: npm run prisma:generate --workspace backend
+        run: npm run db:generate
 
       - name: Typecheck
         run: npm run typecheck
@@ -85,7 +85,7 @@ jobs:
         run: npm test
 
       - name: Apply migrations
-        run: npm run prisma:migrate --workspace backend
+        run: npm run db:migrate
 
       - name: Integration tests against Postgres
         run: npm run test:integration --workspace backend
