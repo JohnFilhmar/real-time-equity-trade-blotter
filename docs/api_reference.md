@@ -73,12 +73,15 @@ Three pre-trade rules run server-side:
 
 ```json
 { "symbol": "AAPL", "currency": "USD", "netQuantity": 184100, "buyQuantity": 582300,
-  "sellQuantity": 398200, "grossNotional": 222215816.74, "tradeCount": 196 }
+  "sellQuantity": 398200, "grossNotional": 222215816.74, "tradeCount": 196,
+  "averagePrice": 227.91, "realisedPnl": 12480.5 }
 ```
 
-Gross notional is in the instrument's own quote currency, so a London name reports pence and the
-interface divides by a hundred to show pounds. There is no P&L: that needs a mark price and a
-cost-basis convention, and the brief supplies neither.
+Every figure is in the instrument's own quote currency, so a London name reports pence and the
+interface divides by a hundred to show pounds. `averagePrice` and `realisedPnl` come from an
+average-cost walk over the symbol's active trades in execution order; the walk lives once, in
+`shared/src/positions/position_book.ts`, and the client runs the same code. Unrealised P&L is not
+served: the client multiplies the open size by the latest mark from the socket as marks move.
 
 ## Authentication
 
@@ -164,6 +167,21 @@ Socket.IO emits `trade.created`, `trade.amended` and `trade.cancelled`, each car
 one and refetches. The sequence restarts when the process does, and the client treats a decrease
 the same way. The whole row travels rather than a patch. Clients send nothing: mutations go over
 HTTP so they get the same validation, error handling and rate limiting as any other write.
+
+Three further events share the same sequence and the same envelope shape:
+
+| Event | Payload | When |
+|---|---|---|
+| `trade_event.recorded` | `{ seq, emitted_at, event }`, the audit row | After every amend and cancel, right after the trade broadcast |
+| `position.updated` | `{ seq, emitted_at, position }`, the symbol's recomputed position | After every create, amend and cancel |
+| `mark.updated` | `{ "AAPL": 227.91, ... }`, every symbol's mark, no envelope | Every 900ms while the simulated feed runs, and once on connect |
+
+The audit event is the row the audit endpoints serve, so a client places it in the feed and in the
+trade's history without a request. The position is the whole recomputed row for one symbol, so a
+client replaces rather than derives. Marks are idempotent snapshots: a missed one is superseded by
+the next, which is why they carry no sequence. All three, like the trade events, are silenced by
+`LIVE_FEED_ENABLED=false` only where they come from the simulation; a real user's write still
+broadcasts.
 
 ## Audit trail
 

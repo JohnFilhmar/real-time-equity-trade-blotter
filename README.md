@@ -38,10 +38,14 @@ the client had to work behind a proxy that blocks upgrades and long-polling.
 request points somewhere else on the next: page two re-serves and skips rows. A cursor names a
 row. Would change if the list were static.
 
-**Cache patching, not refetching.** Every broadcast is applied to the cached list in place through
-one `apply_trade` function shared with the client's own mutations; a refetch happens only on a
-sequence gap or a reconnect. Over invalidating on every event, which would cost a request per
-broadcast and reset scroll. Would change if broadcasts carried patches instead of whole rows.
+**Cache patching, not refetching.** Every broadcast is applied to the cache in place: a trade
+through one `apply_trade` function shared with the client's own mutations, an audit event into the
+feed and the trade's history, a recomputed position into the positions list. The audit trail and
+positions are fed by their own broadcasts rather than refetched when a trade arrives, so a window
+left open makes no requests while the link is healthy; a refetch happens only on a sequence gap or
+a reconnect. Over invalidating on every event, which cost one request per loaded page per
+broadcast and tripped the rate limiter in ordinary use. Would change if broadcasts carried patches
+instead of whole rows.
 
 **TanStack Table, headless.** Over AG Grid. AG Grid brings its own theme and DOM, which would mean
 the design tokens overriding a third-party stylesheet. Headless ships no styling, so the in-house
@@ -64,10 +68,12 @@ rewrite is not an audit trail. Would change only for a database without triggers
 a trade the server has not accepted is a worse failure on a desk than a disabled button. The
 button says why it is disabled. Would change for a field app with intermittent connectivity.
 
-**Notional by symbol, not P&L.** Over a P&L board. A P&L needs a mark price and a cost-basis
-convention, and the brief supplies neither; inventing a mark would be inventing a financial
-convention. The positions page and the KPI strip are labelled notional. Would change the moment a
-market data feed existed.
+**P&L on a simulated mark, labelled as such.** Over notional only, and over a real market feed the
+brief does not supply. Average cost and realised P&L come from one walk in `shared/` that the
+server runs after every write and broadcasts per symbol; unrealised P&L is the client marking the
+open size against a mark that arrives over the socket every 900ms from a random walk around each
+instrument's reference price. Every screen that shows a mark says it is simulated. Would change
+the moment a market data feed replaced the walk, which is a one-file swap on the server.
 
 **Filters and sort in the URL.** Over component state. A filtered blotter is linkable, survives a
 reload, and the back button undoes a filter. Selection stays in memory. Would change if the grid
@@ -217,7 +223,8 @@ filtered, paged view, and that a stale version is dropped.
 
 ## Not built, on purpose
 
-- **P&L.** Needs a mark price and a cost-basis convention. Notional by symbol is shown instead.
+- **A real market data feed.** Marks are a simulated walk; the P&L on screen is real arithmetic on
+  simulated prices, and says so.
 - **FX normalisation.** The notional ceiling is per currency rather than converted at a rate the
   repository would have had to invent.
 - **Registration, password reset, profile edit or account deletion.** A trader code is issued by
