@@ -115,3 +115,32 @@ repository `CLAUDE.md` fallback puts the entry on the dispatcher in that case.
 > [... truncated, ~4,500 characters omitted: the three directory layouts (prisma_trade_repository into index, query, reads and writes; in_memory_trade_repository into index, filtering, positions and events; trade_service into interfaces/trade_service.ts plus index and rules), moving the two colocated tests with them, the importer list to repoint under nodenext, the 250-line and three-export limit, the verification commands to run and report verbatim, and this prompt log obligation.]
 
 **Outcome:** Split the three files into directories with `git mv` (`prisma_trade_repository/` with query, reads and writes; `in_memory_trade_repository/` with filtering, positions and events; `trade_service/` with rules, and the `TradeActor` and `TradeService` contracts moved to `interfaces/trade_service.ts`), moved the two colocated tests with them and repointed the nine importers, with every resulting file under 250 lines. Verified typecheck clean on all three workspaces, the unit tier at shared 30, backend 170 and frontend 38, and the integration tier at 35 passing against the compose Postgres; nothing committed.
+
+---
+
+### 2026-09-13T05:38Z - research_desk_readiness_gaps_and_ranking
+
+**Prompt**
+
+> You are a research subagent for a take-home trade blotter (React, TypeScript, Express, Socket.IO, Postgres). Your job is evidence gathering and ranking. You write no application code.
+>
+> THE STANDING RULE, verbatim from the repository owner: YOU DECIDE NOTHING. Any choice not already written down in the specs, the gap analysis, or the repo CLAUDE.md files stops and goes to the owner as an explicit question, with the options, the cost of each, and your recommendation. Ask before, not after. A subagent decides nothing either: you return findings and options to the dispatcher, who puts them to the owner. Do not implement anything.
+>
+> Repository (read only, do not modify anything except the one prompt-log file named at the end):
+>   D:\My Folder\tp-icap-take-home-assessment\.claude\worktrees\hardening
+>
+> Read first, so your gap list is against what actually exists and does not re-derive settled things:
+>   - take-home-assessment.md (what is graded: Engineering Quality 30%, TypeScript 20%, Full Stack Design 20%, UX 10%, Testing 10%, Communication 10%)
+>   - docs/artifacts/mvp_requirements_and_gap_analysis.html (the FIX tag field set and the settled decisions; use its field list rather than re-deriving)
+>   - docs/superpowers/specs/2026-09-12-interface-behaviour-design.md (what the interface already does: conflation, three connection states, keyboard, ARIA, seven table states)
+>   - README.md and docs/api_reference.md (what shipped)
+>   - frontend/src/components/blotter/columns.tsx (the columns the grid carries today)
+>
+> Then observe, not only read. Fetch and read these, they are live and need no licence:
+>   - https://www.ag-grid.com/example-finance/  (a finance dashboard; note the columns, density, flash behaviour, what updates and how often)
+>   - https://blog.ag-grid.com/streaming-updates-in-javascript-datagrids/  (how high-frequency updates are batched and rendered)
+>   - https://blog.ag-grid.com/proof-trading-case-study/  (a trading firm describing what it wanted from a blotter)
+>
+> [... truncated, ~2,900 characters omitted: the instruction to treat Bloomberg AIM/TOMS, Fidessa, Charles River, FlexTrade and ION product pages as vocabulary rather than observed behaviour; the five focus areas (update behaviour under load, density and number formatting, trader keyboard use, feed-drop handling, columns a real blotter carries that this one does not); the deliverable, a ranked table of 10 to 15 candidate changes with evidence, hours, rubric movement and a cut line, plus a list of what the system already does; the constraints against reintroducing AMENDED, a cancellation reason, offset paging or a P&L with an invented mark, and against generic hour estimates; and this prompt log obligation.]
+
+**Outcome:** Returned a fifteen-row table ranked by rubric movement per hour with a cut line after five items totalling about 3.6 hours (a tested pure sequence-gap rule, a debounce on the per-broadcast positions and event-feed refetch, a date on timestamps that are not today, a README line on the feed floor, and a Playwright feed-drop test), plus fourteen things the interface already does that the observed AG Grid finance demo, Proof Trading case study and FIX session practice do. Found that neither revision of the gap analysis carries a per-field FIX tag table, and that `settle_trade` refetches positions on every broadcast for every client, which the read limiter would turn into 429s at the feed's 250ms floor.
