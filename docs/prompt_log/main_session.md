@@ -610,3 +610,32 @@ to a later session.
 **Outcome:** Verified all four defects rather than taking them as read: two signed-in windows with four audit pages loaded produced 96 API requests in 90 seconds, 64 of them the event feed refetching every loaded page on every broadcast and 32 the positions endpoint refetched by the KPI strip in both windows, and the login form's submit button moved 17 pixels when an error appeared. Fixed the layout shift with a reserved, always-present error line shared by the login form, the ticket and the cancel dialog (0 pixels after), and put the refetch-storm fix, the rate-limit verdict, the password toggle's home, the positions scope and the `database/` contents to the owner as questions.
 
 **Commits:** `5847bd6`
+
+---
+
+### 2026-09-13T06:09Z - correct_kickoff_timestamp
+
+**Prompt:** none. A correction to the entry dated `2026-09-13T00:40Z` above: it was written at about 05:05Z. The timestamp was estimated rather than read from the clock. The entry itself is left as written, per the append-only rule.
+
+---
+
+### 2026-09-13T06:10Z - answer_the_hardening_questions
+
+**Prompt**
+
+> q1: recommended
+> q1a: recommended
+> q2: recommended and instead of a show password hide password text, change it to an eye icon with lucide-icon
+> q3: i, open p&l
+> q4: if possible, retain the migrations or database configurations in the backend and ./database to completely contain the hosting of the database container (my thoughts on this is that to have a real-scalable perspective on the system, since the database in scaling cannot just be hosting postgres in the future and to also have nosql databases in high concurrency 'polyglot persistence') basically to have the database host ran from ./database and system database configuration still in ./backend, but on another hand if possible to also have the configuration like migrations in ./database and the ./backend to only establish connection to the database via root environment variable where is the database via database_url only (and my thoughts on that is to have a single source of true database configuration rather than having it mixed up with all other configurations in ./backend)
+
+Followed by:
+
+> q5: recommended
+> q6: recommended
+> q7:recommeended C and i create the .env.example myself, you give me the example contents now so i can create it
+> q8: recomended b
+>
+> new worktree since this is a new scope
+
+**Outcome:** Reversed the earlier "notional, not P&L" narrowing: the server-side mark feed from decision D2 is built, positions gain average cost and realised P&L from one walk in `shared/`, unrealised P&L is marked on the client, and every screen says the marks are simulated. The refetch storm is fixed by broadcasting the audit event and the recomputed position on the same sequence as trades, so the audit trail and positions are fed by the socket and make no requests while the link is healthy; the password reveal is a lucide eye icon on a real button; and `database/` becomes the database's own unit holding the container definition, the Prisma schema, the migrations, the migration runner image and the documentation, with the API keeping only `DATABASE_URL` from a root `.env` the owner creates himself.
