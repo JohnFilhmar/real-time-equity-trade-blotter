@@ -561,3 +561,52 @@ to a later session.
 **Outcome:** Settled the five questions left open by the submission pass: the three backend files over the house limit are split into directories as their own change, the startup seed rounds its prices to two decimals like the feed, the positions integration test keeps its rare race with the feed and says so, the position mapper stays where it is, and the branch merges to `main` without a pull request. The split and the rounding landed as separate commits, verified by the full unit, integration and browser tiers, before the merge.
 
 **Commits:** `4c8bcb4` (seed rounding), `55257e4` (split); `main` fast-forwarded to the branch tip
+
+---
+
+### 2026-09-13T00:40Z - harden_for_submission
+
+**Prompt**
+
+> remove the submission worktree then proceed with this ;
+> You built this system and you are now hardening it for submission. The blotter works. This pass is
+> about closing the distance between what you shipped and what a real trading system does, using four
+> defects the owner found by using the app, plus what research into real blotters says we are missing.
+>
+> [...]
+>
+> PART ONE. FOUR DEFECTS THE OWNER FOUND BY USING THE APP.
+>
+>   1.1 BROADCAST-DRIVEN REFETCH STORM, causing 429s. This is the most serious item in this document
+>       and it undermines the system's central claim.
+>
+>       frontend/src/lib/query/settle_trade.ts lines 31 to 33 run on every broadcast and call
+>       invalidateQueries on trade_keys.events(tradeId), position_keys.all and event_feed_keys.all.
+>       The audit feed is a useInfiniteQuery, and invalidating an infinite query refetches every page
+>       currently loaded. Five loaded pages means five HTTP requests per broadcast. [...]
+>
+>   1.2 LOGIN ERROR SHIFTS THE LAYOUT. [...] Reserve the space so the form does not move. Check whether
+>       the same pattern exists in the trade ticket and anywhere else Field is used, and fix it
+>       consistently rather than only here.
+>
+>   1.3 PASSWORD REVEAL TOGGLE. [...] Default to masked. Make it a real button, not a div, with
+>       aria-pressed and an accessible name that changes with state. Keep it out of the tab order [...]
+>
+>   1.4 POSITIONS SHOWS A FLAT COLOURED BAR, NOT A LINE GRAPH PER RECORD. [...] So this is a scope
+>       question, not a fix. [...]
+>
+> PART TWO. THE DELIVERABLE GAP IN database/. [...] Propose to the owner what database/ should contain
+> [...] "user note: could include in the readme as the ERD a `mermaid` schema"
+>
+> PART THREE. CLOSE THE GAP AGAINST REAL SYSTEMS. [...] Deliver a ranked table [...] Recommend a cut line.
+>
+> PART FOUR. VERIFY, THEN FIX WHAT YOU FIND. [...] open two tabs, leave the audit trail open, watch the
+> network panel, and report what you see.
+>
+> [... truncated, ~8,000 characters omitted: the standing rule in full, the re-read list, the ground
+> rules, the setup traps and the definition of done. The full prompt is committed verbatim at
+> `docs/handoff/submission_hardening_agent_prompt.txt`.]
+
+**Outcome:** Verified all four defects rather than taking them as read: two signed-in windows with four audit pages loaded produced 96 API requests in 90 seconds, 64 of them the event feed refetching every loaded page on every broadcast and 32 the positions endpoint refetched by the KPI strip in both windows, and the login form's submit button moved 17 pixels when an error appeared. Fixed the layout shift with a reserved, always-present error line shared by the login form, the ticket and the cancel dialog (0 pixels after), and put the refetch-storm fix, the rate-limit verdict, the password toggle's home, the positions scope and the `database/` contents to the owner as questions.
+
+**Commits:** `5847bd6`
