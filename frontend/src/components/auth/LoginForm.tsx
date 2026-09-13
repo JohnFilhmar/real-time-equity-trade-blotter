@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Field';
 import { FieldError } from '@/components/ui/FieldError';
 import { Note } from '@/components/ui/Note';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 import { as_api_error } from '@/lib/api/http';
 import { useSession } from '@/providers/session_provider';
 
@@ -63,11 +64,11 @@ export function LoginForm(): ReactNode {
         </p>
 
         <Field id="login_username" label="Username" error={undefined}>
-          <Input id="login_username" autoComplete="username" autoFocus value={username} onChange={(event) => set_username(event.target.value)} />
+          <Input id="login_username" name="username" autoComplete="username" spellCheck={false} autoFocus value={username} onChange={(event) => set_username(event.target.value)} />
         </Field>
 
         <Field id="login_password" label="Password" error={undefined}>
-          <Input id="login_password" type="password" autoComplete="current-password" value={password} onChange={(event) => set_password(event.target.value)} />
+          <PasswordInput id="login_password" name="password" autoComplete="current-password" value={password} onChange={(event) => set_password(event.target.value)} />
         </Field>
 
         <FieldError message={problem} lines={2} />
