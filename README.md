@@ -210,8 +210,6 @@ filtered, paged view, and that a stale version is dropped.
 - **A row that leaves a filtered view can still be a stored cursor.** If a trade is cancelled while
   the view is filtered to `ACTIVE`, the page cursor that named it still names a real row and the
   next page still resolves; a stale page is corrected by the next resync or refresh.
-- **`prisma` ships as a production dependency** so the one-shot migration container can run
-  `prisma migrate deploy`. Image size against a stack that comes up correctly on its own.
 - **No path aliases in the backend.** Under ESM with `nodenext`, TypeScript does not rewrite them
   at emit. The source tree is shallow enough that relative imports never exceed one level.
 - **Five high-severity `npm audit` findings remain**, all reached through the Prisma 7 toolchain
