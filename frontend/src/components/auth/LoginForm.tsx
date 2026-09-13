@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Field';
+import { FieldError } from '@/components/ui/FieldError';
 import { Note } from '@/components/ui/Note';
 import { as_api_error } from '@/lib/api/http';
 import { useSession } from '@/providers/session_provider';
@@ -69,11 +70,7 @@ export function LoginForm(): ReactNode {
           <Input id="login_password" type="password" autoComplete="current-password" value={password} onChange={(event) => set_password(event.target.value)} />
         </Field>
 
-        {problem !== null ? (
-          <div role="alert" className="text-[12px] text-loss">
-            {problem}
-          </div>
-        ) : null}
+        <FieldError message={problem} lines={2} />
 
         <Button type="submit" variant="primary" block className="h-[38px]" disabled={pending || username.length === 0 || password.length === 0}>
           {pending ? 'Signing in' : 'Sign in to the desk'}

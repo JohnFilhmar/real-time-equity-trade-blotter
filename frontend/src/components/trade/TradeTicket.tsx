@@ -5,6 +5,7 @@ import { find_instrument, instruments, type Trade } from '@blotter/shared';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { Field, Input, Select } from '@/components/ui/Field';
+import { FieldError } from '@/components/ui/FieldError';
 import { Note } from '@/components/ui/Note';
 import { Toggle } from '@/components/ui/Toggle';
 import { useMutationGate } from '@/hooks/use_connection';
@@ -218,11 +219,7 @@ export function TradeTicket({ mode, onClose, onBooked }: TradeTicketProps): Reac
         {currency === 'GBX' ? ' (price in pence, notional in pounds)' : ''}. The desk limit is checked by the server.
       </Note>
 
-      {errors.form !== undefined ? (
-        <div role="alert" className="text-[12px] text-loss">
-          {errors.form}
-        </div>
-      ) : null}
+      <FieldError message={errors.form} lines={2} />
 
       {conflict !== null ? (
         <Note tone="warn">

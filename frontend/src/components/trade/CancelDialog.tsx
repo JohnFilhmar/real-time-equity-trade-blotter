@@ -5,6 +5,7 @@ import type { Trade } from '@blotter/shared';
 import { SideMark } from '@/components/ui/Badges';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
+import { FieldError } from '@/components/ui/FieldError';
 import { Note } from '@/components/ui/Note';
 import { useMutationGate } from '@/hooks/use_connection';
 import { useCancelTrade } from '@/hooks/use_trade_mutations';
@@ -92,11 +93,7 @@ export function CancelDialog({ trade, onClose }: CancelDialogProps): ReactNode {
         <b className="font-semibold">This cannot be undone.</b> The trade is not deleted: it stays on the blotter struck through, keeps its
         history, and drops out of positions.
       </Note>
-      {problem !== null ? (
-        <div role="alert" className="text-[12px] text-loss">
-          {problem}
-        </div>
-      ) : null}
+      <FieldError message={problem} lines={2} />
     </Dialog>
   );
 }
