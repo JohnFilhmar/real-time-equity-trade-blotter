@@ -1,0 +1,204 @@
+You built this system and you are now hardening it for submission. The blotter works. This pass is
+about closing the distance between what you shipped and what a real trading system does, using four
+defects the owner found by using the app, plus what research into real blotters says we are missing.
+
+REPOSITORY AND BRANCH
+
+  D:\My Folder\tp-icap-take-home-assessment
+  Branch `worktree-submission`, merged to `main` at 2baebc4. Work in your own git worktree branched
+  from origin/main. Do not work in the shared checkout.
+
+THE STANDING RULE. Read this first, apply it to everything below.
+
+  YOU DECIDE NOTHING.
+
+  Any choice not already written down in the specs, the gap analysis, or the repo CLAUDE.md files
+  stops and goes to the owner as an explicit question, with the options, the cost of each, and your
+  recommendation. Then you wait for the answer.
+
+  This includes choices that feel small: a library, a dependency version, a file or directory
+  layout, a component boundary, a state shape, a naming pattern, an error message, a scope cut, a
+  threshold, a token or colour not already specified.
+
+  Ask before, not after. A decision taken and then reported is a violation even when the choice was
+  right. "It was obvious", "it was reversible", "it was only small", and "I was unblocking myself"
+  are not reasons to proceed.
+
+  For every question, state for each option whether it agrees with the owner's skills in
+  ~/.claude/skills/ and his memory.
+
+  Not decisions, and needing no question: following something already recorded in the specs, the gap
+  analysis or the repo conventions, and mechanical work following directly from a decision taken.
+
+  If you are waiting on an answer, do not idle and do not guess. Move to other specified work, keep
+  a running open-questions list, and never proceed past an unanswered question on what it blocks.
+
+  Carry this rule verbatim into every subagent you dispatch. A subagent decides nothing either.
+
+RE-READ BEFORE YOU START
+
+  docs/artifacts/mvp_requirements_and_gap_analysis.html      current state and closed decisions
+  docs/superpowers/specs/2026-09-12-interface-behaviour-design.md
+  docs/superpowers/specs/2026-09-12-trade-api-design.md
+  docs/artifacts/fusion_blotter_prototype.html               the UI reference, and its scope note
+  take-home-assessment.md                                    what you are graded against
+
+PART ONE. FOUR DEFECTS THE OWNER FOUND BY USING THE APP.
+
+  Each was checked against the code before being written down here. Verify each yourself before
+  fixing, and say so if you find the diagnosis wrong.
+
+  1.1 BROADCAST-DRIVEN REFETCH STORM, causing 429s. This is the most serious item in this document
+      and it undermines the system's central claim.
+
+      frontend/src/lib/query/settle_trade.ts lines 31 to 33 run on every broadcast and call
+      invalidateQueries on trade_keys.events(tradeId), position_keys.all and event_feed_keys.all.
+      The audit feed is a useInfiniteQuery, and invalidating an infinite query refetches every page
+      currently loaded. Five loaded pages means five HTTP requests per broadcast. The live feed
+      emits every 3 to 8 seconds. Opening the audit trail and waiting therefore produces a request
+      storm and trips the rate limiter.
+
+      Two things are wrong, not one. The requests are needless, and the "real time" claim is false
+      for the positions and audit views, which are actually poll-on-event over HTTP.
+
+      The broadcast envelope already carries the whole trade. Positions are derivable from it. An
+      audit row is derivable from the trade plus the action that produced it. Neither needs a fetch.
+
+      Do not pick the fix. Put the owner a written comparison of at least these, with cost and
+      risk for each, and your recommendation:
+        a) derive both client-side from the existing broadcast, adding no server surface
+        b) broadcast the audit event itself as a new typed socket event, and apply it client-side
+        c) keep invalidation but never on an infinite query, patching page zero instead
+        d) leave the fetch but debounce or coalesce it
+      Say explicitly which option makes the positions and audit views genuinely socket-driven
+      rather than HTTP-driven, because that is what the owner is asking for.
+
+      Separately, report whether the rate limits themselves are mistuned. A limit that an app trips
+      during ordinary use is either the wrong limit or the wrong client behaviour, and the owner
+      should be told which one you think it is.
+
+  1.2 LOGIN ERROR SHIFTS THE LAYOUT. frontend/src/components/auth/LoginForm.tsx renders the error
+      conditionally with nothing reserving its space, and passes error={undefined} to both Field
+      components, so an error appears as a new block and pushes everything below it down.
+
+      Reserve the space so the form does not move. Check whether the same pattern exists in the
+      trade ticket and anywhere else Field is used, and fix it consistently rather than only here.
+
+  1.3 PASSWORD REVEAL TOGGLE. The owner asked whether this is bad practice in a trading system. It
+      is not; it is recommended practice, because masking drives typos and lockouts. Build it.
+
+      Default to masked. Make it a real button, not a div, with aria-pressed and an accessible name
+      that changes with state. Keep it out of the tab order between the field and the submit button.
+      Do not auto-unmask, and do not persist the revealed state.
+
+      Load the web-design-system and web-design-guidelines skills before touching this, and the
+      backend-security-baseline skill before you change anything on the auth path.
+
+  1.4 POSITIONS SHOWS A FLAT COLOURED BAR, NOT A LINE GRAPH PER RECORD. The owner compared this to
+      the prototype and is right that they differ. It is not a component bug.
+
+      frontend/src/components/positions/PositionsScreen.tsx contains no SVG and no sparkline. The
+      coloured line is the "Share of gross" column, a proportion bar. GET /positions returns
+      aggregates only: net quantity, bought, sold, gross notional, trade count. There is no time
+      series, so there is nothing to plot. The prototype's per-record line was fed by its in-memory
+      mark feed, which decision D2 said to build and which never landed on the server.
+
+      So this is a scope question, not a fix. Put the owner the options: build the server-side mark
+      feed so a real series exists, plot something derivable from data you already have, or keep the
+      proportion bar and note the divergence from the prototype in the README. Give the cost of each
+      and remind him that the research ranked P&L last of twenty-eight items on marks per hour, so
+      he is choosing with that in front of him.
+
+PART TWO. THE DELIVERABLE GAP IN database/.
+
+  The brief lists database/ as a deliverable. It currently holds one README.md, while the schema,
+  migrations and seed live in backend/prisma/.
+
+  The owner asked whether the database should run separately rather than integrated with the Express
+  server. It already does: Postgres runs as its own container in docker-compose.yaml, reached over
+  DATABASE_URL. Nothing needs to change about how it runs, and confirm that in writing so the point
+  is closed.
+
+  Do NOT relocate the Prisma schema. prisma.config.ts, the generate output path, the migrate
+  commands, CI and the Docker migrate service all resolve from backend/, and moving it breaks a
+  fresh clone for no grading benefit.
+
+  Propose to the owner what database/ should contain instead so it reads as a real deliverable: the
+  ERD, every table and index with the reason it exists, the append-only trigger, the migration list
+  and how to run them, the seed strategy, and a pointer to the canonical Prisma location. Get the
+  contents approved before writing it.
+
+PART THREE. CLOSE THE GAP AGAINST REAL SYSTEMS.
+
+  Research what real blotters do that this one does not, then bring the owner a ranked list of
+  candidate changes. Do not implement anything from this part without approval.
+
+  Observe rather than only read. These are reachable without a licence and were verified as live:
+    - AG Grid finance dashboard, https://www.ag-grid.com/example-finance/
+    - AG Grid high-frequency updates writeup, https://blog.ag-grid.com/streaming-updates-in-javascript-datagrids/
+    - AG Grid Proof Trading case study, https://blog.ag-grid.com/proof-trading-case-study/ , a firm
+      describing what it wanted from a blotter
+  Bloomberg, Fidessa, Charles River and FlexTrade are behind licences. Vendor PDFs and product pages
+  are the most you will get; treat them as vocabulary, not as behaviour.
+
+  Focus the research where this system is most likely to read as unfinished to someone who works on
+  a desk: update behaviour under load, density, what a trader does with the keyboard, what happens
+  when the feed drops, and which columns a real blotter carries that this one does not. The gap
+  analysis already lists the FIX tag numbers for the standard field set; use it rather than
+  re-deriving it.
+
+  Deliver a ranked table: the change, the evidence it is real practice, the hours, which rubric line
+  it moves, and whether it fits the time left. Recommend a cut line. Expect most items to fall below
+  it, and say so plainly rather than padding the list.
+
+PART FOUR. VERIFY, THEN FIX WHAT YOU FIND.
+
+  Re-run the full verification against take-home-assessment.md, criterion by criterion: every
+  functional requirement, every non-functional requirement, every deliverable, and each of the six
+  weighted assessment criteria. Written pass or fail per line, with the evidence.
+
+  Run the stack in Docker and use it, do not only run tests. The 429 above was found by a human
+  clicking through the app and reading the network panel, and no test caught it. Repeat that: open
+  two tabs, leave the audit trail open, watch the network panel, and report what you see.
+
+  For each finding, classify it. Mechanical fixes that follow from a decision already taken go to a
+  subagent, and you re-verify the line yourself afterwards. Anything with more than one reasonable
+  fix, or implying a new choice, goes to the owner as a question before anything changes.
+
+  Never mark as passing something you have not watched pass. "NOT RUN" never becomes "PASS".
+
+GROUND RULES, non-negotiable.
+
+  - No AI attribution anywhere in a commit message, PR body, or any git artifact.
+  - Never read, write, move, copy or delete .env, .env.*, keys, or *.enc.
+  - No `any`, no `as` to silence an error, no @ts-ignore. Use unknown and narrow.
+  - snake_case for files, functions and variables, except where the framework mandates otherwise:
+    PascalCase for React components and types, Next.js App Router special filenames.
+  - Tailwind only on the web. No CSS modules, styled-components or emotion.
+  - Do not reopen anything recorded in the specs. Do not reintroduce AMENDED as a trade status.
+  - Log significant prompts to docs/prompt_log/ as you go, per the root CLAUDE.md. Append-only,
+    verbatim prompt, one or two sentence outcome. Never batch at the end.
+  - Commit in logical steps as you work.
+
+SETUP
+
+  A fresh worktree needs all three before anything runs:
+      npm install
+      npm run build:shared
+      cd backend && DATABASE_URL="postgresql://x:x@localhost:5432/x" npx prisma generate
+
+  Skip the last and typecheck fails on a missing generated/prisma/client.js. Skip the first two and
+  the suite fails with `instruments` undefined. Neither is a real defect; both have been mistaken
+  for one.
+
+  The worktree guard refuses bash heredocs containing backticks and compound commands it cannot
+  verify stay inside the worktree. Split into plain commands or use the Write tool. Most repo files
+  are CRLF.
+
+DONE MEANS
+
+  The audit trail can sit open indefinitely without tripping the rate limiter, because it is fed by
+  the socket rather than by repeated HTTP. The login form does not move when it shows an error. The
+  password field can be revealed. database/ reads as a deliverable rather than a stub. The positions
+  view either plots real data or its divergence from the prototype is a recorded decision. And every
+  choice along the way that was not already written down was put to the owner first.
