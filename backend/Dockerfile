@@ -7,20 +7,23 @@ WORKDIR /app
 RUN apk add --no-cache python3 make g++
 COPY package.json package-lock.json ./
 COPY shared/package.json shared/package.json
+COPY database/package.json database/package.json
 COPY backend/package.json backend/package.json
 COPY frontend/package.json frontend/package.json
 # The Prisma packages are large. Default npm timeouts drop the install on a slow link, so retries
-# are widened rather than leaving the build dependent on a good connection.
+# are widened rather than leaving the build dependent on a good connection. The database workspace
+# is installed here because the API build generates the Prisma client from it.
 RUN npm config set fetch-retries 5 \
   && npm config set fetch-retry-maxtimeout 120000 \
   && npm config set fetch-timeout 600000 \
-  && npm ci --workspace @blotter/shared --workspace backend --include-workspace-root
+  && npm ci --workspace @blotter/shared --workspace @blotter/database --workspace backend --include-workspace-root
 
 FROM deps AS build
 # prisma.config.ts resolves DATABASE_URL eagerly, and `prisma generate` reads the config even
 # though it never connects. This value is never used at runtime; compose supplies the real one.
 ENV DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build
 COPY shared shared
+COPY database database
 COPY backend backend
 RUN npm run build --workspace @blotter/shared
 RUN npm run build --workspace backend
@@ -33,6 +36,7 @@ WORKDIR /app
 RUN apk add --no-cache python3 make g++
 COPY package.json package-lock.json ./
 COPY shared/package.json shared/package.json
+COPY database/package.json database/package.json
 COPY backend/package.json backend/package.json
 COPY frontend/package.json frontend/package.json
 RUN npm config set fetch-retries 5 \
@@ -53,8 +57,6 @@ COPY --chown=node:node shared/package.json ./shared/package.json
 
 COPY --from=build --chown=node:node /app/backend/dist ./backend/dist
 COPY --chown=node:node backend/package.json ./backend/package.json
-COPY --chown=node:node backend/prisma ./backend/prisma
-COPY --chown=node:node backend/prisma.config.ts ./backend/prisma.config.ts
 
 USER node
 WORKDIR /app/backend

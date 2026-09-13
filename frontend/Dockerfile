@@ -3,6 +3,7 @@ FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY shared/package.json shared/package.json
+COPY database/package.json database/package.json
 COPY backend/package.json backend/package.json
 COPY frontend/package.json frontend/package.json
 RUN npm ci --workspace @blotter/shared --workspace frontend --include-workspace-root

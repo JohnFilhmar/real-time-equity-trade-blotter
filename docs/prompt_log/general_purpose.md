@@ -167,3 +167,27 @@ repository `CLAUDE.md` fallback puts the entry on the dispatcher in that case.
 > [... truncated, ~8,400 characters omitted: the read-first list; the contract already in shared/ (three new event names, the audit, position and mark payloads, the extended Position and the exported position walk); the five specified changes (three broadcaster methods on one sequence, RecordedWrite from amend and cancel, positions from the shared walk over find_active_trades with position_for and the trade-then-event-then-position broadcast order on every write, the mark store and 900ms mark feed with the prototype's drift constants and their index.ts and socket-server wiring, and the test list per file); the verification commands to run and report verbatim; and this prompt log obligation.]
 
 **Outcome:** Built the three broadcaster methods on the one sequence, `RecordedWrite` from amend and cancel in both repositories, positions from the shared walk over `find_active_trades` with `position_for` and the trade, audit, position broadcast order on every write, and the in-process mark store and 900ms mark feed sent to each client on connect and after every tick, with the SQL aggregate and its mapper deleted. Verified typecheck clean on all three workspaces, the unit tier at shared 39, backend 184 and frontend 43, and the integration tier at 38 against the compose Postgres; nothing committed.
+### 2026-09-13T06:39Z - restructure_database_into_its_own_workspace
+
+**Prompt**
+
+> You are a subagent restructuring the database deliverable of a TypeScript trade blotter monorepo (npm workspaces: shared/, backend/, frontend/; Express 5, Prisma 7 with driver adapter, Postgres 17, Redis, Docker Compose). You work in your own isolated git worktree that the harness created for you; run `git status` and `git branch --show-current` first and report them. Never cd outside it.
+>
+> THE STANDING RULE, verbatim from the repository owner: YOU DECIDE NOTHING. Every choice below has been taken by the owner and is specified exactly. If you hit something this brief does not settle, do not pick: finish everything that does not depend on it, then return the question with options, cost of each, and your recommendation. "It was obvious" or "it was small" are not reasons to proceed.
+>
+> Ground rules (non-negotiable):
+> - Never read, write, move, copy or delete .env, .env.*, keys or *.enc. Do not create a .env.example either; the owner creates it himself.
+> - No AI attribution in any commit. snake_case files and identifiers; match the existing code style; JSDoc on exported symbols; comments only where the reason is not obvious.
+> - The shell guard refuses compound commands it cannot verify and heredocs with backticks. Plain single commands; Write/Edit tools for file contents; `git mv` for moves.
+> - Do not touch: frontend/src/**, backend/src/** except the two files named below, shared/**, docs/prompt_log/main_session.md, docs/artifacts/**. Do not edit README.md beyond the pointer changes named below.
+> - Commit on your branch in logical steps when the verification below passes. Do not push. Do not merge. Report the branch name and the commit hashes.
+>
+> Setup, a fresh worktree needs: `npm install`, `npm run build:shared`, and the Prisma client generated (after your move, via the new database workspace).
+>
+> THE TARGET, decided by the owner ("option C"): the database is its own unit. `database/` owns the Postgres container definition, the Prisma schema, the migrations, the migration runner image and the documentation. `backend/` keeps the generated client, the seed code and the application, and needs only `DATABASE_URL` to reach the database. The single source of database configuration is `database/` plus one root `.env` for local runs.
+>
+> [... truncated, ~7,300 characters omitted: the five numbered sections specifying the new `@blotter/database` workspace (its package, the `git mv` of the schema, migrations and `prisma.config.ts`, the migration-runner and Postgres Dockerfiles, `database/compose.yaml` and the root `include:`), the backend changes limited to `package.json`, `src/config/env.ts` and the Dockerfile, the root scripts and CI, the approved outline of `database/README.md`, the root README pointer changes, the verification list to run and report verbatim, and this prompt log obligation.]
+
+**Outcome:** Moved the Prisma schema, migrations and config into a new `@blotter/database` workspace with its own Postgres image, migration-runner image and included compose file, repointed the backend, the root scripts, CI and the Dockerfiles at it, and rewrote `database/README.md` around the entity diagram, the trigger, the migrations and the seed. Verified typecheck clean, the unit tier at shared 30, backend 170 and frontend 38, the integration tier at 35, `db:status` reporting no pending migrations, and a clean compose project on alternate ports in which `migrate` exited 0 after applying all four migrations and the API answered 200 on `/ready`.
+
+**Commits:** `d56b118`, `e38295b`
