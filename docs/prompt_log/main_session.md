@@ -672,3 +672,13 @@ Followed by:
 > and can you layout the .env.example variables for me again so i can manually add them and where to put them?
 
 **Outcome:** Approved all four research rows above the cut line: the sequence and flash logic move into tested pure functions, non-today timestamps show `18 Aug 09:15:23` in the time column, the README gets the 250ms feed line, and a Playwright journey covers the feed drop through `context.setOffline`. Also settled: fast-forward merge into `main`, deletion of the nine merged remote branches and the leftover worktrees, removal of the two nested lockfiles, `quiet: true` on both dotenv loads, and the one-line database Dockerfile stays as the init-script slot.
+
+---
+
+### 2026-09-13T15:50Z - remaining_hardening_rows_outcome
+
+**Prompt:** The answer batch logged at 15:18Z above, carried out. Appended rather than edited, per the append-only rule.
+
+**Outcome:** The sequence and flash rules are pure functions under `lib/` with sixteen tests, rows from another day read `18 Aug 09:15:23` in a time track 20px wider, the README says how to run the feed at 250ms, and a browser journey drops the link through `setOffline` and takes 48 seconds because the client notices a silent link only through the 45-second socket heartbeat. The nested lockfiles are gone, dotenv no longer announces itself, and every tier passed on the rebuilt stack: 288 unit, 38 integration, 8 browser.
+
+**Commits:** `d565bb3`, `929c66d`, `2e53540`, `cc6bf80`, `dbf419a`, `2763003`, `8f6e652`
