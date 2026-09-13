@@ -119,6 +119,12 @@ own; open it in two windows and watch the same rows change in both. Book a trade
 one window and it appears in the other. Sign in as `viewer` to see the booking controls disappear,
 and as `jsmith` to see another trader's trade greyed with "desk head only".
 
+The feed's pace is a compose variable. To watch the client coalesce a burst into one render per
+frame and hold each row to one flash every 333ms, which the shipped three-to-eight-second pace never
+exercises, set `LIVE_FEED_MIN_INTERVAL_MS=250` and `LIVE_FEED_MAX_INTERVAL_MS=250` in a root `.env`
+(compose reads it for substitution) or export them before `npm run start`. 250ms is the floor the
+API accepts.
+
 `npm run stop` stops the stack and keeps the data. `docker compose down -v` discards it.
 
 Other root scripts:
