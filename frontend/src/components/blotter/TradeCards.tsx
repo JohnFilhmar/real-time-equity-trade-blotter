@@ -3,7 +3,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import type { Trade } from '@blotter/shared';
 import { SideMark, StatusBadge, VersionPill } from '@/components/ui/Badges';
-import { format_clock } from '@/lib/format/clock';
+import { format_clock_or_date } from '@/lib/format/clock';
 import { format_notional, format_price, format_quantity } from '@/lib/format/money';
 
 /** Props for {@link TradeCards}. */
@@ -74,7 +74,7 @@ export function TradeCards({ rows, selected_id, onSelect, onLoadMore, has_more }
             <div className="flex items-center gap-[10px] text-[11px] text-muted">
               <span className="font-mono text-[10.5px] text-brand">{trade.tradeId}</span>
               <span>{trade.trader}</span>
-              <span className="ml-auto font-mono text-[10.5px]">{format_clock(trade.tradeTimestamp)}</span>
+              <span className="ml-auto font-mono text-[10.5px]">{format_clock_or_date(trade.tradeTimestamp)}</span>
             </div>
           </button>
         );

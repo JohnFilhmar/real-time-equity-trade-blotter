@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import type { Trade, TradeEvent } from '@blotter/shared';
 import { Skeleton } from '@/components/ui/Note';
 import { useTradeEvents } from '@/hooks/use_trades';
-import { format_clock } from '@/lib/format/clock';
+import { format_clock_or_date } from '@/lib/format/clock';
 
 const dot_colour: Record<TradeEvent['action'] | 'BOOKED', string> = {
   BOOKED: 'bg-brand',
@@ -62,7 +62,7 @@ export function HistoryRow({
           </div>
         ) : null}
         <div className="font-mono text-[10.5px] text-faint">
-          {format_clock(at)} {'·'} {source} {'·'} v{version}
+          {format_clock_or_date(at)} {'·'} {source} {'·'} v{version}
         </div>
       </div>
     </div>

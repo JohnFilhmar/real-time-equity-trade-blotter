@@ -1,7 +1,7 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import type { Trade, TradeSortColumn } from '@blotter/shared';
 import { SideMark, StatusBadge, VersionPill } from '@/components/ui/Badges';
-import { format_clock } from '@/lib/format/clock';
+import { format_clock_or_date } from '@/lib/format/clock';
 import { format_notional, format_quantity } from '@/lib/format/money';
 import { PriceCell } from './PriceCell';
 
@@ -10,10 +10,10 @@ import { PriceCell } from './PriceCell';
  * at that width, so a hidden cell never leaves an empty track behind.
  */
 export const grid_template_classes =
-  'grid-cols-[92px_72px_48px_88px_96px_82px_86px_110px] lg:grid-cols-[96px_76px_50px_96px_100px_86px_152px_88px_110px] xl:grid-cols-[96px_76px_50px_96px_100px_112px_86px_120px_152px_88px_110px]';
+  'grid-cols-[92px_72px_48px_88px_96px_82px_106px_110px] lg:grid-cols-[96px_76px_50px_96px_100px_86px_152px_108px_110px] xl:grid-cols-[96px_76px_50px_96px_100px_112px_86px_120px_152px_108px_110px]';
 
 /** Minimum grid width per breakpoint, so the tracks above never collapse. */
-export const grid_min_width_classes = 'min-w-[700px] lg:min-w-[920px] xl:min-w-[1120px]';
+export const grid_min_width_classes = 'min-w-[720px] lg:min-w-[940px] xl:min-w-[1140px]';
 
 /** Height of one row, matching the `row` spacing token. */
 export const row_height = 32;
@@ -103,7 +103,7 @@ export const trade_columns: ColumnDef<Trade>[] = [
     id: 'tradeTimestamp',
     accessorKey: 'tradeTimestamp',
     header: 'Time (UTC)',
-    cell: ({ getValue }) => <span className="font-mono text-[11px] text-muted">{format_clock(getValue<string>())}</span>,
+    cell: ({ getValue }) => <span className="font-mono text-[11px] whitespace-nowrap text-muted">{format_clock_or_date(getValue<string>())}</span>,
   },
   {
     id: 'status',

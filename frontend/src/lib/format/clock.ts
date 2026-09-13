@@ -58,3 +58,31 @@ export function from_datetime_local_value(value: string): string | undefined {
   const time = Date.parse(`${with_seconds}Z`);
   return Number.isNaN(time) ? undefined : new Date(time).toISOString();
 }
+
+const month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/**
+ * Formats an ISO timestamp as the UTC wall-clock time when it falls on today's UTC date, and as
+ * `18 Aug 09:15:23` otherwise.
+ *
+ * The rows span several sessions: the seed carries earlier days while the feed books today, and
+ * rows from different days sorted together would otherwise show identical-looking times. The full
+ * date stays in the detail drawer, so the column adds only what tells the days apart.
+ *
+ * @param iso - An ISO 8601 timestamp.
+ * @param now - The instant that defines today, compared on its UTC date. Defaults to the current time.
+ * @returns `HH:MM:SS` for today, `D Mon HH:MM:SS` for any other day, or a placeholder when the
+ * value does not parse.
+ */
+export function format_clock_or_date(iso: string, now: Date = new Date()): string {
+  const time = Date.parse(iso);
+  if (Number.isNaN(time)) {
+    return '–';
+  }
+  const at = new Date(time);
+  const clock = at.toISOString().slice(11, 19);
+  if (at.toISOString().slice(0, 10) === now.toISOString().slice(0, 10)) {
+    return clock;
+  }
+  return `${at.getUTCDate().toString()} ${month_names[at.getUTCMonth()]} ${clock}`;
+}
