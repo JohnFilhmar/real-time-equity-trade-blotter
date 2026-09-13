@@ -1,4 +1,9 @@
-import type { BroadcastEnvelope } from '../schemas/broadcast.js';
+import type {
+  BroadcastEnvelope,
+  MarkSet,
+  PositionEnvelope,
+  TradeEventEnvelope,
+} from '../schemas/broadcast.js';
 import type { Role } from '../reference/roles.js';
 
 /**
@@ -9,19 +14,26 @@ export const trade_events = {
   created: 'trade.created',
   amended: 'trade.amended',
   cancelled: 'trade.cancelled',
+  event_recorded: 'trade_event.recorded',
+  position_updated: 'position.updated',
+  mark_updated: 'mark.updated',
 } as const;
 
 /**
  * Events the server sends to connected blotter clients.
  *
- * Each carries an envelope rather than a bare trade, so a client can tell it missed one. The whole
- * row travels inside rather than a patch, so a client that did miss one still converges on the
- * correct trade once it refetches.
+ * Trade, audit and position broadcasts each carry an envelope on one shared sequence, so a client
+ * can tell it missed one whatever kind it was. The whole row travels inside rather than a patch,
+ * so a client that did miss one still converges on the correct state once it refetches. Marks are
+ * idempotent snapshots and travel bare.
  */
 export interface ServerToClientEvents {
   'trade.created': (event: BroadcastEnvelope) => void;
   'trade.amended': (event: BroadcastEnvelope) => void;
   'trade.cancelled': (event: BroadcastEnvelope) => void;
+  'trade_event.recorded': (event: TradeEventEnvelope) => void;
+  'position.updated': (event: PositionEnvelope) => void;
+  'mark.updated': (marks: MarkSet) => void;
 }
 
 /**

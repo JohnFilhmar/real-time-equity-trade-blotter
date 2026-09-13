@@ -78,9 +78,27 @@ export {
 
 export type { Problem, ProblemCode, ProblemFieldError } from './schemas/problem.js';
 
-export { broadcast_envelope_schema } from './schemas/broadcast.js';
+export {
+  broadcast_envelope_schema,
+  trade_event_envelope_schema,
+  position_envelope_schema,
+  mark_set_schema,
+} from './schemas/broadcast.js';
 
-export type { BroadcastEnvelope } from './schemas/broadcast.js';
+export type {
+  BroadcastEnvelope,
+  TradeEventEnvelope,
+  PositionEnvelope,
+  MarkSet,
+} from './schemas/broadcast.js';
+
+export {
+  empty_position,
+  apply_trade,
+  build_positions,
+  unrealised_pnl,
+  currency_of,
+} from './positions/position_book.js';
 
 export {
   instruments,
