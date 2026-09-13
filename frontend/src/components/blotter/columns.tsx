@@ -2,7 +2,8 @@ import type { ColumnDef } from '@tanstack/react-table';
 import type { Trade, TradeSortColumn } from '@blotter/shared';
 import { SideMark, StatusBadge, VersionPill } from '@/components/ui/Badges';
 import { format_clock } from '@/lib/format/clock';
-import { format_notional, format_price, format_quantity } from '@/lib/format/money';
+import { format_notional, format_quantity } from '@/lib/format/money';
+import { PriceCell } from './PriceCell';
 
 /**
  * Grid tracks per breakpoint. Each list has exactly as many entries as there are visible columns
@@ -69,12 +70,7 @@ export const trade_columns: ColumnDef<Trade>[] = [
     accessorKey: 'price',
     header: 'Price',
     meta: { numeric: true },
-    cell: ({ row }) => (
-      <span data-cell="price">
-        {format_price(row.original.price)}
-        <span className="ml-1 text-[9.5px] text-faint">{row.original.currency}</span>
-      </span>
-    ),
+    cell: ({ row }) => <PriceCell trade={row.original} />,
   },
   {
     id: 'notional',

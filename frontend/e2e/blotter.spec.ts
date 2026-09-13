@@ -51,7 +51,7 @@ test.describe('blotter basics @smoke', () => {
   test('positions and the audit trail render from the API', async ({ desk }) => {
     const page = await desk.page('viewer');
     await page.getByRole('link', { name: 'Positions' }).first().click();
-    await expect(page.getByRole('columnheader', { name: 'Gross notional' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Unrealised' })).toBeVisible();
     await expect(page.locator('tbody tr').first()).toBeVisible();
 
     await page.getByRole('link', { name: 'Audit trail' }).first().click();

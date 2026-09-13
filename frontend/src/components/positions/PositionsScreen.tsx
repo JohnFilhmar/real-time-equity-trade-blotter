@@ -1,39 +1,38 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Chip } from '@/components/ui/Badges';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Note';
 import { useConnectionStatus } from '@/hooks/use_connection';
+import { useMarks } from '@/hooks/use_marks';
 import { usePositions } from '@/hooks/use_positions';
-import { format_money, format_quantity, to_display_notional } from '@/lib/format/money';
-import { TradePanel } from '@/components/trade/TradePanel';
-import { useTrade } from '@/hooks/use_trades';
+import { PositionRow, position_grid_cols } from './PositionRow';
 
 const header_class = 'font-mono text-[9.5px] font-semibold uppercase tracking-[.11em] text-faint';
-const grid_cols = 'grid-cols-[84px_60px_96px_92px_92px_124px_72px_1fr]';
 
 /**
- * Net positions by symbol. Every figure is derived from the active trades on the server; nothing
- * here is a P&L, and the page says so, because a P&L needs a mark price and a cost-basis
- * convention that the brief does not supply.
+ * Net positions and P&L by symbol.
+ *
+ * Average cost and realised P&L are the server's, recomputed and broadcast after every write.
+ * Unrealised P&L is this page's: the open size marked against the latest mark from the socket, so
+ * it moves with every tick without a request. Marks are a simulated feed, and the page says so.
  *
  * @returns The screen.
  */
 export function PositionsScreen(): ReactNode {
   const positions = usePositions();
   const status = useConnectionStatus();
-  const [open_trade_id, set_open_trade_id] = useState<string | null>(null);
-  const open_trade = useTrade(open_trade_id);
+  const marks = useMarks();
   const rows = positions.data ?? [];
-  const max_gross = Math.max(1, ...rows.map((row) => to_display_notional(row.grossNotional, row.currency)));
+  const marks_arrived = Object.keys(marks).length > 0;
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
       <div className="flex shrink-0 flex-wrap items-center gap-[9px] border-b border-rule px-[14px] py-[10px]">
         <div className="flex flex-wrap gap-[6px]">
-          <Chip label="Basis" value="active trades" />
-          <Chip label="Figures" value="notional, not P&L" />
+          <Chip label="Cost basis" value="average" />
+          <Chip label="Marks" value={marks_arrived ? 'simulated, streaming' : 'waiting'} />
           <Chip label="Feed" value={status === 'live' ? 'live' : status} />
         </div>
         <div className="ml-auto flex items-center gap-[9px]">
@@ -65,49 +64,33 @@ export function PositionsScreen(): ReactNode {
             <p className="m-0 max-w-[46ch] text-[12.5px] text-muted">Every trade on the blotter is cancelled, or there are none yet. A position appears the moment an active trade exists.</p>
           </div>
         ) : (
-          <table className="w-full min-w-[720px] border-collapse">
+          <table className="w-full min-w-[920px] border-collapse">
             <thead>
-              <tr className={`sticky top-0 z-[5] grid h-[31px] items-center gap-[10px] border-b border-rule bg-head px-[14px] backdrop-blur-[10px] ${grid_cols}`}>
+              <tr className={`sticky top-0 z-[5] grid h-[31px] items-center gap-[10px] border-b border-rule bg-head px-[14px] backdrop-blur-[10px] ${position_grid_cols}`}>
                 <th scope="col" className={`text-left ${header_class}`}>Symbol</th>
                 <th scope="col" className={`text-left ${header_class}`}>Ccy</th>
                 <th scope="col" className={`text-right ${header_class}`}>Net qty</th>
-                <th scope="col" className={`text-right ${header_class}`}>Bought</th>
-                <th scope="col" className={`text-right ${header_class}`}>Sold</th>
-                <th scope="col" className={`text-right ${header_class}`}>Gross notional</th>
+                <th scope="col" className={`text-right ${header_class}`}>Avg price</th>
+                <th scope="col" className={`text-right ${header_class}`}>Mark</th>
+                <th scope="col" className={`text-right ${header_class}`}>Net notional</th>
+                <th scope="col" className={`text-right ${header_class}`}>Unrealised</th>
+                <th scope="col" className={`text-right ${header_class}`}>Realised</th>
                 <th scope="col" className={`text-right ${header_class}`}>Trades</th>
-                <th scope="col" className={`text-left ${header_class}`}>Share of gross</th>
+                <th scope="col" className={`hidden text-left xl:block ${header_class}`}>Trend</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => {
-                const gross = to_display_notional(row.grossNotional, row.currency);
-                const long = row.netQuantity >= 0;
-                return (
-                  <tr key={row.symbol} className={`grid h-[44px] items-center gap-[10px] border-b border-rule-soft px-[14px] text-[12.5px] ${grid_cols}`}>
-                    <td className="font-semibold">{row.symbol}</td>
-                    <td className="font-mono text-[10.5px] text-muted">{row.currency}</td>
-                    <td className={`text-right font-mono tabular-nums ${long ? 'text-gain' : 'text-loss'}`}>
-                      {long ? '+' : '−'}
-                      {format_quantity(Math.abs(row.netQuantity))}
-                    </td>
-                    <td className="text-right font-mono tabular-nums text-text-2">{format_quantity(row.buyQuantity)}</td>
-                    <td className="text-right font-mono tabular-nums text-text-2">{format_quantity(row.sellQuantity)}</td>
-                    <td className="text-right font-mono tabular-nums">{format_money(gross, row.currency)}</td>
-                    <td className="text-right font-mono tabular-nums text-text-2">{row.tradeCount.toString()}</td>
-                    <td>
-                      <div className="h-[5px] min-w-[60px] overflow-hidden rounded-[3px] bg-sunk" aria-label={`${((gross / max_gross) * 100).toFixed(0)} percent of the largest position`}>
-                        <div className={`h-full rounded-[3px] opacity-55 ${long ? 'bg-gain' : 'bg-loss'}`} style={{ width: `${Math.max(4, (gross / max_gross) * 100).toString()}%` }} />
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+              {rows.map((row) => (
+                <PositionRow key={row.symbol} position={row} />
+              ))}
             </tbody>
           </table>
         )}
       </div>
 
-      {open_trade.data !== undefined && open_trade_id !== null ? <TradePanel trade={open_trade.data} onClose={() => set_open_trade_id(null)} /> : null}
+      <p className="shrink-0 border-t border-rule px-[14px] py-2 font-mono text-[10.5px] text-faint">
+        Unrealised is open size times mark minus average cost. Marks are a simulated random walk from each instrument&apos;s reference price, not market data.
+      </p>
     </div>
   );
 }

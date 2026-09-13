@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 import { SectionLabel } from '@/components/ui/Note';
 import { useMutationGate } from '@/hooks/use_connection';
+import { useMark } from '@/hooks/use_marks';
 import { can, can_act_on } from '@/lib/auth/permissions';
 import { format_date_time } from '@/lib/format/clock';
-import { format_notional, format_price, format_quantity } from '@/lib/format/money';
+import { format_money, format_notional, format_price, format_quantity, to_display_notional } from '@/lib/format/money';
 import { useSession } from '@/providers/session_provider';
 import { TradeHistory } from './TradeHistory';
 
@@ -56,6 +57,10 @@ export function TradeDrawer({ trade, onClose, onAmend, onCancel }: TradeDrawerPr
     close_button.current?.focus();
   }, [trade.id]);
 
+  const mark = useMark(trade.symbol);
+  // What this trade is worth against the current mark, signed by side: a BUY gains as the mark
+  // rises, a SELL gains as it falls. The prototype's "drift since execution".
+  const drift = mark === undefined ? null : (mark - trade.price) * trade.quantity * (trade.side === 'BUY' ? 1 : -1);
   const amend = can_act_on(user, trade, 'amend');
   const cancel = can_act_on(user, trade, 'cancel');
   const amend_reason = !amend.allowed ? amend.reason : gate.reason;
@@ -96,7 +101,18 @@ export function TradeDrawer({ trade, onClose, onAmend, onCancel }: TradeDrawerPr
           <div className="grid grid-cols-2 gap-x-3 gap-y-[13px]">
             <Value label="Quantity" mono>{format_quantity(trade.quantity)}</Value>
             <Value label={`Price (${trade.currency})`} mono>{format_price(trade.price)}</Value>
-            <Value label="Notional" mono wide>{format_notional(trade.quantity, trade.price, trade.currency)}</Value>
+            <Value label="Notional" mono>{format_notional(trade.quantity, trade.price, trade.currency)}</Value>
+            <Value label={`Mark (${trade.currency})`} mono>{mark === undefined ? '–' : format_price(mark)}</Value>
+            <Value label="Drift since execution" mono wide>
+              {drift === null ? (
+                <span className="text-faint">{'–'}</span>
+              ) : (
+                <span className={drift >= 0 ? 'text-gain' : 'text-loss'}>
+                  {drift >= 0 ? '+' : ''}
+                  {format_money(to_display_notional(drift, trade.currency), trade.currency)}
+                </span>
+              )}
+            </Value>
           </div>
         </section>
 
