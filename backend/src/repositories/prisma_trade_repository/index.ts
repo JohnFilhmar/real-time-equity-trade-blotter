@@ -1,7 +1,8 @@
-import type { Position, Trade, TradeEvent, TradeEventQuery, TradeQuery } from '@blotter/shared';
+import type { Trade, TradeEvent, TradeEventQuery, TradeQuery } from '@blotter/shared';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import type {
   NewTrade,
+  RecordedWrite,
   TradeEventPage,
   TradePage,
   TradeChanges,
@@ -9,7 +10,7 @@ import type {
   TradeWriteContext,
 } from '../../interfaces/trade_repository.js';
 import {
-  aggregate_positions,
+  find_active_trades,
   find_by_trade_id,
   find_events,
   find_random_active,
@@ -48,7 +49,7 @@ export function create_prisma_trade_repository(prisma: PrismaClient): TradeRepos
       expected_version: number,
       changes: TradeChanges,
       context: TradeWriteContext,
-    ): Promise<Trade | null> {
+    ): Promise<RecordedWrite | null> {
       return amend(prisma, trade_id, expected_version, changes, context);
     },
 
@@ -56,7 +57,7 @@ export function create_prisma_trade_repository(prisma: PrismaClient): TradeRepos
       trade_id: string,
       expected_version: number | undefined,
       context: TradeWriteContext,
-    ): Promise<Trade | null> {
+    ): Promise<RecordedWrite | null> {
       return cancel(prisma, trade_id, expected_version, context);
     },
 
@@ -68,8 +69,8 @@ export function create_prisma_trade_repository(prisma: PrismaClient): TradeRepos
       return list_events(prisma, query);
     },
 
-    async aggregate_positions(): Promise<Position[]> {
-      return aggregate_positions(prisma);
+    async find_active_trades(symbol?: string): Promise<Trade[]> {
+      return find_active_trades(prisma, symbol);
     },
 
     async find_random_active(): Promise<Trade | null> {

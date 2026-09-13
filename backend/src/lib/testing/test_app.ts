@@ -41,6 +41,9 @@ export function build_test_app(): TestApp {
     trade_created: () => sent.push('trade.created'),
     trade_amended: () => sent.push('trade.amended'),
     trade_cancelled: () => sent.push('trade.cancelled'),
+    trade_event_recorded: () => sent.push('trade_event.recorded'),
+    position_updated: () => sent.push('position.updated'),
+    marks_updated: () => sent.push('mark.updated'),
   });
 
   const auth_service = create_auth_service(

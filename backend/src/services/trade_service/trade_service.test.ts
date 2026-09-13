@@ -1,9 +1,15 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
+  apply_trade,
+  build_positions,
+  empty_position,
   trade_query_schema,
   trade_sort_columns,
   type CreateTrade,
+  type MarkSet,
+  type Position,
   type Trade,
+  type TradeEvent,
   type TradeList,
 } from '@blotter/shared';
 import type { TradeBroadcaster } from '../../interfaces/trade_broadcaster.js';
@@ -11,10 +17,17 @@ import { create_in_memory_trade_repository } from '../../repositories/in_memory_
 import { AppError } from '../../lib/errors/app_error.js';
 import { create_trade_service, type TradeActor, type TradeService } from './index.js';
 
+/** One announcement, as the service made it, keyed by what it carried. */
+type Announcement =
+  | { event: 'trade.created' | 'trade.amended' | 'trade.cancelled'; trade: Trade }
+  | { event: 'trade_event.recorded'; audit: TradeEvent }
+  | { event: 'position.updated'; position: Position }
+  | { event: 'mark.updated'; marks: MarkSet };
+
 /** A broadcaster that remembers what it was asked to announce. */
 interface RecordingBroadcaster extends TradeBroadcaster {
-  /** Every announcement, in order, as `event_name` and the trade that went with it. */
-  readonly sent: { event: string; trade: Trade }[];
+  /** Every announcement, in the order the service made them. */
+  readonly sent: Announcement[];
 }
 
 /**
@@ -23,13 +36,16 @@ interface RecordingBroadcaster extends TradeBroadcaster {
  * @returns A broadcaster whose `sent` array can be asserted on.
  */
 function create_recording_broadcaster(): RecordingBroadcaster {
-  const sent: { event: string; trade: Trade }[] = [];
+  const sent: Announcement[] = [];
 
   return {
     sent,
     trade_created: (trade) => sent.push({ event: 'trade.created', trade }),
     trade_amended: (trade) => sent.push({ event: 'trade.amended', trade }),
     trade_cancelled: (trade) => sent.push({ event: 'trade.cancelled', trade }),
+    trade_event_recorded: (audit) => sent.push({ event: 'trade_event.recorded', audit }),
+    position_updated: (position) => sent.push({ event: 'position.updated', position }),
+    marks_updated: (marks) => sent.push({ event: 'mark.updated', marks }),
   };
 }
 
@@ -99,10 +115,13 @@ describe('trade service', () => {
       expect(london.currency).toBe('GBX');
     });
 
-    it('announces the new trade', async () => {
+    it('announces the new trade, then the position it opens, and no audit event', async () => {
       const trade = await service.create(a_create_payload(), trader_actor);
 
-      expect(broadcaster.sent).toEqual([{ event: 'trade.created', trade }]);
+      expect(broadcaster.sent).toEqual([
+        { event: 'trade.created', trade },
+        { event: 'position.updated', position: apply_trade(empty_position('AAPL', 'USD'), trade) },
+      ]);
     });
 
     it('refuses a ticket over the desk notional limit', async () => {
@@ -277,7 +296,25 @@ describe('trade service', () => {
 
       expect(amended.quantity).toBe(7500);
       expect(amended.version).toBe(2);
-      expect(broadcaster.sent.at(-1)).toEqual({ event: 'trade.amended', trade: amended });
+      expect(broadcaster.sent.at(-3)).toEqual({ event: 'trade.amended', trade: amended });
+    });
+
+    it('announces the trade, then its audit row, then the position, in that order', async () => {
+      const created = await service.create(a_create_payload(), trader_actor);
+      broadcaster.sent.length = 0;
+
+      const amended = await service.amend(
+        created.tradeId,
+        { version: created.version, quantity: 7500 },
+        trader_actor,
+      );
+      const [audit] = await service.list_events(created.tradeId);
+
+      expect(broadcaster.sent).toEqual([
+        { event: 'trade.amended', trade: amended },
+        { event: 'trade_event.recorded', audit },
+        { event: 'position.updated', position: apply_trade(empty_position('AAPL', 'USD'), amended) },
+      ]);
     });
 
     it('rejects an amendment that changes nothing', async () => {
@@ -352,7 +389,21 @@ describe('trade service', () => {
 
       expect(cancelled.status).toBe('CANCELLED');
       expect(cancelled.version).toBe(2);
-      expect(broadcaster.sent.at(-1)).toEqual({ event: 'trade.cancelled', trade: cancelled });
+      expect(broadcaster.sent.at(-3)).toEqual({ event: 'trade.cancelled', trade: cancelled });
+    });
+
+    it('announces the trade, then its audit row, then the now-flat position, in that order', async () => {
+      const created = await service.create(a_create_payload(), trader_actor);
+      broadcaster.sent.length = 0;
+
+      const cancelled = await service.cancel(created.tradeId, undefined, trader_actor);
+      const [audit] = await service.list_events(created.tradeId);
+
+      expect(broadcaster.sent).toEqual([
+        { event: 'trade.cancelled', trade: cancelled },
+        { event: 'trade_event.recorded', audit },
+        { event: 'position.updated', position: empty_position('AAPL', 'USD') },
+      ]);
     });
 
     it('honours the version guard when one is supplied', async () => {
@@ -442,6 +493,54 @@ describe('trade service', () => {
       ).rejects.toThrow();
 
       await expect(service.list_events(created.tradeId)).resolves.toEqual([]);
+    });
+  });
+
+  describe('positions', () => {
+    it('walks the active trades with the shared book, so the average and realised P&L are right', async () => {
+      const opened = await service.create(
+        a_create_payload({
+          symbol: 'MSFT',
+          quantity: 100,
+          price: 100,
+          tradeTimestamp: '2026-08-18T09:00:00.000Z',
+        }),
+        trader_actor,
+      );
+      const closed = await service.create(
+        a_create_payload({
+          symbol: 'MSFT',
+          side: 'SELL',
+          quantity: 40,
+          price: 110,
+          tradeTimestamp: '2026-08-18T10:00:00.000Z',
+        }),
+        trader_actor,
+      );
+      const other = await service.create(a_create_payload({ symbol: 'AAPL' }), trader_actor);
+      const doomed = await service.create(a_create_payload({ symbol: 'AAPL', quantity: 1 }), trader_actor);
+      const cancelled = await service.cancel(doomed.tradeId, undefined, trader_actor);
+
+      const positions = await service.list_positions();
+
+      expect(positions).toEqual(build_positions([opened, closed, other, cancelled]));
+      expect(positions.map((position) => position.symbol)).toEqual(['AAPL', 'MSFT']);
+      expect(positions[1]).toMatchObject({ netQuantity: 60, averagePrice: 100, realisedPnl: 400 });
+    });
+
+    it('reads one symbol without the others', async () => {
+      const microsoft = await service.create(a_create_payload({ symbol: 'MSFT' }), trader_actor);
+      await service.create(a_create_payload({ symbol: 'AAPL' }), trader_actor);
+
+      await expect(service.position_for('MSFT')).resolves.toEqual(
+        apply_trade(empty_position('MSFT', 'USD'), microsoft),
+      );
+    });
+
+    it('answers a flat position, in the instrument currency, for a symbol with no trades', async () => {
+      await service.create(a_create_payload({ symbol: 'AAPL' }), trader_actor);
+
+      await expect(service.position_for('VOD.L')).resolves.toEqual(empty_position('VOD.L', 'GBX'));
     });
   });
 });

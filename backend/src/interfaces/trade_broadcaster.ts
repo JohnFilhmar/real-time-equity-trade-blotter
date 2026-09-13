@@ -1,4 +1,4 @@
-import type { Trade } from '@blotter/shared';
+import type { MarkSet, Position, Trade, TradeEvent } from '@blotter/shared';
 
 /**
  * The outbound side of real-time updates, as the service sees it.
@@ -30,4 +30,26 @@ export interface TradeBroadcaster {
    * @param trade - The cancelled trade, in wire shape.
    */
   trade_cancelled(trade: Trade): void;
+
+  /**
+   * Announces the audit row an amendment or cancellation wrote, so a client can place it in the
+   * event feed without a fetch.
+   *
+   * @param event - The event row, in wire shape.
+   */
+  trade_event_recorded(event: TradeEvent): void;
+
+  /**
+   * Announces one symbol's recomputed position after a write, the whole row rather than a delta.
+   *
+   * @param position - The position after the write, in wire shape.
+   */
+  position_updated(position: Position): void;
+
+  /**
+   * Announces the current mark for every symbol. Idempotent, so it travels without an envelope.
+   *
+   * @param marks - The whole mark set, keyed by symbol.
+   */
+  marks_updated(marks: MarkSet): void;
 }

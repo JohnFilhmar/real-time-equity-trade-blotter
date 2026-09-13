@@ -17,7 +17,12 @@ export const connected_clients = new Gauge({
   registers: [registry],
 });
 
-/** Every broadcast the server has emitted, labelled by event name. Rate gives events per second. */
+/**
+ * Every broadcast the server has emitted, labelled by event name. Rate gives events per second.
+ *
+ * The label takes every name in `trade_events`: the three trade events, `trade_event.recorded`,
+ * `position.updated` and `mark.updated`.
+ */
 export const broadcasts_emitted = new Counter({
   name: 'blotter_broadcasts_emitted_total',
   help: 'Broadcasts emitted to connected clients',
@@ -28,10 +33,11 @@ export const broadcasts_emitted = new Counter({
 /**
  * How long a change takes to reach the wire after it was committed.
  *
- * Measured from the trade's `updatedAt`, which the database sets at commit, to the moment the
- * envelope is stamped for emit. That is the number that distinguishes a real-time blotter from one
- * that merely has a socket attached, and buckets rather than an average because the tail is what
- * matters.
+ * Measured from the trade's `updatedAt`, or the audit event's `occurredAt`, which the database
+ * sets at commit, to the moment the envelope is stamped for emit. That is the number that
+ * distinguishes a real-time blotter from one that merely has a socket attached, and buckets rather
+ * than an average because the tail is what matters. Positions and marks are derived rather than
+ * committed, so they carry no commit time and are not observed here.
  */
 export const broadcast_lag_seconds = new Histogram({
   name: 'blotter_broadcast_lag_seconds',

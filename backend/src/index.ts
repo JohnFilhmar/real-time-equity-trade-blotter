@@ -7,6 +7,8 @@ import { create_login_attempts } from './lib/auth/login_attempts.js';
 import { create_refresh_store } from './lib/auth/refresh_store.js';
 import { create_live_feed } from './lib/live_feed/live_feed.js';
 import { logger } from './lib/logging/logger.js';
+import { create_mark_feed } from './lib/marks/mark_feed.js';
+import { create_mark_store } from './lib/marks/mark_store.js';
 import { seed_trades_if_empty } from './lib/seed/seed_trades.js';
 import { seed_users_if_empty } from './lib/seed/seed_users.js';
 import { create_socket_broadcaster } from './realtime/socket_broadcaster.js';
@@ -17,16 +19,23 @@ import { create_prisma_user_repository } from './repositories/prisma_user_reposi
 import { create_auth_service } from './services/auth_service.js';
 import { create_trade_service } from './services/trade_service/index.js';
 
+/** How often the simulated marks move, in milliseconds. */
+const mark_interval_ms = 900;
+
 // The HTTP server is created empty and the app attached afterwards, because the socket server
 // needs the HTTP server, the broadcaster needs the socket server, the service needs the
 // broadcaster, and the app needs the service. Building it in this order is what breaks that cycle.
+// The mark store comes first of all, because the socket server hands its contents to every client
+// that connects.
+const mark_store = create_mark_store();
 const http_server = createServer();
-const io = create_socket_server(http_server);
+const io = create_socket_server(http_server, mark_store);
+const broadcaster = create_socket_broadcaster(io);
 
 const trade_repository = create_prisma_trade_repository(prisma);
 const user_repository = create_prisma_user_repository(prisma);
 
-const trade_service = create_trade_service(trade_repository, create_socket_broadcaster(io));
+const trade_service = create_trade_service(trade_repository, broadcaster);
 const redis = get_redis();
 const auth_service = create_auth_service(
   user_repository,
@@ -43,6 +52,7 @@ const app = create_app({
 http_server.on('request', app);
 
 const live_feed = create_live_feed(trade_service, trade_repository, live_feed_options);
+const mark_feed = create_mark_feed(mark_store, broadcaster, { interval_ms: mark_interval_ms });
 
 /**
  * Closes the HTTP listener, tolerating the case where Socket.IO has already closed it.
@@ -71,7 +81,7 @@ function close_http_server(): Promise<void> {
 }
 
 /**
- * Stops the simulated feed, closes the socket server, the HTTP listener, Redis and the database
+ * Stops the simulated feeds, closes the socket server, the HTTP listener, Redis and the database
  * pool, in that order, so no request is cut mid-flight and no connection is left dangling.
  *
  * Without this, Docker's SIGTERM kills the process outright and `docker compose down` waits the
@@ -90,6 +100,7 @@ async function shutdown(signal: string): Promise<void> {
 
   try {
     live_feed.stop();
+    mark_feed.stop();
     await io.close();
     await close_http_server();
     await close_redis();
@@ -128,6 +139,9 @@ async function main(): Promise<void> {
       },
       'live_feed_started',
     );
+
+    mark_feed.start();
+    logger.info({ interval_ms: mark_interval_ms }, 'mark_feed_started');
   }
 }
 

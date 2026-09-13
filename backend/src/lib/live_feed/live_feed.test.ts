@@ -12,6 +12,9 @@ const one_second = { min_interval_ms: 1000, max_interval_ms: 1000 };
 /**
  * Builds a feed over an in-memory blotter.
  *
+ * Only the trade broadcasts are recorded, one per action, so `sent` counts ticks. The audit and
+ * position broadcasts that follow each write are the service's subject, not the feed's.
+ *
  * @param repository - Optional repository override, for the failure case.
  * @returns The feed and the events it caused.
  */
@@ -21,6 +24,9 @@ function build_feed(repository: TradeRepository = create_in_memory_trade_reposit
     trade_created: () => sent.push('trade.created'),
     trade_amended: () => sent.push('trade.amended'),
     trade_cancelled: () => sent.push('trade.cancelled'),
+    trade_event_recorded: () => undefined,
+    position_updated: () => undefined,
+    marks_updated: () => undefined,
   });
 
   return { feed: create_live_feed(service, repository, one_second), sent };

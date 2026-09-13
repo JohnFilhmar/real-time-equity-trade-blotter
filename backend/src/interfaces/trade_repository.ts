@@ -2,7 +2,6 @@ import type {
   AmendableTrade,
   CreateTrade,
   Currency,
-  Position,
   Trade,
   TradeEvent,
   TradeEventQuery,
@@ -42,6 +41,21 @@ export interface TradeEventPage {
  * complete row.
  */
 export type NewTrade = CreateTrade & { trader: string; currency: Currency };
+
+/**
+ * What an amendment or cancellation leaves behind: the trade as it now stands and the audit row
+ * written in the same transaction.
+ *
+ * Both come back together so the service can broadcast the event without re-reading the history,
+ * and because the two were committed as one and should be seen as one.
+ */
+export interface RecordedWrite {
+  /** The trade after the write, in wire shape. */
+  trade: Trade;
+
+  /** The audit row the write recorded, in wire shape. */
+  event: TradeEvent;
+}
 
 /** The fields an amendment is allowed to change. */
 export type TradeChanges = { [K in keyof AmendableTrade]?: AmendableTrade[K] | undefined };
@@ -103,14 +117,14 @@ export interface TradeRepository {
    * @param expected_version - The version the client last saw.
    * @param changes - The fields to overwrite.
    * @param context - Who made the change and where it came from.
-   * @returns The amended trade, or `null` when nothing matched.
+   * @returns The amended trade with its audit row, or `null` when nothing matched.
    */
   amend(
     trade_id: string,
     expected_version: number,
     changes: TradeChanges,
     context: TradeWriteContext,
-  ): Promise<Trade | null>;
+  ): Promise<RecordedWrite | null>;
 
   /**
    * Moves an `ACTIVE` trade to `CANCELLED`, recording the transition in the same transaction.
@@ -118,13 +132,13 @@ export interface TradeRepository {
    * @param trade_id - The trade to cancel.
    * @param expected_version - Optional version guard. Omitted means cancel whatever is current.
    * @param context - Who cancelled it and where the request came from.
-   * @returns The cancelled trade, or `null` when nothing matched.
+   * @returns The cancelled trade with its audit row, or `null` when nothing matched.
    */
   cancel(
     trade_id: string,
     expected_version: number | undefined,
     context: TradeWriteContext,
-  ): Promise<Trade | null>;
+  ): Promise<RecordedWrite | null>;
 
   /**
    * Reads the full history of one trade, oldest first.
@@ -147,11 +161,15 @@ export interface TradeRepository {
   list_events(query: TradeEventQuery): Promise<TradeEventPage>;
 
   /**
-   * Sums the `ACTIVE` trades into one net position per instrument.
+   * Reads the `ACTIVE` trades in execution order, which is the order the position walk needs.
    *
-   * @returns One position per symbol, sorted by symbol ascending. Empty when nothing is active.
+   * Ordered on `tradeTimestamp` ascending with the row id as the tiebreaker, so two trades executed
+   * in the same millisecond are walked in one order on every read.
+   *
+   * @param symbol - When given, only that instrument's trades. Omitted means every instrument.
+   * @returns The trades, oldest execution first. Empty when nothing is active.
    */
-  aggregate_positions(): Promise<Position[]>;
+  find_active_trades(symbol?: string): Promise<Trade[]>;
 
   /**
    * Picks one `ACTIVE` trade at random, used by the live feed to choose something to amend or

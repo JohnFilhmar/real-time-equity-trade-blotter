@@ -144,3 +144,26 @@ repository `CLAUDE.md` fallback puts the entry on the dispatcher in that case.
 > [... truncated, ~2,900 characters omitted: the instruction to treat Bloomberg AIM/TOMS, Fidessa, Charles River, FlexTrade and ION product pages as vocabulary rather than observed behaviour; the five focus areas (update behaviour under load, density and number formatting, trader keyboard use, feed-drop handling, columns a real blotter carries that this one does not); the deliverable, a ranked table of 10 to 15 candidate changes with evidence, hours, rubric movement and a cut line, plus a list of what the system already does; the constraints against reintroducing AMENDED, a cancellation reason, offset paging or a P&L with an invented mark, and against generic hour estimates; and this prompt log obligation.]
 
 **Outcome:** Returned a fifteen-row table ranked by rubric movement per hour with a cut line after five items totalling about 3.6 hours (a tested pure sequence-gap rule, a debounce on the per-broadcast positions and event-feed refetch, a date on timestamps that are not today, a README line on the feed floor, and a Playwright feed-drop test), plus fourteen things the interface already does that the observed AG Grid finance demo, Proof Trading case study and FIX session practice do. Found that neither revision of the gap analysis carries a per-field FIX tag table, and that `settle_trade` refetches positions on every broadcast for every client, which the read limiter would turn into 429s at the feed's 250ms floor.
+
+---
+
+### 2026-09-13T06:21Z - broadcast_audit_positions_and_marks
+
+**Prompt**
+
+> You are a backend subagent on a TypeScript trade blotter (Express 5, Prisma 7, Postgres, Socket.IO, zod 4, vitest 5, ESM nodenext so relative imports end in `.js`). Work ONLY inside this git worktree and never cd out of it:
+>
+>   D:\My Folder\tp-icap-take-home-assessment\.claude\worktrees\hardening
+>
+> THE STANDING RULE, verbatim from the repository owner: YOU DECIDE NOTHING. Every choice below has been taken by the owner and is specified exactly. If you hit something this brief does not settle, do not pick: finish everything that does not depend on it, then return the question with options, the cost of each, and your recommendation. "It was obvious" or "it was small" are not reasons to proceed.
+>
+> Ground rules (non-negotiable):
+> - Do NOT commit, push, stash or switch branches. I review the diff and commit.
+> - Do NOT touch frontend/**, shared/** (the contract is finished and committed; read it, do not change it), README.md, docs/** except the one prompt-log file named at the end, docker-compose.yaml, Dockerfiles, package.json files, or any .env file. Another agent is moving backend/prisma into a database/ workspace in a separate worktree; do not touch backend/prisma or prisma.config.ts here either.
+> - No `any`, no `as` to silence an error, no @ts-ignore. `unknown` and narrow. Explicit return types on exported functions. JSDoc on every export in the style of the existing files. snake_case files and identifiers; camelCase on the wire. Files under about 250 lines and about 3 exported functions; split into a directory if needed, following how repositories/prisma_trade_repository/ is laid out.
+> - The shell guard refuses compound commands it cannot verify and heredocs containing backticks. Plain single commands; Write/Edit tools for files.
+> - Tests colocated as <subject>.test.ts and <subject>.integration.test.ts. One case per branch that can produce a wrong answer.
+>
+> [... truncated, ~8,400 characters omitted: the read-first list; the contract already in shared/ (three new event names, the audit, position and mark payloads, the extended Position and the exported position walk); the five specified changes (three broadcaster methods on one sequence, RecordedWrite from amend and cancel, positions from the shared walk over find_active_trades with position_for and the trade-then-event-then-position broadcast order on every write, the mark store and 900ms mark feed with the prototype's drift constants and their index.ts and socket-server wiring, and the test list per file); the verification commands to run and report verbatim; and this prompt log obligation.]
+
+**Outcome:** Built the three broadcaster methods on the one sequence, `RecordedWrite` from amend and cancel in both repositories, positions from the shared walk over `find_active_trades` with `position_for` and the trade, audit, position broadcast order on every write, and the in-process mark store and 900ms mark feed sent to each client on connect and after every tick, with the SQL aggregate and its mapper deleted. Verified typecheck clean on all three workspaces, the unit tier at shared 39, backend 184 and frontend 43, and the integration tier at 38 against the compose Postgres; nothing committed.

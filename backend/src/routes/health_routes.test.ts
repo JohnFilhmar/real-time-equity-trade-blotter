@@ -31,6 +31,9 @@ function app_with(health_probe: HealthProbe): Express {
       trade_created: () => undefined,
       trade_amended: () => undefined,
       trade_cancelled: () => undefined,
+      trade_event_recorded: () => undefined,
+      position_updated: () => undefined,
+      marks_updated: () => undefined,
     }),
     auth_service: create_auth_service(
       create_in_memory_user_repository(),

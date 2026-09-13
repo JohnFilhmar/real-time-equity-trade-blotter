@@ -2,14 +2,16 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PrismaPg } from '@prisma/adapter-pg';
 import {
   find_instrument,
+  position_schema,
   trade_event_query_schema,
   trade_query_schema,
   trade_sort_columns,
-  type Position,
   type TradeEvent,
 } from '@blotter/shared';
 import { PrismaClient } from '../../generated/prisma/client.js';
 import type { NewTrade, TradeRepository } from '../../interfaces/trade_repository.js';
+import type { TradeService } from '../../interfaces/trade_service.js';
+import { create_trade_service } from '../../services/trade_service/index.js';
 import { create_prisma_trade_repository } from './index.js';
 
 /**
@@ -48,36 +50,26 @@ function a_new_trade(overrides: Partial<NewTrade> = {}): NewTrade {
   };
 }
 
-/**
- * Finds one symbol's position, or a zero position when nothing active is booked in it yet.
- *
- * @param positions - The rows the repository returned.
- * @param symbol - The instrument to look for.
- * @returns Its position, every figure zero when absent.
- */
-function position_of(positions: Position[], symbol: string): Position {
-  return (
-    positions.find((position) => position.symbol === symbol) ?? {
-      symbol,
-      currency: 'USD',
-      netQuantity: 0,
-      buyQuantity: 0,
-      sellQuantity: 0,
-      grossNotional: 0,
-      tradeCount: 0,
-    }
-  );
-}
-
 describe.skipIf(test_database_url === undefined)('prisma trade repository', () => {
   let prisma: PrismaClient;
   let repository: TradeRepository;
+  let service: TradeService;
 
   beforeAll(() => {
     prisma = new PrismaClient({
       adapter: new PrismaPg({ connectionString: test_database_url }),
     });
     repository = create_prisma_trade_repository(prisma);
+    // The service is here only for `position_for`, which is where the walk over this
+    // repository's rows lives. Nothing in this suite writes through it, so nothing is broadcast.
+    service = create_trade_service(repository, {
+      trade_created: () => undefined,
+      trade_amended: () => undefined,
+      trade_cancelled: () => undefined,
+      trade_event_recorded: () => undefined,
+      position_updated: () => undefined,
+      marks_updated: () => undefined,
+    });
   });
 
   afterAll(async () => {
@@ -234,8 +226,8 @@ describe.skipIf(test_database_url === undefined)('prisma trade repository', () =
         api_context,
       );
 
-      expect(amended?.quantity).toBe(7500);
-      expect(amended?.version).toBe(2);
+      expect(amended?.trade.quantity).toBe(7500);
+      expect(amended?.trade.version).toBe(2);
       expect(stale).toBeNull();
     });
 
@@ -245,12 +237,12 @@ describe.skipIf(test_database_url === undefined)('prisma trade repository', () =
 
       const amended = await repository.amend(
         created.tradeId,
-        cancelled?.version ?? 2,
+        cancelled?.trade.version ?? 2,
         { quantity: 100 },
         api_context,
       );
 
-      expect(cancelled?.status).toBe('CANCELLED');
+      expect(cancelled?.trade.status).toBe('CANCELLED');
       expect(amended).toBeNull();
     });
 
@@ -260,12 +252,24 @@ describe.skipIf(test_database_url === undefined)('prisma trade repository', () =
       const first = await repository.cancel(created.tradeId, undefined, api_context);
       const second = await repository.cancel(created.tradeId, undefined, api_context);
 
-      expect(first?.status).toBe('CANCELLED');
+      expect(first?.trade.status).toBe('CANCELLED');
       expect(second).toBeNull();
     });
   });
 
   describe('the event log', () => {
+    it('hands back the audit row it wrote, the same row the history serves', async () => {
+      const created = await repository.create(a_new_trade({ quantity: 5000 }));
+
+      const amended = await repository.amend(created.tradeId, 1, { quantity: 7500 }, api_context);
+      const cancelled = await repository.cancel(created.tradeId, 2, api_context);
+      const history = await repository.find_events(created.tradeId);
+
+      expect(amended?.event).toMatchObject({ tradeId: created.tradeId, action: 'AMENDED', version: 2 });
+      expect(cancelled?.event).toMatchObject({ tradeId: created.tradeId, action: 'CANCELLED', version: 3 });
+      expect(history).toEqual([amended?.event, cancelled?.event]);
+    });
+
     it('writes one row per change, oldest first', async () => {
       const created = await repository.create(a_new_trade({ quantity: 5000 }));
       await repository.amend(created.tradeId, 1, { quantity: 7500 }, api_context);
@@ -377,24 +381,73 @@ describe.skipIf(test_database_url === undefined)('prisma trade repository', () =
     });
   });
 
+  describe('active trades, as the position walk reads them', () => {
+    it('lists one symbol in execution order and leaves cancelled trades out', async () => {
+      const symbol = 'GOOGL';
+      const later = await repository.create(
+        a_new_trade({ symbol, tradeTimestamp: '2026-08-18T11:00:00.000Z' }),
+      );
+      const earlier = await repository.create(
+        a_new_trade({ symbol, tradeTimestamp: '2026-08-18T10:00:00.000Z' }),
+      );
+      const doomed = await repository.create(
+        a_new_trade({ symbol, tradeTimestamp: '2026-08-18T10:30:00.000Z' }),
+      );
+      await repository.cancel(doomed.tradeId, undefined, api_context);
+
+      // The shared database has a live feed writing to it, so rows outside this run's book can
+      // sit between these. Only this run's rows are asserted on; every row is checked for symbol.
+      const active = await repository.find_active_trades(symbol);
+      const mine = active.filter((trade) => trade.book === test_book);
+
+      expect(active.every((trade) => trade.symbol === symbol && trade.status === 'ACTIVE')).toBe(true);
+      expect(mine.map((trade) => trade.tradeId)).toEqual([earlier.tradeId, later.tradeId]);
+    });
+
+    it('lists every symbol when none is given, oldest execution first', async () => {
+      await repository.create(a_new_trade({ symbol: 'JPM' }));
+      await repository.create(a_new_trade({ symbol: 'META' }));
+
+      const active = await repository.find_active_trades();
+      const symbols = new Set(active.map((trade) => trade.symbol));
+
+      expect(symbols.has('JPM')).toBe(true);
+      expect(symbols.has('META')).toBe(true);
+      expect(active.every((trade) => trade.status === 'ACTIVE')).toBe(true);
+      for (let index = 1; index < active.length; index += 1) {
+        const previous = active[index - 1];
+        const current = active[index];
+        const by_time = Date.parse(current?.tradeTimestamp ?? '') - Date.parse(previous?.tradeTimestamp ?? '');
+        expect(by_time >= 0).toBe(true);
+        if (by_time === 0) {
+          expect((previous?.id ?? '') < (current?.id ?? '')).toBe(true);
+        }
+      }
+    });
+  });
+
   describe('positions', () => {
-    it('adds a BUY and a SELL to the symbol position, in the instrument currency', async () => {
+    it('walks a BUY and a SELL into the symbol position, in the instrument currency', async () => {
       const symbol = 'NVDA';
-      const before = position_of(await repository.aggregate_positions(), symbol);
+      const before = await service.position_for(symbol);
 
       await repository.create(a_new_trade({ symbol, side: 'BUY', quantity: 5000, price: 178.9 }));
       await repository.create(a_new_trade({ symbol, side: 'SELL', quantity: 3000, price: 180.25 }));
 
-      const after = position_of(await repository.aggregate_positions(), symbol);
+      const after = await service.position_for(symbol);
 
-      expect(after.buyQuantity - before.buyQuantity).toBe(5000);
-      expect(after.sellQuantity - before.sellQuantity).toBe(3000);
-      expect(after.tradeCount - before.tradeCount).toBe(2);
-      expect(after.grossNotional - before.grossNotional).toBeCloseTo(
-        5000 * 178.9 + 3000 * 180.25,
-        2,
+      // The simulated feed writes to this database too, so the figures can only be bounded from
+      // below and checked for the invariants the walk guarantees, whatever else it applied.
+      expect(() => position_schema.parse(after)).not.toThrow();
+      expect(after.buyQuantity - before.buyQuantity).toBeGreaterThanOrEqual(5000);
+      expect(after.sellQuantity - before.sellQuantity).toBeGreaterThanOrEqual(3000);
+      expect(after.tradeCount - before.tradeCount).toBeGreaterThanOrEqual(2);
+      expect(after.grossNotional - before.grossNotional).toBeGreaterThanOrEqual(
+        5000 * 178.9 + 3000 * 180.25 - 0.01,
       );
       expect(after.netQuantity).toBe(after.buyQuantity - after.sellQuantity);
+      expect(after.averagePrice === 0).toBe(after.netQuantity === 0);
+      expect(Number.isFinite(after.realisedPnl)).toBe(true);
       expect(after.currency).toBe(find_instrument(symbol)?.currency);
     });
   });

@@ -1,6 +1,5 @@
 import type {
   AmendableTrade,
-  Position,
   Trade,
   TradeEvent,
   TradeEventQuery,
@@ -8,6 +7,7 @@ import type {
 } from '@blotter/shared';
 import type {
   NewTrade,
+  RecordedWrite,
   TradeEventPage,
   TradePage,
   TradeChanges,
@@ -21,7 +21,6 @@ import {
 import { decode_cursor, encode_cursor } from '../../lib/paging/cursor.js';
 import { find_events, list_events } from './events.js';
 import { compare_on, matches_text, within_range } from './filtering.js';
-import { aggregate_positions } from './positions.js';
 
 /** Where the in-memory business identifiers start, matching the database sequence. */
 const first_trade_number = 100_001;
@@ -60,13 +59,14 @@ export function create_in_memory_trade_repository(initial: Trade[] = []): TradeR
   let next_number = first_trade_number + trades.size;
 
   /**
-   * Appends one history entry.
+   * Appends one history entry and pairs it with the trade it describes.
    *
    * @param trade - The trade after the change.
    * @param action - What happened.
    * @param context - Who did it and where it came from.
    * @param changes - What moved.
    * @param fallback_actor - Used when the context names no actor.
+   * @returns The trade and the entry as recorded.
    */
   function record(
     trade: Trade,
@@ -74,8 +74,8 @@ export function create_in_memory_trade_repository(initial: Trade[] = []): TradeR
     context: TradeWriteContext,
     changes: TradeEvent['changes'],
     fallback_actor: string,
-  ): void {
-    events.push({
+  ): RecordedWrite {
+    const event: TradeEvent = {
       id: crypto.randomUUID(),
       tradeId: trade.tradeId,
       version: trade.version,
@@ -84,7 +84,10 @@ export function create_in_memory_trade_repository(initial: Trade[] = []): TradeR
       changes,
       actor: context.actor ?? fallback_actor,
       occurredAt: trade.updatedAt,
-    });
+    };
+
+    events.push(event);
+    return { trade, event };
   }
 
   return {
@@ -154,7 +157,7 @@ export function create_in_memory_trade_repository(initial: Trade[] = []): TradeR
       expected_version: number,
       changes: TradeChanges,
       context: TradeWriteContext,
-    ): Promise<Trade | null> {
+    ): Promise<RecordedWrite | null> {
       const current = trades.get(trade_id);
 
       if (
@@ -173,16 +176,14 @@ export function create_in_memory_trade_repository(initial: Trade[] = []): TradeR
       };
 
       trades.set(trade_id, amended);
-      record(amended, 'AMENDED', context, build_change_set(current, changes), current.trader);
-
-      return amended;
+      return record(amended, 'AMENDED', context, build_change_set(current, changes), current.trader);
     },
 
     async cancel(
       trade_id: string,
       expected_version: number | undefined,
       context: TradeWriteContext,
-    ): Promise<Trade | null> {
+    ): Promise<RecordedWrite | null> {
       const current = trades.get(trade_id);
 
       if (
@@ -201,9 +202,7 @@ export function create_in_memory_trade_repository(initial: Trade[] = []): TradeR
       };
 
       trades.set(trade_id, cancelled);
-      record(cancelled, 'CANCELLED', context, build_cancellation_change_set(), current.trader);
-
-      return cancelled;
+      return record(cancelled, 'CANCELLED', context, build_cancellation_change_set(), current.trader);
     },
 
     async find_events(trade_id: string): Promise<TradeEvent[]> {
@@ -214,8 +213,15 @@ export function create_in_memory_trade_repository(initial: Trade[] = []): TradeR
       return list_events(events, query);
     },
 
-    async aggregate_positions(): Promise<Position[]> {
-      return aggregate_positions(trades);
+    async find_active_trades(symbol?: string): Promise<Trade[]> {
+      return [...trades.values()]
+        .filter(
+          (trade) => trade.status === 'ACTIVE' && (symbol === undefined || trade.symbol === symbol),
+        )
+        .sort((a, b) => {
+          const by_time = Date.parse(a.tradeTimestamp) - Date.parse(b.tradeTimestamp);
+          return by_time === 0 ? a.id.localeCompare(b.id) : by_time;
+        });
     },
 
     async find_random_active(): Promise<Trade | null> {

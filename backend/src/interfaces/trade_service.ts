@@ -117,4 +117,12 @@ export interface TradeService {
    * @returns Positions sorted by symbol. Empty when the blotter holds no active trades.
    */
   list_positions(): Promise<Position[]>;
+
+  /**
+   * Reads the net position in one instrument.
+   *
+   * @param symbol - The instrument.
+   * @returns Its position. Every figure is zero when the instrument has no active trades.
+   */
+  position_for(symbol: string): Promise<Position>;
 }

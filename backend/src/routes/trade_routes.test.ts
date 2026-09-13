@@ -265,7 +265,7 @@ describe(`POST ${api_prefix}/trades`, () => {
     expect(() => trade_schema.parse(response.body)).not.toThrow();
     expect(response.body.trader).toBe('ABROWN');
     expect(response.body.status).toBe('ACTIVE');
-    expect(sent).toEqual(['trade.created']);
+    expect(sent).toEqual(['trade.created', 'position.updated']);
   });
 
   it('ignores a trader the client tries to supply', async () => {
@@ -346,7 +346,13 @@ describe(`PATCH ${api_prefix}/trades/:trade_id`, () => {
     expect(response.status).toBe(200);
     expect(response.body.price).toBe(230.1);
     expect(response.body.version).toBe(2);
-    expect(sent).toEqual(['trade.created', 'trade.amended']);
+    expect(sent).toEqual([
+      'trade.created',
+      'position.updated',
+      'trade.amended',
+      'trade_event.recorded',
+      'position.updated',
+    ]);
   });
 
   it('ignores an attempt to re-point the trade at another instrument', async () => {
@@ -408,7 +414,13 @@ describe(`POST ${api_prefix}/trades/:trade_id/cancel`, () => {
 
     expect(response.status).toBe(200);
     expect(response.body.status).toBe('CANCELLED');
-    expect(sent).toEqual(['trade.created', 'trade.cancelled']);
+    expect(sent).toEqual([
+      'trade.created',
+      'position.updated',
+      'trade.cancelled',
+      'trade_event.recorded',
+      'position.updated',
+    ]);
   });
 
   it('answers 409 on a second cancel', async () => {

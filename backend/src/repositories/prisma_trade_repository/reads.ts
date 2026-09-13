@@ -1,7 +1,6 @@
-import type { Position, Trade, TradeEvent, TradeEventQuery, TradeQuery } from '@blotter/shared';
+import type { Trade, TradeEvent, TradeEventQuery, TradeQuery } from '@blotter/shared';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import type { TradeEventPage, TradePage } from '../../interfaces/trade_repository.js';
-import { to_wire_position, type PositionRow } from '../../lib/mappers/position_mapper.js';
 import { to_wire_event } from '../../lib/mappers/trade_event_mapper.js';
 import { to_wire_trade } from '../../lib/mappers/trade_mapper.js';
 import { decode_cursor, encode_cursor } from '../../lib/paging/cursor.js';
@@ -77,26 +76,14 @@ export async function list_events(
   };
 }
 
-/** The Postgres side of `TradeRepository.aggregate_positions`. */
-export async function aggregate_positions(prisma: PrismaClient): Promise<Position[]> {
-  // The two quantity sums are cast to int because Postgres widens a summed integer to bigint.
-  // The notional is left as numeric so the mapper converts it exactly the way it converts a
-  // price.
-  const rows = await prisma.$queryRaw<PositionRow[]>`
-    SELECT
-      "symbol",
-      "currency",
-      SUM(CASE WHEN "side" = 'BUY' THEN "quantity" ELSE 0 END)::int AS "buyQuantity",
-      SUM(CASE WHEN "side" = 'SELL' THEN "quantity" ELSE 0 END)::int AS "sellQuantity",
-      SUM("quantity" * "price") AS "grossNotional",
-      COUNT(*)::int AS "tradeCount"
-    FROM "trade"
-    WHERE "status" = 'ACTIVE'
-    GROUP BY "symbol", "currency"
-    ORDER BY "symbol" ASC
-  `;
+/** The Postgres side of `TradeRepository.find_active_trades`. */
+export async function find_active_trades(prisma: PrismaClient, symbol?: string): Promise<Trade[]> {
+  const rows = await prisma.trade.findMany({
+    where: { status: 'ACTIVE', ...(symbol === undefined ? {} : { symbol }) },
+    orderBy: [{ tradeTimestamp: 'asc' }, { id: 'asc' }],
+  });
 
-  return rows.map(to_wire_position);
+  return rows.map(to_wire_trade);
 }
 
 /** The Postgres side of `TradeRepository.find_random_active`. */

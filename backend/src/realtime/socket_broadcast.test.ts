@@ -1,12 +1,22 @@
 import { createServer, type Server as HttpServer } from 'node:http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { io as connect, type Socket } from 'socket.io-client';
-import { broadcast_envelope_schema, type BroadcastEnvelope } from '@blotter/shared';
+import { z } from 'zod';
+import {
+  broadcast_envelope_schema,
+  instrument_symbols,
+  mark_set_schema,
+  position_envelope_schema,
+  trade_event_envelope_schema,
+  trade_events,
+  type BroadcastEnvelope,
+} from '@blotter/shared';
 import { api_prefix, create_app } from '../app.js';
 import {
   create_in_memory_login_attempts,
   create_in_memory_refresh_store,
 } from '../lib/auth/in_memory_auth_stores.js';
+import { create_mark_store } from '../lib/marks/mark_store.js';
 import { bearer, token_for } from '../lib/testing/test_app.js';
 import { create_in_memory_trade_repository } from '../repositories/in_memory_trade_repository/index.js';
 import { create_in_memory_user_repository } from '../repositories/in_memory_user_repository.js';
@@ -24,10 +34,19 @@ const own_desk = 'JSMITH';
 /** One access token, reused, because the subject here is the broadcast rather than the login. */
 const access_token = token_for(own_desk);
 
+/** The one field every enveloped broadcast shares, for reading the sequence off any of them. */
+const sequenced_schema = z.object({ seq: z.int().nonnegative() });
+
+/** One message a tab was sent, as it arrived, before any parsing. */
+interface Delivery {
+  event: string;
+  payload: unknown;
+}
+
 /** A client standing in for one browser tab. */
 interface Tab {
   socket: Socket;
-  received: { event: string; envelope: BroadcastEnvelope }[];
+  received: Delivery[];
 }
 
 let http_server: HttpServer;
@@ -38,6 +57,7 @@ const open_sockets: Socket[] = [];
  * Connects a client and records everything it is sent.
  *
  * @param origin - The Origin header to present, so the rejection path can be exercised too.
+ * @param token - The access token to present, or `null` to present none.
  * @returns The connected tab.
  */
 async function open_tab(origin = allowed_origin, token: string | null = access_token): Promise<Tab> {
@@ -49,10 +69,10 @@ async function open_tab(origin = allowed_origin, token: string | null = access_t
   });
   open_sockets.push(socket);
 
-  const received: Tab['received'] = [];
-  for (const event of ['trade.created', 'trade.amended', 'trade.cancelled'] as const) {
-    socket.on(event, (envelope: BroadcastEnvelope) => {
-      received.push({ event, envelope });
+  const received: Delivery[] = [];
+  for (const event of Object.values(trade_events)) {
+    socket.on(event, (payload: unknown) => {
+      received.push({ event, payload });
     });
   }
 
@@ -67,7 +87,38 @@ async function open_tab(origin = allowed_origin, token: string | null = access_t
 }
 
 /**
- * Waits for one tab to see a specific event for a specific trade.
+ * Pauses briefly, so a poll does not spin.
+ *
+ * @param ms - How long to pause for.
+ */
+async function pause(ms = 20): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * The trade a delivery carries, or `null` when the message was not a trade broadcast.
+ *
+ * @param entry - The delivery.
+ * @returns The business identifier of the trade inside.
+ */
+function trade_id_of(entry: Delivery): string | null {
+  const parsed = broadcast_envelope_schema.safeParse(entry.payload);
+  return parsed.success ? parsed.data.trade.tradeId : null;
+}
+
+/**
+ * The sequence number a delivery carries, or `null` for a bare payload such as a mark set.
+ *
+ * @param entry - The delivery.
+ * @returns Its position in the stream.
+ */
+function seq_of(entry: Delivery): number | null {
+  const parsed = sequenced_schema.safeParse(entry.payload);
+  return parsed.success ? parsed.data.seq : null;
+}
+
+/**
+ * Waits for one tab to see a specific trade event for a specific trade.
  *
  * Polling rather than a one-shot listener because the live path is asynchronous and a test that
  * asserts immediately after the HTTP call passes or fails on timing rather than on behaviour.
@@ -88,17 +139,32 @@ async function wait_for(
 
   while (Date.now() < deadline) {
     const hit = tab.received.find(
-      (entry) => entry.event === event && entry.envelope.trade.tradeId === trade_id,
+      (entry) => entry.event === event && trade_id_of(entry) === trade_id,
     );
 
     if (hit !== undefined) {
-      return hit.envelope;
+      return broadcast_envelope_schema.parse(hit.payload);
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 20));
+    await pause();
   }
 
   return null;
+}
+
+/**
+ * Waits until a tab has been sent at least `count` messages, or the timeout passes.
+ *
+ * @param tab - The tab to watch.
+ * @param count - How many messages to wait for.
+ * @param timeout_ms - How long to wait before giving up.
+ */
+async function wait_for_count(tab: Tab, count: number, timeout_ms = 3000): Promise<void> {
+  const deadline = Date.now() + timeout_ms;
+
+  while (tab.received.length < count && Date.now() < deadline) {
+    await pause();
+  }
 }
 
 /**
@@ -141,12 +207,33 @@ const a_trade_body = {
   tradeTimestamp: '2026-08-18T09:15:23.000Z',
 };
 
+/**
+ * Books a trade and waits until the tab has seen everything a booking produces, so the tab's
+ * message count is a known baseline for what the test does next.
+ *
+ * A fresh tab has already been sent the marks, so the wait for one message first is what stops the
+ * baseline landing before they arrive.
+ *
+ * @param tab - The tab to settle.
+ * @returns The new trade's identifier and the index the next message will land at.
+ */
+async function book_and_settle(tab: Tab): Promise<{ trade_id: string; next: number }> {
+  await wait_for_count(tab, 1);
+  const baseline = tab.received.length;
+
+  const created = await call('POST', '/trades', a_trade_body);
+  expect(created.status).toBe(201);
+  await wait_for_count(tab, baseline + 2);
+
+  return { trade_id: String(created.body.tradeId), next: baseline + 2 };
+}
+
 beforeAll(async () => {
-  // Built the same way index.ts builds it: the HTTP server first, then the socket server, then the
-  // broadcaster, then the service, then the app. Only the repository is swapped, because the thing
-  // under test is the broadcast path rather than persistence.
+  // Built the same way index.ts builds it: the mark store, the HTTP server, then the socket server,
+  // then the broadcaster, then the service, then the app. Only the repository is swapped, because
+  // the thing under test is the broadcast path rather than persistence.
   http_server = createServer();
-  const socket_server = create_socket_server(http_server);
+  const socket_server = create_socket_server(http_server, create_mark_store());
   const service = create_trade_service(
     create_in_memory_trade_repository(),
     create_socket_broadcaster(socket_server),
@@ -247,7 +334,10 @@ describe('a change made by one client reaches every other client', () => {
     const second = await call('POST', '/trades', a_trade_body);
     await wait_for(tab, 'trade.created', String(second.body.tradeId));
 
-    const sequences = tab.received.slice(before).map((entry) => entry.envelope.seq);
+    const sequences = tab.received
+      .slice(before)
+      .map(seq_of)
+      .filter((seq): seq is number => seq !== null);
 
     expect(sequences.length).toBeGreaterThanOrEqual(2);
     for (let index = 1; index < sequences.length; index += 1) {
@@ -268,13 +358,91 @@ describe('a change made by one client reaches every other client', () => {
 
   it('sends nothing when a write is refused', async () => {
     const tab = await open_tab();
+    await wait_for_count(tab, 1);
     const before = tab.received.length;
 
     const rejected = await call('POST', '/trades', { ...a_trade_body, quantity: -1 });
     expect(rejected.status).toBe(422);
 
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await pause(200);
     expect(tab.received).toHaveLength(before);
+  });
+});
+
+describe('every write is followed by what a client needs to keep its book current', () => {
+  it('delivers a booking as the trade then the position, with no audit event', async () => {
+    const tab = await open_tab();
+
+    const { trade_id, next } = await book_and_settle(tab);
+    await pause(100);
+
+    const [trade, position] = tab.received.slice(next - 2);
+    expect(tab.received).toHaveLength(next);
+    expect(trade?.event).toBe('trade.created');
+    expect(broadcast_envelope_schema.parse(trade?.payload).trade.tradeId).toBe(trade_id);
+    expect(position?.event).toBe('position.updated');
+    expect(position_envelope_schema.parse(position?.payload).position.symbol).toBe('AAPL');
+  });
+
+  it('delivers an amendment to a second tab as the trade, its audit event, then the position, numbered in that order', async () => {
+    await open_tab();
+    const tab = await open_tab();
+    const { trade_id, next } = await book_and_settle(tab);
+
+    await call('PATCH', `/trades/${trade_id}`, { version: 1, quantity: 7500 });
+    await wait_for_count(tab, next + 3);
+
+    const [first, second, third] = tab.received.slice(next, next + 3);
+    expect(first?.event).toBe('trade.amended');
+    const trade = broadcast_envelope_schema.parse(first?.payload);
+    expect(trade.trade).toMatchObject({ tradeId: trade_id, quantity: 7500 });
+
+    expect(second?.event).toBe('trade_event.recorded');
+    const audit = trade_event_envelope_schema.parse(second?.payload);
+    expect(audit.event).toMatchObject({ action: 'AMENDED', tradeId: trade_id });
+
+    expect(third?.event).toBe('position.updated');
+    const position = position_envelope_schema.parse(third?.payload);
+    expect(position.position.symbol).toBe('AAPL');
+
+    expect([audit.seq, position.seq]).toEqual([trade.seq + 1, trade.seq + 2]);
+  });
+
+  it('delivers a cancellation the same way, with the audit event marked CANCELLED', async () => {
+    await open_tab();
+    const tab = await open_tab();
+    const { trade_id, next } = await book_and_settle(tab);
+
+    await call('POST', `/trades/${trade_id}/cancel`, {});
+    await wait_for_count(tab, next + 3);
+
+    const [first, second, third] = tab.received.slice(next, next + 3);
+    expect(first?.event).toBe('trade.cancelled');
+    const trade = broadcast_envelope_schema.parse(first?.payload);
+    expect(trade.trade).toMatchObject({ tradeId: trade_id, status: 'CANCELLED' });
+
+    expect(second?.event).toBe('trade_event.recorded');
+    const audit = trade_event_envelope_schema.parse(second?.payload);
+    expect(audit.event).toMatchObject({ action: 'CANCELLED', tradeId: trade_id });
+
+    expect(third?.event).toBe('position.updated');
+    const position = position_envelope_schema.parse(third?.payload);
+    expect(position.position.symbol).toBe('AAPL');
+
+    expect([audit.seq, position.seq]).toEqual([trade.seq + 1, trade.seq + 2]);
+  });
+
+  it('sends the current marks to a client as soon as it connects', async () => {
+    const tab = await open_tab();
+    await wait_for_count(tab, 1);
+
+    const [first] = tab.received;
+    expect(first?.event).toBe('mark.updated');
+
+    const marks = mark_set_schema.parse(first?.payload);
+    for (const symbol of instrument_symbols) {
+      expect(marks[symbol]).toBeGreaterThan(0);
+    }
   });
 });
 

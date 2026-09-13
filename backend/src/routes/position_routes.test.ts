@@ -106,6 +106,8 @@ describe(`GET ${api_prefix}/positions`, () => {
       sellQuantity: 2000,
       netQuantity: 3000,
       tradeCount: 2,
+      averagePrice: 100,
+      realisedPnl: 0,
     });
     expect(apple?.grossNotional).toBe(700_000);
   });

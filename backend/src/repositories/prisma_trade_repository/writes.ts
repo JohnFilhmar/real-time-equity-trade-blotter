@@ -2,6 +2,7 @@ import type { Trade } from '@blotter/shared';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import type {
   NewTrade,
+  RecordedWrite,
   TradeChanges,
   TradeWriteContext,
 } from '../../interfaces/trade_repository.js';
@@ -9,6 +10,7 @@ import {
   build_cancellation_change_set,
   build_change_set,
 } from '../../lib/audit/build_change_set.js';
+import { to_wire_event } from '../../lib/mappers/trade_event_mapper.js';
 import { to_wire_trade } from '../../lib/mappers/trade_mapper.js';
 
 /** Row returned by the business-identifier sequence read. */
@@ -54,7 +56,7 @@ export async function amend(
   expected_version: number,
   changes: TradeChanges,
   context: TradeWriteContext,
-): Promise<Trade | null> {
+): Promise<RecordedWrite | null> {
   return prisma.$transaction(async (tx) => {
     const existing = await tx.trade.findUnique({ where: { tradeId: trade_id } });
 
@@ -91,7 +93,7 @@ export async function amend(
       return null;
     }
 
-    await tx.tradeEvent.create({
+    const event = await tx.tradeEvent.create({
       data: {
         tradeUuid: existing.id,
         version: after.version,
@@ -102,7 +104,7 @@ export async function amend(
       },
     });
 
-    return to_wire_trade(after);
+    return { trade: to_wire_trade(after), event: to_wire_event(event, trade_id) };
   });
 }
 
@@ -112,7 +114,7 @@ export async function cancel(
   trade_id: string,
   expected_version: number | undefined,
   context: TradeWriteContext,
-): Promise<Trade | null> {
+): Promise<RecordedWrite | null> {
   return prisma.$transaction(async (tx) => {
     const existing = await tx.trade.findUnique({ where: { tradeId: trade_id } });
 
@@ -143,7 +145,7 @@ export async function cancel(
       return null;
     }
 
-    await tx.tradeEvent.create({
+    const event = await tx.tradeEvent.create({
       data: {
         tradeUuid: existing.id,
         version: after.version,
@@ -154,6 +156,6 @@ export async function cancel(
       },
     });
 
-    return to_wire_trade(after);
+    return { trade: to_wire_trade(after), event: to_wire_event(event, trade_id) };
   });
 }

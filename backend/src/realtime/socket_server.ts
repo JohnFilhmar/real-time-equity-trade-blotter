@@ -1,6 +1,13 @@
 import { Server } from 'socket.io';
 import type { Server as HttpServer } from 'node:http';
-import { role_has, type ClientToServerEvents, type ServerToClientEvents, type SocketData } from '@blotter/shared';
+import {
+  role_has,
+  trade_events,
+  type ClientToServerEvents,
+  type MarkSet,
+  type ServerToClientEvents,
+  type SocketData,
+} from '@blotter/shared';
 import { cors_origins } from '../config/env.js';
 import { verify_access_token } from '../lib/auth/tokens.js';
 import { logger } from '../lib/logging/logger.js';
@@ -71,10 +78,17 @@ function handshake_token(auth: Record<string, unknown>, header: string | undefin
  * unauthenticated socket would stream the entire blotter to anyone who opened one, and the
  * authorisation on the read endpoints would be decorative.
  *
+ * A client that passes all three is sent the current marks straight away, so it can price its
+ * positions before the first tick of the mark feed arrives.
+ *
  * @param http_server - The server Express is already listening on, so both share one port.
+ * @param marks - Where the current mark set is read from on each connection.
  * @returns The typed Socket.IO server.
  */
-export function create_socket_server(http_server: HttpServer): BlotterSocketServer {
+export function create_socket_server(
+  http_server: HttpServer,
+  marks: { current(): MarkSet },
+): BlotterSocketServer {
   const io: BlotterSocketServer = new Server(http_server, {
     cors: {
       origin: [...cors_origins],
@@ -116,6 +130,7 @@ export function create_socket_server(http_server: HttpServer): BlotterSocketServ
   io.on('connection', (socket) => {
     socket.data.connected_at = new Date().toISOString();
     connected_clients.inc();
+    socket.emit(trade_events.mark_updated, marks.current());
 
     socket.on('disconnect', () => {
       connected_clients.dec();

@@ -1,4 +1,7 @@
 import {
+  build_positions,
+  currency_of,
+  empty_position,
   find_instrument,
   type AmendTrade,
   type CreateTrade,
@@ -25,6 +28,10 @@ export type { TradeActor, TradeService } from '../../interfaces/trade_service.js
  * test can assert what was announced, and so the live feed gets the same broadcasts as a human
  * request without any special casing.
  *
+ * Every write ends with the same broadcast order: the trade, then its audit row where one was
+ * written, then the symbol's recomputed position. The three share one sequence, so a client sees
+ * them numbered in that order and can apply them in it.
+ *
  * @param repository - Persistence port.
  * @param broadcaster - Real-time port.
  * @returns The service.
@@ -48,6 +55,17 @@ export function create_trade_service(
     }
 
     return trade;
+  }
+
+  /**
+   * Walks one symbol's active trades into its position.
+   *
+   * @param symbol - The instrument.
+   * @returns Its position, every figure zero when nothing active is booked in it.
+   */
+  async function position_for(symbol: string): Promise<Position> {
+    const [position] = build_positions(await repository.find_active_trades(symbol));
+    return position ?? empty_position(symbol, currency_of(symbol));
   }
 
   return {
@@ -84,6 +102,7 @@ export function create_trade_service(
       });
 
       broadcaster.trade_created(trade);
+      broadcaster.position_updated(await position_for(trade.symbol));
       return trade;
     },
 
@@ -112,8 +131,10 @@ export function create_trade_service(
         return explain_failed_write(repository, trade_id, 'amended');
       }
 
-      broadcaster.trade_amended(amended);
-      return amended;
+      broadcaster.trade_amended(amended.trade);
+      broadcaster.trade_event_recorded(amended.event);
+      broadcaster.position_updated(await position_for(amended.trade.symbol));
+      return amended.trade;
     },
 
     async cancel(
@@ -133,8 +154,10 @@ export function create_trade_service(
         return explain_failed_write(repository, trade_id, 'cancelled');
       }
 
-      broadcaster.trade_cancelled(cancelled);
-      return cancelled;
+      broadcaster.trade_cancelled(cancelled.trade);
+      broadcaster.trade_event_recorded(cancelled.event);
+      broadcaster.position_updated(await position_for(cancelled.trade.symbol));
+      return cancelled.trade;
     },
 
     async list_events(trade_id: string): Promise<TradeEvent[]> {
@@ -154,7 +177,9 @@ export function create_trade_service(
     },
 
     async list_positions(): Promise<Position[]> {
-      return repository.aggregate_positions();
+      return build_positions(await repository.find_active_trades());
     },
+
+    position_for,
   };
 }
