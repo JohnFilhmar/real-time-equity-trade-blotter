@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 // The repository root .env is the one local configuration file, so it is loaded by path rather
 // than from wherever the process happened to start. A variable already in the environment wins.
-load_dotenv({ path: fileURLToPath(new URL('../../../.env', import.meta.url)), override: false });
+load_dotenv({ path: fileURLToPath(new URL('../../../.env', import.meta.url)), override: false, quiet: true });
 
 /**
  * The shortest signing secret this will accept.

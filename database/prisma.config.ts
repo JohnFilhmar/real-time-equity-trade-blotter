@@ -4,7 +4,7 @@ import { defineConfig, env } from 'prisma/config';
 
 // The repository root .env is the one local configuration file, so it is loaded by path rather
 // than from wherever prisma was invoked. A variable already in the environment wins.
-load_dotenv({ path: fileURLToPath(new URL('../.env', import.meta.url)), override: false });
+load_dotenv({ path: fileURLToPath(new URL('../.env', import.meta.url)), override: false, quiet: true });
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',
