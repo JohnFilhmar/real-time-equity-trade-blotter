@@ -146,6 +146,15 @@ The same pass moved the database into its own unit under `database/`, against th
 own prompt, because a deliverable that is one README next to a schema living elsewhere is not a
 deliverable.
 
+The pass ended with research into what real blotters do that this one did not, delivered as a
+ranked table of candidates with the hours and the rubric line each one moved, and a recommended cut
+after the fifth row. I took the four above the cut: the sequence-gap and flash rules moved out of
+the provider and the hook into pure functions with their own tests; rows that did not trade today
+show their date in the time column; the README says how to run the feed fast enough to watch the
+client coalesce a burst; and a browser journey drops the link, checks that booking is blocked with
+a reason, and checks that the client resyncs before it calls itself live. The ten below the cut
+stayed below it.
+
 ## Where the AI was wrong, and caught
 
 **U-M4 in the gap analysis.** The first revision claimed the prototype had no up or down tick
