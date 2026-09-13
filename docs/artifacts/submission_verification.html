@@ -72,8 +72,8 @@
       passing; anything not run says so.
     </p>
     <div class="meta">
-      <span>Verified <b>2026-09-12, 10:54 UTC</b></span>
-      <span>Branch <b>worktree-submission</b> at <b>f4847d7</b></span>
+      <span>Verified <b>2026-09-13, 06:44 UTC</b></span>
+      <span>Branch <b>worktree-hardening</b> at <b>adf1c83</b></span>
       <span>Platform <b>Windows 11, Docker Desktop 28.5, Node 22.12</b></span>
     </div>
   </header>
@@ -103,7 +103,7 @@
       <tbody>
         <tr><td>React frontend written in TypeScript</td><td><span class="flag pass">pass</span></td><td>Next.js 16.3.4, React 19.2.8, TypeScript strict; <code>frontend/src</code>. <code>npm run typecheck</code> clean.</td></tr>
         <tr><td>TypeScript backend API</td><td><span class="flag pass">pass</span></td><td>Express 5 under <code>backend/src</code>; TypeScript strict with <code>exactOptionalPropertyTypes</code>.</td></tr>
-        <tr><td>A database for persistence</td><td><span class="flag pass">pass</span></td><td>PostgreSQL 17 via Prisma 7, four hand-written migrations under <code>backend/prisma/migrations</code>. Data survives a container restart.</td></tr>
+        <tr><td>A database for persistence</td><td><span class="flag pass">pass</span></td><td>PostgreSQL 17 via Prisma 7, four hand-written migrations under <code>database/prisma/migrations</code>. Data survives a container restart.</td></tr>
         <tr><td>Real-time updates delivered to the UI (WebSockets, Socket.IO or SSE)</td><td><span class="flag pass">pass</span></td><td>Socket.IO. <code>backend/src/realtime/socket_broadcast.test.ts</code> proves a second client receives a trade; <code>frontend/e2e/live_sync.spec.ts</code> proves it in two browsers.</td></tr>
         <tr><td>Local execution via Docker and/or simple setup instructions</td><td><span class="flag pass">pass</span></td><td><code>npm run start</code> brings up five services and waits for health. Observed on Windows; macOS and Linux not run here (the images are <code>node:22-alpine</code> and <code>postgres:17-alpine</code>, and CI runs the same install on Ubuntu).</td></tr>
       </tbody>
@@ -164,7 +164,7 @@
         <tr><td>README.md with the six sections</td><td><span class="flag pass">pass</span></td><td>Architecture decisions, installation, running, tests, assumptions, trade-offs, in the brief's order, plus a lead image and a not-built section.</td></tr>
         <tr><td>frontend/</td><td><span class="flag pass">pass</span></td><td>Next.js app, Dockerfile, e2e suite, audit and capture scripts.</td></tr>
         <tr><td>backend/</td><td><span class="flag pass">pass</span></td><td>Express API, Prisma schema and migrations, Dockerfile.</td></tr>
-        <tr><td>database/</td><td><span class="flag pass">pass</span></td><td>Schema documentation pointing at the Prisma schema and migrations, which are the source of truth.</td></tr>
+        <tr><td>database/</td><td><span class="flag pass">pass</span></td><td>The database as its own unit since 2026-09-13: the Postgres image, the Prisma schema, the four hand-written migrations, the migration runner image, a compose file the root file includes, and a README with a mermaid entity diagram, every table, index and the append-only trigger with its reasons. The API keeps only <code>DATABASE_URL</code>. Verified by a compose run on separate ports that applied all four migrations from here.</td></tr>
         <tr><td>docker-compose.yml (optional but preferred)</td><td><span class="flag pass">pass</span></td><td><code>docker-compose.yaml</code>: Postgres, Redis, one-shot migrate, API, web, each with a healthcheck, non-root, dropped capabilities.</td></tr>
         <tr><td>AI usage report</td><td><span class="flag pass">pass</span></td><td><code>docs/ai_usage_report.md</code>: tools, method, sample prompts, decisions influenced, accepted and rejected suggestions, corrected mistakes.</td></tr>
         <tr><td>Prompt log</td><td><span class="flag pass">pass</span></td><td><code>docs/prompt_log/</code>, one file per agent, verbatim prompts with two-sentence outcomes, appended as the work happened.</td></tr>
