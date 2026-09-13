@@ -682,3 +682,22 @@ Followed by:
 **Outcome:** The sequence and flash rules are pure functions under `lib/` with sixteen tests, rows from another day read `18 Aug 09:15:23` in a time track 20px wider, the README says how to run the feed at 250ms, and a browser journey drops the link through `setOffline` and takes 48 seconds because the client notices a silent link only through the 45-second socket heartbeat. The nested lockfiles are gone, dotenv no longer announces itself, and every tier passed on the rebuilt stack: 288 unit, 38 integration, 8 browser.
 
 **Commits:** `d565bb3`, `929c66d`, `2e53540`, `cc6bf80`, `dbf419a`, `2763003`, `8f6e652`
+
+---
+
+### 2026-09-13T23:30Z - close_hardening_and_open_the_login_revamp
+
+**Prompt**
+
+> 1. go delete both
+>   2. leave it
+>   3. keep it
+>
+>   after that we need a full revamp on the login page to make it more look like a private firm login and making it more appealing rather than a flat, modern, and overused template of signin/login page
+>   centered card. we need to discover various options with it in layout to find a comfortable login page for this system. create an artifact showing various templates with user experience impact in loading,
+>   splash screen, animation, and interactivity. keep the color theme as-is and we need to add more to it.
+
+**Outcome:** Deleted the merged hardening remote branch and the six stale local branches, left the gap analysis as its dated snapshot, kept the `setOffline` journey, and opened `worktree-login-revamp` from `main` at 9b26cb7. The login options artifact shows six layouts running live on the app's own tokens with the loading, splash, motion and interactivity choices priced, five additive theme tokens, and a ranked cut recommending the ledger split; nothing is implemented until the owner picks.
+
+**Artifact:** [Fusion Blotter login options](../artifacts/login_page_options.html)
+**Commits:** `d41ada6`
