@@ -15,7 +15,7 @@ zod contract between them, and Docker Compose to run it all.
 frontend/   Next.js 16 App Router, React 19, Tailwind v4, TanStack Query and Table, socket.io-client
 backend/    Express 5 + Socket.IO, Prisma 7 over PostgreSQL 17, Redis for sessions and rate limits
 shared/     @blotter/shared: one zod schema per model, every other shape derived from it
-database/   schema documentation; the migrations are hand-written under backend/prisma
+database/   @blotter/database: the Postgres image, the Prisma schema, hand-written migrations and their runner
 docs/       specs, prompt log, AI usage report, verification table
 ```
 
@@ -124,8 +124,9 @@ Other root scripts:
 | `npm run build` | Build the shared contract, the API and the web app locally |
 | `npm run typecheck` | `tsc --noEmit` in all three workspaces |
 | `npm run lint` | ESLint on the web app (the API and contract have no lint script by choice) |
-| `npm run db:generate` | Regenerate the Prisma client |
-| `npm run db:migrate` | Apply migrations to `DATABASE_URL` |
+| `npm run db:generate` | Regenerate the Prisma client from `database/prisma/schema.prisma` into `backend/src/generated/` |
+| `npm run db:migrate` | Apply the migrations under `database/prisma/migrations/` to `DATABASE_URL` |
+| `npm run db:status` | Report which of those migrations `DATABASE_URL` has and has not applied |
 | `npm run capture:readme` | Re-take the image at the top of this file from the running stack |
 
 ### Running without Docker
@@ -137,11 +138,11 @@ npm install
 npm run build:shared
 npm run db:generate
 npm run dev:deps          # Postgres and Redis only, from compose
-npm run dev:backend       # http://localhost:5000, reads backend/.env
+npm run dev:backend       # http://localhost:5000, reads the root .env
 npm run dev:frontend      # http://localhost:3000
 ```
 
-`backend/.env` needs at least `DATABASE_URL`, `REDIS_URL`, `JWT_ACCESS_SECRET` and
+The root `.env` needs at least `DATABASE_URL`, `REDIS_URL`, `JWT_ACCESS_SECRET` and
 `JWT_REFRESH_SECRET`; the full list is in [`docs/api_reference.md`](docs/api_reference.md). The
 repository never writes to your `.env` for you. `npm run build:shared` and `npm run db:generate`
 are not optional on a fresh clone: both apps import the shared contract from its built output, and
