@@ -651,3 +651,24 @@ Followed by:
 **Artifact:** [Submission verification](../artifacts/submission_verification.html)
 
 **Commits:** `5847bd6` through the merge `27f69d1`, then `adf1c83` and `4899a0d`, on `worktree-hardening`
+
+---
+
+### 2026-09-13T15:18Z - answer_the_remaining_hardening_questions
+
+**Prompt**
+
+> 1. row 1 : proceed
+>   row 3: a
+>   row 4: a
+>   row 5: recommended
+>   2. merge back to main
+>   3. after merge delete all nine
+>   4. clean up remaining worktrees
+>   5. - execute/run git rm
+>   -recommended
+> -recommended
+>
+> and can you layout the .env.example variables for me again so i can manually add them and where to put them?
+
+**Outcome:** Approved all four research rows above the cut line: the sequence and flash logic move into tested pure functions, non-today timestamps show `18 Aug 09:15:23` in the time column, the README gets the 250ms feed line, and a Playwright journey covers the feed drop through `context.setOffline`. Also settled: fast-forward merge into `main`, deletion of the nine merged remote branches and the leftover worktrees, removal of the two nested lockfiles, `quiet: true` on both dotenv loads, and the one-line database Dockerfile stays as the init-script slot.
