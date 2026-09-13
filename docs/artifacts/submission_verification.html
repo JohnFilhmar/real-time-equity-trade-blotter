@@ -80,9 +80,9 @@
 
   <section>
     <div class="scoreboard">
-      <div class="score"><b class="pass">37</b><span>lines pass</span></div>
+      <div class="score"><b class="pass">38</b><span>lines pass</span></div>
       <div class="score"><b class="warn">1</b><span>pass with a named gap</span></div>
-      <div class="score"><b class="fail">1</b><span>deliberately not built</span></div>
+      <div class="score"><b class="fail">0</b><span>deliberately not built</span></div>
       <div class="score"><b>0</b><span>marked pass without running</span></div>
     </div>
     <div class="callout">
@@ -146,7 +146,7 @@
       <thead><tr><th>Expectation</th><th>Result</th><th>Evidence</th></tr></thead>
       <tbody>
         <tr><td>Clean code</td><td><span class="flag pass">pass</span></td><td>Typecheck and lint clean in every workspace; one canonical schema per model; routes parse, delegate, answer; JSDoc on every export; no source file over 250 lines after the repositories and the trade service were split into directories.</td></tr>
-        <tr><td>Unit tests</td><td><span class="flag pass">pass</span></td><td><code>npm test</code>: 238 pass (30 shared, 170 backend, 38 frontend), no skips.</td></tr>
+        <tr><td>Unit tests</td><td><span class="flag pass">pass</span></td><td><code>npm test</code>: 268 pass (39 shared, 186 backend, 43 frontend), no skips.</td></tr>
         <tr><td>Sensible architecture</td><td><span class="flag pass">pass</span></td><td>Shared contract package; service layer behind repository ports with an in-memory and a Prisma implementation; broadcaster port; providers at the root, server state in TanStack Query, one cache-patch function for sockets and mutations alike.</td></tr>
         <tr><td>Appropriate use of TypeScript</td><td><span class="flag pass">pass</span></td><td>No <code>any</code>, no silencing casts; types inferred from schemas; typed socket event maps on both sides; <code>unknown</code> narrowed at every boundary.</td></tr>
         <tr><td>Reasonable error handling</td><td><span class="flag pass">pass</span></td><td>RFC 9457 problem documents with a correlation id; the client parses them into one <code>ApiError</code>; seven designed table states; a 409 shows the diff instead of retrying.</td></tr>
@@ -179,7 +179,7 @@
       <tbody>
         <tr><td>Audit trail</td><td><span class="flag pass">pass</span></td><td>Append-only <code>trade_event</code> table enforced by a trigger; per-trade history in the drawer and a global feed at <code>/audit</code>.</td></tr>
         <tr><td>Position summary: net positions by symbol</td><td><span class="flag pass">pass</span></td><td><code>GET /api/v1/positions</code> and the positions page: net, bought, sold, gross notional, trade count per symbol.</td></tr>
-        <tr><td>P&amp;L view</td><td><span class="flag fail">not built</span></td><td>Deliberately. A P&amp;L needs a mark price and a cost-basis convention that the brief does not supply. Notional is shown and labelled as such.</td></tr>
+        <tr><td>P&amp;L view</td><td><span class="flag pass">pass, on a simulated mark</span></td><td>Average cost and realised P&amp;L from one walk in <code>shared/src/positions/position_book.ts</code>, recomputed per symbol on the server after every write and broadcast; unrealised marked on the client against a simulated 900ms random walk per instrument, labelled simulated on every screen that shows it. Reversed the earlier "notional only" decision on 2026-09-13.</td></tr>
         <tr><td>User authentication</td><td><span class="flag pass">pass</span></td><td>Rotating refresh tokens in an httpOnly cookie, bcrypt, lockout, three roles mapped to permissions, ownership rule, authenticated socket handshake.</td></tr>
         <tr><td>Trade validation rules</td><td><span class="flag pass">pass</span></td><td>Positive quantity and price, symbol allowlist, future-date bound, per-currency notional ceiling, trader from the token.</td></tr>
         <tr><td>Virtualised grid</td><td><span class="flag pass">pass</span></td><td>TanStack Table with react-virtual; only the visible window renders, <code>aria-rowcount</code> carries the server total.</td></tr>
@@ -196,11 +196,11 @@
       <tbody>
         <tr><td>Typecheck</td><td><code>npm run typecheck</code></td><td>Clean, three workspaces.</td></tr>
         <tr><td>Lint</td><td><code>npm run lint</code></td><td>Clean (frontend; the API and contract have no lint script by the owner's choice).</td></tr>
-        <tr><td>Unit and route</td><td><code>npm test</code></td><td>238 pass, 0 skipped.</td></tr>
-        <tr><td>Integration</td><td><code>npm run test:integration</code></td><td>35 pass, 2 files, against the compose Postgres and Redis.</td></tr>
-        <tr><td>Browser end to end</td><td><code>npm run test:e2e</code></td><td>7 pass in 24 seconds against the compose build, one worker, two browser contexts where the journey needs them.</td></tr>
+        <tr><td>Unit and route</td><td><code>npm test</code></td><td>268 pass, 0 skipped.</td></tr>
+        <tr><td>Integration</td><td><code>npm run test:integration</code></td><td>38 pass, 2 files, against the compose Postgres and Redis.</td></tr>
+        <tr><td>Browser end to end</td><td><code>npm run test:e2e</code></td><td>7 pass in 29 seconds against the compose build, one worker, two browser contexts where the journey needs them.</td></tr>
         <tr><td>Load</td><td><code>npm run test:load</code></td><td>k6, 4 virtual users, 60 seconds: 259 requests, 0 failed, 319 of 319 checks, p95 78ms overall, list p95 104ms, create p95 28ms. Both thresholds met.</td></tr>
-        <tr><td>Page audit</td><td><code>npm run test:lighthouse</code></td><td>Desktop preset. Login: performance 100, accessibility 98, best practices 96, SEO 100. Blotter, signed in: 100, 96, 100, 100. Reports in <code>frontend/lighthouse/</code>, not committed.</td></tr>
+        <tr><td>Page audit</td><td><code>npm run test:lighthouse</code></td><td>Desktop preset. Login: performance 100, accessibility 98, best practices 96, SEO 100. Blotter, signed in: 99, 96, 100, 100 (rerun on the hardening build). Reports in <code>frontend/lighthouse/</code>, not committed.</td></tr>
         <tr><td>Compose stack</td><td><code>npm run start</code></td><td>Five services healthy: database, redis, migrate (exited 0, four migrations applied), backend, frontend. The redis service needed a fix found only by running it (see the README's decisions and the prompt log).</td></tr>
       </tbody>
     </table></div>
@@ -215,18 +215,39 @@
         <tr><td>TypeScript usage: type safety, domain modelling, API contracts</td><td>20%</td><td><code>shared/</code> as the contract both sides import; typed socket event maps; no <code>any</code>; problem documents and envelopes parsed at the client boundary.</td></tr>
         <tr><td>Full stack design: interaction, database, API</td><td>20%</td><td>Keyset paging, optimistic concurrency, the broadcast envelope with a sequence, cache patching with gap resync, RFC 9457 errors, append-only audit, permissions enforced server-side and mirrored in the interface.</td></tr>
         <tr><td>User experience: usability, responsiveness, error handling</td><td>10%</td><td>The interface spec implemented: table states, connection states, flash with direction, keyboard, ARIA, three themes, tablet and phone layouts, conflict shown as a diff.</td></tr>
-        <tr><td>Testing: unit and integration, sensible coverage</td><td>10%</td><td>238 unit and route tests, 35 integration against real datastores, 7 browser journeys including the brief's literal acceptance criterion, a load script inside the API's own limits.</td></tr>
+        <tr><td>Testing: unit and integration, sensible coverage</td><td>10%</td><td>268 unit and route tests, 38 integration against real datastores, 7 browser journeys including the brief's literal acceptance criterion, a load script inside the API's own limits.</td></tr>
         <tr><td>Communication: README, AI usage report, explanation of decisions</td><td>10%</td><td>README in the brief's order with four-line decisions and a not-built section; AI report naming rejections; two specs recording the options each decision came from; this table.</td></tr>
       </tbody>
     </table></div>
   </section>
 
   <section>
+    <h2>Found by using the app, and closed</h2>
+    <p>
+      Four defects the owner found by clicking through the running stack with the network panel open, none of which a
+      test had caught. Each was verified before it was fixed, and each fix was observed.
+    </p>
+    <div class="scroller"><table>
+      <thead><tr><th>Defect</th><th>Before, observed</th><th>After, observed</th></tr></thead>
+      <tbody>
+        <tr><td>Every broadcast refetched every loaded page of the audit feed and the positions, tripping the 300-a-minute read limit in two tabs</td><td>Two windows, four audit pages loaded, 90 seconds: 96 API requests, 64 of them <code>GET /trades/events</code> and 32 <code>GET /positions</code></td><td>Same set-up, 400 audit rows loaded: 0 API requests in 90 seconds in either window, and none to <code>/positions</code> after its first load. Audit events and recomputed positions now arrive over the socket on the trade sequence; marks tick without a request.</td></tr>
+        <tr><td>The login form moved when an error appeared</td><td>Submit button shifted 17px on a failed sign-in</td><td>0px; the error line is reserved and always present, in the login form, the ticket and the cancel dialog alike</td></tr>
+        <tr><td>No way to reveal a password</td><td>Masked only</td><td>A real button with <code>aria-pressed</code>, a name that flips between Show password and Hide password, <code>tabindex</code> -1, masked by default, not persisted; driven in the browser</td></tr>
+        <tr><td>Positions showed a proportion bar where the prototype had a trend line</td><td>No time series existed: the prototype's line was fed by a mark feed that was never built</td><td>The mark feed is built as decision D2 specified; each row shows mark, average cost, net notional, unrealised and realised P&amp;L, and a trend line of the last 24 marks</td></tr>
+      </tbody>
+    </table></div>
+    <p>
+      The read limit itself was judged right and left alone: 300 reads a minute per user is generous for a human-driven
+      client, and the fault was the client refetching on every broadcast.
+    </p>
+  </section>
+
+  <section>
     <h2>Gaps named rather than hidden</h2>
     <div class="callout warn">
       <ul>
-        <li>P&amp;L is not built; notional by symbol stands in and is labelled.</li>
-        <li>The positions integration test races the simulated feed on a shared database. Possible, rare, noted.</li>
+        <li>The marks behind the P&amp;L are a simulated walk, not market data, and every screen says so.</li>
+        <li>The positions integration test races the simulated feed on a shared database, so it asserts the walk's invariants against Postgres and leaves exact arithmetic to the in-memory and shared tests. Possible, rare, noted.</li>
         <li>macOS was not run. Windows observed; Ubuntu through CI.</li>
         <li>Lighthouse and the browser tier run locally against the built stack, not in CI.</li>
         <li>The frontend calls the API at a build-time address. Serving the two from different hosts needs <code>NEXT_PUBLIC_API_URL</code> at build and <code>CORS_ORIGINS</code> at run.</li>
