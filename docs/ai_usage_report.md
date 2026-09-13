@@ -124,6 +124,28 @@ paged list is wrong the moment there is a second page.
 component state for filters. I chose a zustand store and the URL respectively: many components
 subscribe to the link state, and a filtered blotter should be linkable.
 
+## The hardening pass
+
+After submission was assembled I used the app the way a grader would, with the network panel open,
+and found four things no test had caught: opening the audit trail and waiting produced a request
+per loaded page per broadcast and tripped the API's own rate limiter; the login form jumped when an
+error appeared; there was no way to reveal a password; and the positions page showed a proportion
+bar where the prototype had a trend line. I wrote them up with the file and line for each and gave
+them to the agent with the standing rule intact.
+
+The agent verified each before touching anything, measured the first two (96 requests in 90
+seconds across two windows with four audit pages loaded; a 17 pixel shift), and put the fixes to me
+as options. On the refetch storm it laid out four, said which one made the audit trail and the
+positions genuinely socket-driven rather than poll-on-event over HTTP, and told me the rate limit
+was right and the client was wrong. I chose that one. On the positions line it told me the honest
+answer was scope, not a bug, and reminded me the research had ranked P&L last; I reversed my own
+earlier narrowing and opened P&L anyway, on a simulated mark labelled as such, because the walk
+already existed in the spec and the page without it read as unfinished.
+
+The same pass moved the database into its own unit under `database/`, against the advice in my
+own prompt, because a deliverable that is one README next to a schema living elsewhere is not a
+deliverable.
+
 ## Where the AI was wrong, and caught
 
 **U-M4 in the gap analysis.** The first revision claimed the prototype had no up or down tick
