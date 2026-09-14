@@ -701,3 +701,30 @@ Followed by:
 
 **Artifact:** [Fusion Blotter login options](../artifacts/login_page_options.html)
 **Commits:** `d41ada6`
+
+---
+
+### 2026-09-14T00:05Z - choose_the_ledger_split_login
+
+**Prompt**
+
+> let's proceed with B
+> yes
+> recommended
+> recommended
+> recommended
+> proceed with recommended
+> adjust accordingly and rerun
+
+**Outcome:** Chose layout B, the ledger split, with the stage rendered during session restore and only the form held back, no splash before sign-in and an honest handshake after submit, ambient motion only, the five additive theme tokens with no second hue, and the four extras (Caps Lock warning, theme switch on the door, readiness line from the public ready route, lockout countdown). Verification is to be re-run and adjusted where the page's behaviour changed.
+
+---
+
+### 2026-09-14T01:39Z - sign_in_door_outcome
+
+**Prompt:** The answer batch logged at 00:05Z above, carried out. Appended rather than edited, per the append-only rule.
+
+**Outcome:** The login page is the ledger split: a desk panel with the identity, a UTC clock and a readiness line from the public ready route on the left, the unchanged form on bare ground on the right, rendered before the session check answers with the form's silhouette holding its space, plus a Caps Lock warning, a lockout countdown read from the API's sentence, a handshake on the button tied to real events, the theme switch on the door, and five additive tokens with no existing value changed. Lighthouse on the door reads 100 / 100 / 96 / 100 against 100 / 98 / 96 / 100 before, once the muted token's 4.18:1 on the light ground had moved the door's copy to the next step of the text ramp; 297 unit tests and 9 browser journeys pass on the rebuilt stack, with the integration tier not re-run because the API is untouched.
+
+**Artifact:** [Fusion Blotter login options](../artifacts/login_page_options.html)
+**Commits:** `8deebff`, `a1846cd`, `6138db8`, `43bdb8d`
