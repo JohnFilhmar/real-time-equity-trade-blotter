@@ -213,13 +213,15 @@ one is never edited; a correction is a new migration.
 ## Seed strategy
 
 On start, with `SEED_ON_STARTUP` true, the API creates the four demo accounts if `app_user` is
-empty, then inserts 500 trades (`SEED_TRADE_COUNT`) if `trade` is empty. Generation is seeded, so a
-given count always produces the same dataset. What makes it realistic is documented and tested in
+empty, then inserts 500 trades (`SEED_TRADE_COUNT`) if `trade` is empty, dated across the five
+weekday sessions before the day it runs. Generation is seeded, so a given count always produces the
+same trades, placed on those days. What makes it realistic is documented and tested in
 [`../backend/src/lib/seed/generate_trades.ts`](../backend/src/lib/seed/generate_trades.ts): prices
 drift around each instrument's own level, quantities are round lots skewed toward smaller tickets,
 sessions are weekdays only, and roughly one trade in twenty is already cancelled. The simulated
 desk then books, amends and cancels every three to eight seconds (`LIVE_FEED_ENABLED`,
-`LIVE_FEED_MIN_INTERVAL_MS`, `LIVE_FEED_MAX_INTERVAL_MS`).
+`LIVE_FEED_MIN_INTERVAL_MS`, `LIVE_FEED_MAX_INTERVAL_MS`), keeping its active book near
+`LIVE_FEED_MAX_ACTIVE_TRADES`.
 
 The code lives in [`../backend/src/lib/seed/`](../backend/src/lib/seed/), and it is application
 code rather than SQL on purpose. The generator draws on the shared instrument universe in

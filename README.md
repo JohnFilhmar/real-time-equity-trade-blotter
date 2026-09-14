@@ -123,11 +123,13 @@ are cached. Without Docker, see [Running without Docker](#running-without-docker
 | API | Through the web app only: <http://localhost:3000/ready>, <http://localhost:3000/health>. No published port; `/metrics` answers inside the compose network, see [the API reference](docs/api_reference.md) |
 | Sign in | `jsmith` or `abrown` (traders), `mjones` (desk head), `viewer` (read only); password `blotter-demo-2026` |
 
-An empty database is seeded with 500 realistic trades and the four accounts. A simulated desk
-then books, amends and cancels trades every three to eight seconds, so the blotter moves on its
-own. It holds its book to 2,000 active trades and leans each new ticket against its symbol's net
-position, so the book stays near flat, the way a desk working flow from both sides does. Open it
-in two windows and watch the same rows change in both. Book a trade as `jsmith` in
+An empty database is seeded with 500 realistic trades, dated across the five trading days before
+the stack first starts, and the four accounts. A simulated desk then books, amends and cancels
+trades every three to eight seconds, so the blotter moves on its own. It keeps its active book near
+2,000 trades, cancelling more than it books as the book nears that size, and leans each new ticket
+against its symbol's net position, so the book stays near flat the way a desk working flow from
+both sides does. Trades people book count toward the 2,000, and cancelled trades and the audit
+trail still accumulate. Open it in two windows and watch the same rows change in both. Book a trade as `jsmith` in
 one window and it appears in the other. Sign in as `viewer` to see the booking controls disappear,
 and as `jsmith` to see another trader's trade greyed with "desk head only".
 
@@ -176,8 +178,8 @@ the Prisma client is generated rather than committed.
 
 | Script | Tier | Needs | Observed |
 |---|---|---|---|
-| `npm test` | Unit and route tests in all three workspaces: contract, service and route suites against an in-memory repository, the cache-patching and formatting logic on the client | nothing | 306 pass: 39 shared, 189 backend, 78 frontend |
-| `npm run test:integration` | Repository, refresh-token and positions tests against real Postgres and Redis, including the append-only trigger | the compose stack | 38 pass |
+| `npm test` | Unit and route tests in all three workspaces: contract, service and route suites against an in-memory repository, the cache-patching and formatting logic on the client | nothing | 325 pass: 39 shared, 208 backend, 78 frontend |
+| `npm run test:integration` | Repository, refresh-token and positions tests against real Postgres and Redis, including the append-only trigger | the compose stack | 39 pass |
 | `npm run test:e2e` | Playwright, two browser contexts: a trade booked in one appears in the other, follows its amend and cancel, a concurrent amend is refused with a 409, the role rules hold, a dropped link blocks booking then resyncs on recovery, the sign-in door shows the desk before the session check answers and keeps its form still on a bad password, and the API answers only through the web origin with its own port closed and `/metrics` not forwarded | the compose stack | 10 pass |
 | `npm run test:load` | k6, four virtual users for sixty seconds inside the API's own rate limits, p95 under 300ms | the compose stack and [k6](https://k6.io) | 244 requests, 0 failed, p95 209ms; list p95 149ms, create p95 133ms, through the web server's forwarding |
 | `npm run test:lighthouse` | Lighthouse on the login page and the signed-in blotter, through Playwright's Chromium; reports in `frontend/lighthouse/` | the compose stack | login 100 / 100 / 96 / 100, blotter 99 / 96 / 100 / 100 (performance, accessibility, best practices, SEO, desktop preset) |
