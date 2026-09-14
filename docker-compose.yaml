@@ -48,7 +48,7 @@ services:
     pull_policy: build
     restart: unless-stopped
     env_file:
-      - path: ./.env
+      - path: .env
         required: false
     environment:
       NODE_ENV: production
