@@ -1,10 +1,10 @@
-import { createServer } from 'node:http';
 import { create_app } from './app.js';
 import { cors_origins, env, live_feed_options } from './config/env.js';
 import { prisma } from './db/prisma_client.js';
 import { close_redis, get_redis } from './db/redis_client.js';
 import { create_login_attempts } from './lib/auth/login_attempts.js';
 import { create_refresh_store } from './lib/auth/refresh_store.js';
+import { create_http_server } from './lib/http/create_http_server.js';
 import { create_live_feed } from './lib/live_feed/live_feed.js';
 import { logger } from './lib/logging/logger.js';
 import { create_mark_feed } from './lib/marks/mark_feed.js';
@@ -22,13 +22,15 @@ import { create_trade_service } from './services/trade_service/index.js';
 /** How often the simulated marks move, in milliseconds. */
 const mark_interval_ms = 900;
 
-// The HTTP server is created empty and the app attached afterwards, because the socket server
-// needs the HTTP server, the broadcaster needs the socket server, the service needs the
-// broadcaster, and the app needs the service. Building it in this order is what breaks that cycle.
-// The mark store comes first of all, because the socket server hands its contents to every client
-// that connects.
+// The HTTP server is created with an empty request slot and the app installed into it afterwards,
+// because the socket server needs the HTTP server, the broadcaster needs the socket server, the
+// service needs the broadcaster, and the app needs the service. The slot has to exist before the
+// socket server attaches: Socket.IO passes non-socket requests on to the listeners present when it
+// attaches, and a listener added later also answers socket requests, which crashes the process on
+// a long-polling handshake. The mark store comes first of all, because the socket server hands its
+// contents to every client that connects.
 const mark_store = create_mark_store();
-const http_server = createServer();
+const { server: http_server, serve } = create_http_server();
 const io = create_socket_server(http_server, mark_store);
 const broadcaster = create_socket_broadcaster(io);
 
@@ -49,7 +51,7 @@ const app = create_app({
   auth_service,
   cors_origins,
 });
-http_server.on('request', app);
+serve(app);
 
 const live_feed = create_live_feed(trade_service, trade_repository, live_feed_options);
 const mark_feed = create_mark_feed(mark_store, broadcaster, { interval_ms: mark_interval_ms });

@@ -1,4 +1,4 @@
-import { createServer, type Server as HttpServer } from 'node:http';
+import type { Server as HttpServer } from 'node:http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { io as connect, type Socket } from 'socket.io-client';
 import { z } from 'zod';
@@ -16,6 +16,7 @@ import {
   create_in_memory_login_attempts,
   create_in_memory_refresh_store,
 } from '../lib/auth/in_memory_auth_stores.js';
+import { create_http_server } from '../lib/http/create_http_server.js';
 import { create_mark_store } from '../lib/marks/mark_store.js';
 import { bearer, token_for } from '../lib/testing/test_app.js';
 import { create_in_memory_trade_repository } from '../repositories/in_memory_trade_repository/index.js';
@@ -229,18 +230,18 @@ async function book_and_settle(tab: Tab): Promise<{ trade_id: string; next: numb
 }
 
 beforeAll(async () => {
-  // Built the same way index.ts builds it: the mark store, the HTTP server, then the socket server,
-  // then the broadcaster, then the service, then the app. Only the repository is swapped, because
-  // the thing under test is the broadcast path rather than persistence.
-  http_server = createServer();
+  // Built the same way index.ts builds it: the mark store, the HTTP server with its request slot,
+  // the socket server, the broadcaster, the service, then the app installed into the slot. Only the
+  // repository is swapped, because the thing under test is the broadcast path rather than persistence.
+  const composed = create_http_server();
+  http_server = composed.server;
   const socket_server = create_socket_server(http_server, create_mark_store());
   const service = create_trade_service(
     create_in_memory_trade_repository(),
     create_socket_broadcaster(socket_server),
   );
 
-  http_server.on(
-    'request',
+  composed.serve(
     create_app({
       health_probe: { check_connection: async () => undefined },
       trade_service: service,
