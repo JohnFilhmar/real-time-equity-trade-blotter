@@ -1,88 +1,133 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Field';
 import { FieldError } from '@/components/ui/FieldError';
-import { Note } from '@/components/ui/Note';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { as_api_error } from '@/lib/api/http';
+import { format_lockout, lockout_seconds_from_detail } from '@/lib/auth/lockout';
 import { useSession } from '@/providers/session_provider';
 
+/** Where the sign-in is: waiting for a person, sending their credentials, or handing over. */
+type Phase = 'idle' | 'sending' | 'opening';
+
+const button_copy: Record<Phase, string> = {
+  idle: 'Sign in to the desk',
+  sending: 'Signing in',
+  opening: 'Opening the desk',
+};
+
+const handshake_copy: Record<Phase, string> = {
+  idle: '',
+  sending: 'Credentials sent',
+  opening: `Session adopted ${'·'} opening the desk`,
+};
+
 /**
- * The sign-in card. Desk credentials only: there is no registration, because a trader code is
+ * The sign-in form. Desk credentials only: there is no registration, because a trader code is
  * issued by the desk rather than self-claimed.
+ *
+ * Three things happen around the two fields. Caps Lock is reported in the password field's own
+ * message line, because five failures lock the account and a stuck Caps Lock is the commonest
+ * cause. A lockout answer from the API becomes a countdown in the reserved error line and holds
+ * the button until it ends. And the button and the line beneath it say what is happening after
+ * submit, each state tied to a real event rather than a timer.
  *
  * @returns The form.
  */
 export function LoginForm(): ReactNode {
   const { login } = useSession();
-  const router = useRouter();
   const [username, set_username] = useState('');
   const [password, set_password] = useState('');
+  const [caps_lock, set_caps_lock] = useState(false);
   const [problem, set_problem] = useState<string | null>(null);
-  const [pending, set_pending] = useState(false);
+  const [phase, set_phase] = useState<Phase>('idle');
+  const [locked_until, set_locked_until] = useState<number | null>(null);
+  const [now, set_now] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (locked_until === null) {
+      return;
+    }
+    const timer = setInterval(() => {
+      const current = Date.now();
+      if (current >= locked_until) {
+        set_locked_until(null);
+        return;
+      }
+      set_now(current);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [locked_until]);
+
+  const seconds_left = locked_until === null ? 0 : Math.max(0, Math.ceil((locked_until - now) / 1000));
+  const locked = seconds_left > 0;
 
   const submit = async (): Promise<void> => {
     set_problem(null);
-    set_pending(true);
+    set_phase('sending');
     try {
       await login({ username: username.trim(), password });
-      router.replace('/');
+      set_phase('opening');
     } catch (error) {
       const api_error = as_api_error(error);
-      set_problem(api_error === null ? 'Something went wrong. Try again.' : api_error.detail);
-    } finally {
-      set_pending(false);
+      const seconds = api_error === null ? null : lockout_seconds_from_detail(api_error.detail);
+      if (seconds === null) {
+        set_problem(api_error === null ? 'Something went wrong. Try again.' : api_error.detail);
+      } else {
+        const started = Date.now();
+        set_now(started);
+        set_locked_until(started + seconds * 1000);
+      }
+      set_phase('idle');
     }
   };
 
+  const read_caps_lock = (event: KeyboardEvent<HTMLInputElement>): void => {
+    set_caps_lock(event.getModifierState('CapsLock'));
+  };
+
+  const message = locked ? `Too many failed attempts. Try again in ${format_lockout(seconds_left)}.` : problem;
+
   return (
-    <div className="flex flex-1 items-center justify-center px-4 py-6">
-      <form
-        className="flex w-full max-w-[372px] flex-col gap-4 rounded-[12px] border border-glass-edge bg-glass p-[26px] shadow-glass backdrop-blur-[22px] backdrop-saturate-150"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void submit();
-        }}
-      >
-        <div className="flex items-center gap-[10px]">
-          <div className="grid h-6 w-6 place-items-center rounded-[6px] bg-linear-145 from-brand-grad-hi to-brand-grad-lo text-brand-lo shadow-[inset_0_0_0_1px_var(--brand_edge)]">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M3 17l6-6 4 4 8-8" />
-            </svg>
-          </div>
-          <div>
-            <b className="text-[15px] font-semibold">Fusion Blotter</b>
-            <div className="mt-[2px] font-mono text-[10px] uppercase tracking-[.12em] text-faint">Equity cash {'·'} London desk</div>
-          </div>
-        </div>
+    <form
+      className="flex flex-col gap-[14px] animate-fade"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void submit();
+      }}
+    >
+      <Field id="login_username" label="Username" error={undefined}>
+        <Input id="login_username" name="username" autoComplete="username" spellCheck={false} autoFocus value={username} onChange={(event) => set_username(event.target.value)} />
+      </Field>
 
-        <p className="m-0 text-[12.5px] leading-[1.6] text-muted">
-          Desk credentials. Your trader code stamps every trade you book, amend or cancel.
-        </p>
+      <Field id="login_password" label="Password" error={undefined} warning={caps_lock ? 'Caps Lock is on' : undefined}>
+        <PasswordInput
+          id="login_password"
+          name="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(event) => set_password(event.target.value)}
+          onKeyDown={read_caps_lock}
+          onKeyUp={read_caps_lock}
+        />
+      </Field>
 
-        <Field id="login_username" label="Username" error={undefined}>
-          <Input id="login_username" name="username" autoComplete="username" spellCheck={false} autoFocus value={username} onChange={(event) => set_username(event.target.value)} />
-        </Field>
+      <FieldError message={message} lines={2} />
 
-        <Field id="login_password" label="Password" error={undefined}>
-          <PasswordInput id="login_password" name="password" autoComplete="current-password" value={password} onChange={(event) => set_password(event.target.value)} />
-        </Field>
+      <Button type="submit" variant="primary" block className="h-[38px]" disabled={phase !== 'idle' || locked || username.length === 0 || password.length === 0}>
+        {button_copy[phase]}
+      </Button>
 
-        <FieldError message={problem} lines={2} />
+      <div role="status" aria-live="polite" className="min-h-[16px] font-mono text-[10.5px] text-brand-lo">
+        {handshake_copy[phase]}
+      </div>
 
-        <Button type="submit" variant="primary" block className="h-[38px]" disabled={pending || username.length === 0 || password.length === 0}>
-          {pending ? 'Signing in' : 'Sign in to the desk'}
-        </Button>
-
-        <Note>
-          Demo accounts: <span className="font-mono">jsmith</span> and <span className="font-mono">abrown</span> (traders),{' '}
-          <span className="font-mono">mjones</span> (desk head), <span className="font-mono">viewer</span> (read only). The shared demo
-          password is in the README.
-        </Note>
-      </form>
-    </div>
+      <p className="m-0 text-[11.5px] leading-[1.6] text-text-2">
+        Demo accounts <span className="font-mono text-text">jsmith</span>, <span className="font-mono text-text">abrown</span>,{' '}
+        <span className="font-mono text-text">mjones</span>, <span className="font-mono text-text">viewer</span>. Password in the README.
+      </p>
+    </form>
   );
 }
