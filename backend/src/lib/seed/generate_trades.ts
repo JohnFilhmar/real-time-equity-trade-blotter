@@ -1,6 +1,7 @@
 import { faker } from '@faker-js/faker';
 import {
   instruments,
+  trade_side_values,
   type AmendableTrade,
   type CreateTrade,
   type Currency,
@@ -156,7 +157,7 @@ export function generate_trades(count: number, seed = 20260818): GeneratedTrade[
 
     return {
       symbol: instrument.symbol,
-      side: faker.helpers.arrayElement(['BUY', 'SELL']) as TradeSide,
+      side: faker.helpers.arrayElement(trade_side_values),
       quantity: pick_quantity(),
       price: price.toFixed(2),
       currency: instrument.currency,
@@ -197,7 +198,7 @@ export function generate_live_trade(): GeneratedLiveTrade {
   return {
     payload: {
       symbol: instrument.symbol,
-      side: faker.helpers.arrayElement(['BUY', 'SELL']) as TradeSide,
+      side: faker.helpers.arrayElement(trade_side_values),
       quantity: pick_quantity(),
       price: Number((instrument.base_price * (1 + drift)).toFixed(2)),
       book: instrument.book,
