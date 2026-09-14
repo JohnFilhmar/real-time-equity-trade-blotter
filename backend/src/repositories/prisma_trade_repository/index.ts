@@ -9,15 +9,9 @@ import type {
   TradeRepository,
   TradeWriteContext,
 } from '../../interfaces/trade_repository.js';
-import {
-  count_active,
-  find_active_trades,
-  find_by_trade_id,
-  find_events,
-  find_random_active,
-  list,
-  list_events,
-} from './reads.js';
+import { count_active, find_active_trades, find_random_active } from './active_reads.js';
+import { find_events, list_events } from './event_reads.js';
+import { find_by_trade_id, list } from './trade_reads.js';
 import { amend, cancel, create } from './writes.js';
 
 /**

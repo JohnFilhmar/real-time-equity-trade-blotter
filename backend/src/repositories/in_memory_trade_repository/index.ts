@@ -55,6 +55,17 @@ function drop_undefined(changes: TradeChanges): Partial<AmendableTrade> {
  */
 export function create_in_memory_trade_repository(initial: Trade[] = []): TradeRepository {
   const trades = new Map<string, Trade>(initial.map((trade) => [trade.tradeId, trade]));
+
+  /**
+   * Whether a trade counts as active, and belongs to the given symbol when one is given.
+   *
+   * @param trade - The trade to test.
+   * @param symbol - Optional instrument to restrict to.
+   * @returns True when the trade is `ACTIVE` and, if a symbol was given, in that symbol.
+   */
+  function is_active(trade: Trade, symbol?: string): boolean {
+    return trade.status === 'ACTIVE' && (symbol === undefined || trade.symbol === symbol);
+  }
   const events: TradeEvent[] = [];
   let next_number = first_trade_number + trades.size;
 
@@ -215,9 +226,7 @@ export function create_in_memory_trade_repository(initial: Trade[] = []): TradeR
 
     async find_active_trades(symbol?: string): Promise<Trade[]> {
       return [...trades.values()]
-        .filter(
-          (trade) => trade.status === 'ACTIVE' && (symbol === undefined || trade.symbol === symbol),
-        )
+        .filter((trade) => is_active(trade, symbol))
         .sort((a, b) => {
           const by_time = Date.parse(a.tradeTimestamp) - Date.parse(b.tradeTimestamp);
           return by_time === 0 ? a.id.localeCompare(b.id) : by_time;
@@ -225,7 +234,7 @@ export function create_in_memory_trade_repository(initial: Trade[] = []): TradeR
     },
 
     async find_random_active(): Promise<Trade | null> {
-      const active = [...trades.values()].filter((trade) => trade.status === 'ACTIVE');
+      const active = [...trades.values()].filter((trade) => is_active(trade));
 
       if (active.length === 0) {
         return null;
@@ -235,7 +244,13 @@ export function create_in_memory_trade_repository(initial: Trade[] = []): TradeR
     },
 
     async count_active(): Promise<number> {
-      return [...trades.values()].filter((trade) => trade.status === 'ACTIVE').length;
+      let count = 0;
+      for (const trade of trades.values()) {
+        if (is_active(trade)) {
+          count += 1;
+        }
+      }
+      return count;
     },
   };
 }
