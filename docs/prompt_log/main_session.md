@@ -728,3 +728,15 @@ Followed by:
 
 **Artifact:** [Fusion Blotter login options](../artifacts/login_page_options.html)
 **Commits:** `8deebff`, `a1846cd`, `6138db8`, `43bdb8d`
+
+---
+
+### 2026-09-14T02:30Z - backdrop_carousel_and_trend_width
+
+**Prompt**
+
+> give me 3 prompt for chatgpt to generate 3 different images for the login page of this system that will serve as a faded background/backdrop image that autonomously auto changes every 5 seconds fade-in fade-out animations in between those N images. after giving me 3 separate prompts of realistic image in trading, human interactions, etc. whatever's appropriate in a firm financial trading systems, work the login page to this new adjustment on what's needed as backgroound/backdrop images. because currently , the login page as now, is too bland and empty. alongside that work, trend width in the table of positions page is short, maximize the width fit for windows view.
+
+**Outcome:** The door now crossfades three images every five seconds at a theme-level opacity under a scrim, still under reduced motion and paused in a hidden tab, with script-drawn stand-ins in `frontend/public/login/` until the owner's generated photographs replace them file for file, and the runtime image copies `public/`, which the standalone bundle had left out. The positions trend line fills its column, 510px at 1440 wide where it drew 96; the login journey counts the images and passes, Lighthouse on the door stays at 100 / 100 / 96 / 100, and the three image prompts went to the owner in chat.
+
+**Commits:** `6372cf8`, `4389abf`, `ed61fd6`
