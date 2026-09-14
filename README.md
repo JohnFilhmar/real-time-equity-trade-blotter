@@ -125,7 +125,9 @@ are cached. Without Docker, see [Running without Docker](#running-without-docker
 
 An empty database is seeded with 500 realistic trades and the four accounts. A simulated desk
 then books, amends and cancels trades every three to eight seconds, so the blotter moves on its
-own; open it in two windows and watch the same rows change in both. Book a trade as `jsmith` in
+own. It holds its book to 2,000 active trades and leans each new ticket against its symbol's net
+position, so the book stays near flat, the way a desk working flow from both sides does. Open it
+in two windows and watch the same rows change in both. Book a trade as `jsmith` in
 one window and it appears in the other. Sign in as `viewer` to see the booking controls disappear,
 and as `jsmith` to see another trader's trade greyed with "desk head only".
 

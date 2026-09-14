@@ -231,6 +231,7 @@ docker compose exec backend node -e "fetch('http://127.0.0.1:5000/metrics').then
 | `LIVE_FEED_ENABLED` | `true` | Set false to silence the simulated desk while demonstrating manually |
 | `LIVE_FEED_MIN_INTERVAL_MS` | `3000` | Shortest gap between simulated actions |
 | `LIVE_FEED_MAX_INTERVAL_MS` | `8000` | Longest gap between simulated actions |
+| `LIVE_FEED_MAX_ACTIVE_TRADES` | `2000` | Size of book the simulated desk keeps; at the cap it cancels instead of booking |
 | `MAX_NOTIONAL_USD` | `50000000` | Desk notional ceiling for USD names |
 | `MAX_NOTIONAL_GBX` | `4000000000` | Desk notional ceiling for GBX names, in pence |
 | `AUTH_RATE_LIMIT` | `10` | Requests a minute on the credential endpoints, per address |

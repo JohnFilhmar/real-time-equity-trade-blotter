@@ -67,6 +67,7 @@ services:
       LIVE_FEED_ENABLED: ${LIVE_FEED_ENABLED:-true}
       LIVE_FEED_MIN_INTERVAL_MS: ${LIVE_FEED_MIN_INTERVAL_MS:-3000}
       LIVE_FEED_MAX_INTERVAL_MS: ${LIVE_FEED_MAX_INTERVAL_MS:-8000}
+      LIVE_FEED_MAX_ACTIVE_TRADES: ${LIVE_FEED_MAX_ACTIVE_TRADES:-2000}
     # No published port. The API is reachable only on the blotter network, through the web server's
     # forwarding, and /metrics is not forwarded, so the counters stay inside the network too.
     depends_on:

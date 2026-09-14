@@ -209,6 +209,21 @@ describe.skipIf(test_database_url === undefined)('prisma trade repository', () =
     });
   });
 
+  describe('reads the live feed relies on', () => {
+    // A count cannot be isolated to this run's book, so this assumes nothing else writes to the
+    // database while the tier runs, which is how `npm run test:integration` is meant to be used.
+    it('counts only active trades', async () => {
+      const before = await repository.count_active();
+      const kept = await repository.create(a_new_trade());
+      const dropped = await repository.create(a_new_trade());
+      await repository.cancel(dropped.tradeId, dropped.version, api_context);
+
+      expect(kept.status).toBe('ACTIVE');
+      expect(await repository.count_active()).toBe(before + 1);
+      expect(await repository.count_active()).toBe(await prisma.trade.count({ where: { status: 'ACTIVE' } }));
+    });
+  });
+
   describe('concurrency', () => {
     it('amends only when the version still matches', async () => {
       const created = await repository.create(a_new_trade());

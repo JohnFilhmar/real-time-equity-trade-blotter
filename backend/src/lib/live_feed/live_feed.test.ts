@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Trade } from '@blotter/shared';
+import { instruments, type Trade, type TradeSide } from '@blotter/shared';
 import { create_in_memory_trade_repository } from '../../repositories/in_memory_trade_repository/index.js';
 import { create_trade_service } from '../../services/trade_service/index.js';
 import { logger } from '../logging/logger.js';
 import type { TradeRepository } from '../../interfaces/trade_repository.js';
-import { create_live_feed } from './live_feed.js';
+import { create_live_feed, type LiveFeedOptions } from './live_feed.js';
 
 /** A fixed pace, so a test advances the clock by a known amount rather than guessing. */
-const one_second = { min_interval_ms: 1000, max_interval_ms: 1000 };
+const one_second: LiveFeedOptions = { min_interval_ms: 1000, max_interval_ms: 1000, max_active_trades: 10_000 };
 
 /**
  * Builds a feed over an in-memory blotter.
@@ -15,10 +15,11 @@ const one_second = { min_interval_ms: 1000, max_interval_ms: 1000 };
  * Only the trade broadcasts are recorded, one per action, so `sent` counts ticks. The audit and
  * position broadcasts that follow each write are the service's subject, not the feed's.
  *
- * @param repository - Optional repository override, for the failure case.
+ * @param repository - Optional repository override, for the failure case and pre-filled books.
+ * @param options - Optional pacing and cap override.
  * @returns The feed and the events it caused.
  */
-function build_feed(repository: TradeRepository = create_in_memory_trade_repository()) {
+function build_feed(repository: TradeRepository = create_in_memory_trade_repository(), options: LiveFeedOptions = one_second) {
   const sent: string[] = [];
   const service = create_trade_service(repository, {
     trade_created: () => sent.push('trade.created'),
@@ -29,7 +30,39 @@ function build_feed(repository: TradeRepository = create_in_memory_trade_reposit
     marks_updated: () => undefined,
   });
 
-  return { feed: create_live_feed(service, repository, one_second), sent };
+  return { feed: create_live_feed(service, repository, options), sent };
+}
+
+/**
+ * Stores trades straight into the repository, bypassing the service, so a test can start from a
+ * book the feed did not build.
+ *
+ * @param repository - Where to store them.
+ * @param per_symbol - How many trades to store for each instrument.
+ * @param side - The side every stored trade takes.
+ * @param quantity - The size every stored trade takes.
+ * @returns The stored trades.
+ */
+async function fill(repository: TradeRepository, per_symbol: number, side: TradeSide, quantity: number): Promise<Trade[]> {
+  const stored: Trade[] = [];
+  for (const instrument of instruments) {
+    for (let i = 0; i < per_symbol; i += 1) {
+      stored.push(
+        await repository.create({
+          symbol: instrument.symbol,
+          side,
+          quantity,
+          price: 100,
+          currency: instrument.currency,
+          trader: 'JSMITH',
+          book: instrument.book,
+          counterparty: 'UBS',
+          tradeTimestamp: new Date().toISOString(),
+        }),
+      );
+    }
+  }
+  return stored;
 }
 
 describe('live feed', () => {
@@ -92,6 +125,7 @@ describe('live feed', () => {
         throw new Error('database is on fire');
       },
       find_random_active: async (): Promise<Trade | null> => null,
+      count_active: async (): Promise<number> => 0,
     };
     const { feed } = build_feed(failing);
 
@@ -100,5 +134,40 @@ describe('live feed', () => {
     feed.stop();
 
     expect(warn).toHaveBeenCalledTimes(3);
+  });
+
+  it('never lets the book grow past its cap, and still books when there is room', async () => {
+    const repository = create_in_memory_trade_repository();
+    const cap = 12;
+    await fill(repository, 1, 'BUY', 100);
+    const { feed, sent } = build_feed(repository, { ...one_second, max_active_trades: cap });
+
+    feed.start();
+    for (let tick = 0; tick < 60; tick += 1) {
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(await repository.count_active()).toBeLessThanOrEqual(cap);
+    }
+    feed.stop();
+
+    expect(sent).toContain('trade.cancelled');
+    expect(sent).toContain('trade.created');
+  });
+
+  it('sells into a book that is long, rather than adding to it at random', async () => {
+    const repository = create_in_memory_trade_repository();
+    const seeded = await fill(repository, 5, 'BUY', 5_000_000);
+    const seeded_ids = new Set(seeded.map((trade) => trade.tradeId));
+    const { feed } = build_feed(repository);
+
+    feed.start();
+    await vi.advanceTimersByTimeAsync(100_000);
+    feed.stop();
+
+    const booked = (await repository.find_active_trades()).filter((trade) => !seeded_ids.has(trade.tradeId) && trade.version === 1);
+    const buys = booked.filter((trade) => trade.side === 'BUY').length;
+
+    // Without the lean, about half would be buys; with every symbol heavily long, about one in ten.
+    expect(booked.length).toBeGreaterThan(20);
+    expect(buys).toBeLessThanOrEqual(booked.length / 4);
   });
 });

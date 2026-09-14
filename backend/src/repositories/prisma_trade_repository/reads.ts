@@ -102,3 +102,8 @@ export async function find_random_active(prisma: PrismaClient): Promise<Trade | 
 
   return row === null ? null : to_wire_trade(row);
 }
+
+/** The Postgres side of `TradeRepository.count_active`. Served by the status-first index. */
+export async function count_active(prisma: PrismaClient): Promise<number> {
+  return prisma.trade.count({ where: { status: 'ACTIVE' } });
+}

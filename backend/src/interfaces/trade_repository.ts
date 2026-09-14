@@ -178,4 +178,11 @@ export interface TradeRepository {
    * @returns A trade, or `null` when the blotter holds no active trades.
    */
   find_random_active(): Promise<Trade | null>;
+
+  /**
+   * Counts the `ACTIVE` trades, used by the live feed to keep its book under a cap.
+   *
+   * @returns How many trades are active. Zero when none are.
+   */
+  count_active(): Promise<number>;
 }
