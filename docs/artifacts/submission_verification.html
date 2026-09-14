@@ -72,8 +72,8 @@
       passing; anything not run says so.
     </p>
     <div class="meta">
-      <span>Verified <b>2026-09-14, 01:39 UTC</b></span>
-      <span>Branch <b>worktree-login-revamp</b> at <b>6138db8</b></span>
+      <span>Verified <b>2026-09-14, 02:40 UTC</b></span>
+      <span>Branch <b>worktree-login-revamp</b> at <b>4389abf</b></span>
       <span>Platform <b>Windows 11, Docker Desktop 28.5, Node 22.12</b></span>
     </div>
   </header>
@@ -151,7 +151,7 @@
         <tr><td>Appropriate use of TypeScript</td><td><span class="flag pass">pass</span></td><td>No <code>any</code>, no silencing casts; types inferred from schemas; typed socket event maps on both sides; <code>unknown</code> narrowed at every boundary.</td></tr>
         <tr><td>Reasonable error handling</td><td><span class="flag pass">pass</span></td><td>RFC 9457 problem documents with a correlation id; the client parses them into one <code>ApiError</code>; seven designed table states; a 409 shows the diff instead of retrying.</td></tr>
         <tr><td>Automated testing where appropriate</td><td><span class="flag pass">pass</span></td><td>Unit and route tier, integration tier against Postgres and Redis (38), Playwright (9), k6 and Lighthouse scripts. CI runs the first two on every push.</td></tr>
-        <tr><td>Thoughtful UX</td><td><span class="flag pass">pass</span></td><td>Built to <a href="../superpowers/specs/2026-09-12-interface-behaviour-design.md">the interface spec</a>: three connection states, mutations blocked with a reason, flash throttle with a direction arrow, scroll pinning with a count pill, ARIA grid with roving row focus, permission-aware controls, three themes, phone layout. The sign-in door, chosen from <a href="login_page_options.html">six laid-out options</a>: the desk panel, clock and readiness line render before the session check answers, the form's space is reserved so nothing moves, Caps Lock is reported, a lockout counts down, and the button says what is happening after submit.</td></tr>
+        <tr><td>Thoughtful UX</td><td><span class="flag pass">pass</span></td><td>Built to <a href="../superpowers/specs/2026-09-12-interface-behaviour-design.md">the interface spec</a>: three connection states, mutations blocked with a reason, flash throttle with a direction arrow, scroll pinning with a count pill, ARIA grid with roving row focus, permission-aware controls, three themes, phone layout. The sign-in door, chosen from <a href="login_page_options.html">six laid-out options</a>: the desk panel, clock and readiness line render before the session check answers, the form's space is reserved so nothing moves, Caps Lock is reported, a lockout counts down, the button says what is happening after submit, and faded photographs crossfade behind it every five seconds, still under reduced motion. The positions trend line fills its column.</td></tr>
       </tbody>
     </table></div>
   </section>
@@ -200,7 +200,7 @@
         <tr><td>Integration</td><td><code>npm run test:integration</code></td><td>38 pass, 2 files, against the compose Postgres and Redis.</td></tr>
         <tr><td>Browser end to end</td><td><code>npm run test:e2e</code></td><td>7 pass in 29 seconds against the compose build, one worker, two browser contexts where the journey needs them.</td></tr>
         <tr><td>Load</td><td><code>npm run test:load</code></td><td>k6, 4 virtual users, 60 seconds: 259 requests, 0 failed, 319 of 319 checks, p95 78ms overall, list p95 104ms, create p95 28ms. Both thresholds met.</td></tr>
-        <tr><td>Page audit</td><td><code>npm run test:lighthouse</code></td><td>Desktop preset. Login: performance 100, accessibility 100, best practices 96, SEO 100 (the door rebuilt as a ledger split, 2026-09-14). Blotter, signed in: 98, 96, 100, 100 (rerun 2026-09-13, 10:36 UTC, on the merged tree at e0f8eae). Reports in <code>frontend/lighthouse/</code>, not committed.</td></tr>
+        <tr><td>Page audit</td><td><code>npm run test:lighthouse</code></td><td>Desktop preset. Login: performance 100, accessibility 100, best practices 96, SEO 100 (the door rebuilt as a ledger split with the backdrop carousel, 2026-09-14). Blotter, signed in: 98, 96, 100, 100 (rerun 2026-09-13, 10:36 UTC, on the merged tree at e0f8eae). Reports in <code>frontend/lighthouse/</code>, not committed.</td></tr>
         <tr><td>Compose stack</td><td><code>npm run start</code></td><td>Five services healthy: database, redis, migrate (exited 0, four migrations applied), backend, frontend. The redis service needed a fix found only by running it (see the README's decisions and the prompt log).</td></tr>
       </tbody>
     </table></div>

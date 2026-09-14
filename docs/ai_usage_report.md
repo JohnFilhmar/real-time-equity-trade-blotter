@@ -171,6 +171,16 @@ names a `Retry-After` header as the cleaner contract. Lighthouse then caught wha
 card had hidden: the muted text token sits under 4.5:1 on the light ground, so the door's own copy
 moved one step up the text ramp rather than the theme being touched.
 
+The door then gained a backdrop, a crossfade of photographs at low opacity that changes every
+five seconds and stops under reduced motion. The three files under `frontend/public/login/` are
+stand-ins drawn by a script, dark gradients at the size and mood the real images need, so the
+carousel, the container copy of `public/` and the browser journey could be verified before any
+photograph existed. The photographs are to be generated with an image model from three prompts I
+asked the agent to write: a London equities floor at dawn, two traders over one monitor with a
+desk head behind, and a close-up of a desk after the close, each constrained to no legible text,
+no logos, faces out of focus and a dark cool grade so the copy in front keeps its contrast. When
+they replace the stand-ins, that is their provenance.
+
 ## Where the AI was wrong, and caught
 
 **U-M4 in the gap analysis.** The first revision claimed the prototype had no up or down tick
