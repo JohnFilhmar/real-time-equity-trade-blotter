@@ -10,12 +10,15 @@ export interface SparklineProps {
   label: string;
 }
 
-const width = 96;
+const width = 320;
 const height = 22;
 const pad = 2;
 
 /**
- * A 96 by 22 trend line, the prototype's `sparkline`, drawn from the recent marks of one symbol.
+ * A trend line drawn from the recent marks of one symbol, the prototype's `sparkline`, stretched
+ * to whatever width its column gives it. The drawing scales with the column; the stroke and the
+ * end marker keep their screen size, which is why the marker is a zero-length round-capped line
+ * rather than a circle that would squash.
  *
  * @param props - Values, tone and label.
  * @returns An inline SVG, or `null` with fewer than two points.
@@ -38,9 +41,9 @@ export function Sparkline({ values, tone, label }: SparklineProps): ReactNode {
   const colour = tone === 'gain' ? 'var(--gain)' : 'var(--loss)';
 
   return (
-    <svg className="block h-[22px] w-full max-w-[96px]" viewBox={`0 0 ${width.toString()} ${height.toString()}`} preserveAspectRatio="none" role="img" aria-label={label}>
-      <path d={path} fill="none" stroke={colour} strokeWidth="1.4" strokeLinejoin="round" strokeLinecap="round" opacity="0.9" />
-      <circle cx={last[0].toFixed(1)} cy={last[1].toFixed(1)} r="1.9" fill={colour} />
+    <svg className="block h-[22px] w-full" viewBox={`0 0 ${width.toString()} ${height.toString()}`} preserveAspectRatio="none" role="img" aria-label={label}>
+      <path d={path} fill="none" stroke={colour} strokeWidth="1.4" strokeLinejoin="round" strokeLinecap="round" opacity="0.9" vectorEffect="non-scaling-stroke" />
+      <path d={`M${last[0].toFixed(1)} ${last[1].toFixed(1)} h0.01`} fill="none" stroke={colour} strokeWidth="3.8" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
     </svg>
   );
 }
