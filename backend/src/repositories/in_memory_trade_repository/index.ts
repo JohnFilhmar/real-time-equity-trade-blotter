@@ -233,5 +233,9 @@ export function create_in_memory_trade_repository(initial: Trade[] = []): TradeR
 
       return active[Math.floor(Math.random() * active.length)] ?? null;
     },
+
+    async count_active(): Promise<number> {
+      return [...trades.values()].filter((trade) => trade.status === 'ACTIVE').length;
+    },
   };
 }

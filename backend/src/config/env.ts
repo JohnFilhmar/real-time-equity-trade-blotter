@@ -57,6 +57,13 @@ const env_schema = z.object({
   LIVE_FEED_MIN_INTERVAL_MS: z.coerce.number().int().min(250).max(600_000).default(3_000),
   LIVE_FEED_MAX_INTERVAL_MS: z.coerce.number().int().min(250).max(600_000).default(8_000),
   /**
+   * The most active trades the simulated desk keeps.
+   *
+   * The desk creates seven times as often as it cancels, so without a cap the book, and the size of
+   * every figure derived from it, grows for as long as the stack runs.
+   */
+  LIVE_FEED_MAX_ACTIVE_TRADES: z.coerce.number().int().min(1).max(100_000).default(2_000),
+  /**
    * Per-currency notional ceilings, the fat-finger control.
    *
    * One limit per currency rather than one global figure, because the blotter quotes in USD and in
@@ -102,15 +109,16 @@ export const cors_origins: readonly string[] = env.CORS_ORIGINS.split(',')
 export const is_production = env.NODE_ENV === 'production';
 
 /**
- * Pacing for the simulated desk activity.
+ * Pacing and book size for the simulated desk activity.
  *
- * The two bounds are sorted rather than rejected when they arrive the wrong way round, because an
- * inverted window is an obvious typo in a compose file and refusing to boot over it would be a
- * worse outcome than quietly running the feed between the same two numbers.
+ * The two interval bounds are sorted rather than rejected when they arrive the wrong way round,
+ * because an inverted window is an obvious typo in a compose file and refusing to boot over it would
+ * be a worse outcome than quietly running the feed between the same two numbers.
  */
 export const live_feed_options = {
   min_interval_ms: Math.min(env.LIVE_FEED_MIN_INTERVAL_MS, env.LIVE_FEED_MAX_INTERVAL_MS),
   max_interval_ms: Math.max(env.LIVE_FEED_MIN_INTERVAL_MS, env.LIVE_FEED_MAX_INTERVAL_MS),
+  max_active_trades: env.LIVE_FEED_MAX_ACTIVE_TRADES,
 } as const;
 
 /** The notional ceiling for each currency the blotter quotes in. */
