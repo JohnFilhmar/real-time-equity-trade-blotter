@@ -13,17 +13,20 @@ export interface FieldProps {
   error?: string | undefined;
   /** Explanatory line under the control when there is no error. */
   hint?: string | undefined;
+  /** A caution shown in the warn tone when there is no error, such as Caps Lock being on. */
+  warning?: string | undefined;
   children: ReactNode;
 }
 
 /**
  * A labelled form row: mono uppercase label, the control, and a message line.
  *
- * @param props - The label, the control, and the error or hint line.
+ * @param props - The label, the control, and the error, warning or hint line.
  * @returns The row.
  */
-export function Field({ id, label, error, hint, children }: FieldProps): ReactNode {
+export function Field({ id, label, error, warning, hint, children }: FieldProps): ReactNode {
   const message_id = `${id}_message`;
+  const tone = error ? 'text-loss' : warning ? 'text-warn' : 'text-muted';
 
   return (
     <div className="flex min-w-0 flex-col gap-[5px]">
@@ -33,10 +36,10 @@ export function Field({ id, label, error, hint, children }: FieldProps): ReactNo
       {children}
       <div
         id={message_id}
-        className={`flex min-h-[14px] items-center gap-[5px] text-[11px] ${error ? 'text-loss' : 'text-muted'}`}
+        className={`flex min-h-[14px] items-center gap-[5px] text-[11px] ${tone}`}
         aria-live="polite"
       >
-        {error ?? hint ?? ''}
+        {error ?? warning ?? hint ?? ''}
       </div>
     </div>
   );

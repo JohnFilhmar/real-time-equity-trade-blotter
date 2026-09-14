@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { BrandMark } from '@/components/ui/BrandMark';
 import { IconButton } from '@/components/ui/IconButton';
 import { useSession } from '@/providers/session_provider';
 import { ConnectionPill } from './ConnectionPill';
@@ -28,11 +29,7 @@ export function TopBar(): ReactNode {
   return (
     <header className="flex h-[52px] shrink-0 items-center gap-[14px] border-b border-rule bg-glass px-4 shadow-[inset_0_1px_0_var(--glass_edge_soft)] backdrop-blur-[18px] backdrop-saturate-[1.4]">
       <div className="flex shrink-0 items-center gap-[9px]">
-        <div className="grid h-6 w-6 place-items-center rounded-[6px] bg-linear-145 from-brand-grad-hi to-brand-grad-lo text-brand-lo shadow-[inset_0_0_0_1px_var(--brand_edge)]" aria-hidden="true">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 17l6-6 4 4 8-8" />
-          </svg>
-        </div>
+        <BrandMark />
         <b className="hidden whitespace-nowrap text-[13.5px] font-semibold tracking-[-.012em] md:inline">Fusion Blotter</b>
       </div>
 

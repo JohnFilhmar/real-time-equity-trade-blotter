@@ -90,6 +90,12 @@
   --flash_down: rgba(245, 133, 152, .14);
   --flash_new:  rgba(34, 211, 238, .14);
 
+  /* large empty grounds and the door: an engineering grid at the row rhythm, an edge light for a
+     panel, and a shadow for an opaque panel resting on the ground rather than floating over it */
+  --grid_line:    rgba(157, 176, 202, .055);
+  --beam:         rgba(34, 211, 238, .08);
+  --panel_shadow: 0 10px 30px -18px rgba(3, 8, 16, .8);
+
   color-scheme: dark;
 }
 
@@ -166,6 +172,10 @@
     --flash_down: rgba(190, 18, 60, .09);
     --flash_new:  rgba(8, 145, 178, .10);
 
+    --grid_line:    rgba(15, 27, 42, .05);
+    --beam:         rgba(8, 145, 178, .07);
+    --panel_shadow: 0 10px 26px -18px rgba(15, 27, 42, .35);
+
     color-scheme: light;
   }
 }
@@ -241,6 +251,10 @@
   --flash_up:   rgba(4, 120, 87, .10);
   --flash_down: rgba(190, 18, 60, .09);
   --flash_new:  rgba(8, 145, 178, .10);
+
+  --grid_line:    rgba(15, 27, 42, .05);
+  --beam:         rgba(8, 145, 178, .07);
+  --panel_shadow: 0 10px 26px -18px rgba(15, 27, 42, .35);
 
   color-scheme: light;
 }
@@ -320,6 +334,17 @@
 
   --shadow-glass: var(--glass_shadow);
   --shadow-drawer: var(--drawer_shadow);
+  --shadow-panel: var(--panel_shadow);
+  --color-grid-line: var(--grid_line);
+  --color-beam: var(--beam);
+
+  /* the display step, for a heading on the door or an empty state; same face, one weight */
+  --text-display: 34px;
+  --text-display--line-height: 1.08;
+  --text-display--letter-spacing: -0.025em;
+  --text-display-sm: 24px;
+  --text-display-sm--line-height: 1.1;
+  --text-display-sm--letter-spacing: -0.02em;
 
   --font-sans: var(--font-plex-sans), "Segoe UI", system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), "SFMono-Regular", Consolas, monospace;
@@ -331,6 +356,7 @@
   --animate-flash-down: flash_down 1.1s ease-out;
   --animate-flash-new: flash_new 1.5s ease-out;
   --animate-rise: rise .22s cubic-bezier(.2, .8, .3, 1);
+  --animate-rise-stagger: rise .42s cubic-bezier(.2, .8, .3, 1) both;
   --animate-fade: fade .18s ease-out;
   --animate-slide-in: slide_in .22s cubic-bezier(.2, .8, .3, 1);
   --animate-pulse-dot: pulse 2.4s ease-in-out infinite;
