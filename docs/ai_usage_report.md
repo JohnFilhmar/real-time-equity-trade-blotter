@@ -155,6 +155,22 @@ client coalesce a burst; and a browser journey drops the link, checks that booki
 a reason, and checks that the client resyncs before it calls itself live. The ten below the cut
 stayed below it.
 
+## The sign-in door
+
+The last thing I asked for was a login page that read as a private firm's system rather than the
+centred card every product ships. I asked for options, not a design, and the agent answered with
+an artifact of six layouts running live on the app's own tokens, each with its loading, splash,
+motion and interactivity costs priced separately, a ranked cut, and a list of seven decisions with
+its recommendation against each. It also found a defect the options all inherited: the page was
+blank for the whole session-restore round trip, because the gate that stops a signed-in person
+seeing a form on reload held back everything, not just the form. I chose the ledger split and the
+recommendations, and the build kept the form byte for byte behind the ids the browser journeys
+sign in through. The one thing it flagged rather than did was the lockout countdown's source: the
+API carries the seconds only inside its sentence, so the client reads that sentence and the report
+names a `Retry-After` header as the cleaner contract. Lighthouse then caught what the old glass
+card had hidden: the muted text token sits under 4.5:1 on the light ground, so the door's own copy
+moved one step up the text ramp rather than the theme being touched.
+
 ## Where the AI was wrong, and caught
 
 **U-M4 in the gap analysis.** The first revision claimed the prototype had no up or down tick

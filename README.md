@@ -164,11 +164,11 @@ the Prisma client is generated rather than committed.
 
 | Script | Tier | Needs | Observed |
 |---|---|---|---|
-| `npm test` | Unit and route tests in all three workspaces: contract, service and route suites against an in-memory repository, the cache-patching and formatting logic on the client | nothing | 288 pass: 39 shared, 186 backend, 63 frontend |
+| `npm test` | Unit and route tests in all three workspaces: contract, service and route suites against an in-memory repository, the cache-patching and formatting logic on the client | nothing | 297 pass: 39 shared, 186 backend, 72 frontend |
 | `npm run test:integration` | Repository, refresh-token and positions tests against real Postgres and Redis, including the append-only trigger | the compose stack | 38 pass |
-| `npm run test:e2e` | Playwright, two browser contexts: a trade booked in one appears in the other, follows its amend and cancel, a concurrent amend is refused with a 409, the role rules hold, and a dropped link blocks booking then resyncs on recovery | the compose stack | 8 pass |
+| `npm run test:e2e` | Playwright, two browser contexts: a trade booked in one appears in the other, follows its amend and cancel, a concurrent amend is refused with a 409, the role rules hold, a dropped link blocks booking then resyncs on recovery, and the sign-in door shows the desk before the session check answers and keeps its form still on a bad password | the compose stack | 9 pass |
 | `npm run test:load` | k6, four virtual users for sixty seconds inside the API's own rate limits, p95 under 300ms | the compose stack and [k6](https://k6.io) | 259 requests, 0 failed, p95 78ms; list p95 104ms, create p95 28ms |
-| `npm run test:lighthouse` | Lighthouse on the login page and the signed-in blotter, through Playwright's Chromium; reports in `frontend/lighthouse/` | the compose stack | login 100 / 98 / 96 / 100, blotter 98 / 96 / 100 / 100 (performance, accessibility, best practices, SEO, desktop preset) |
+| `npm run test:lighthouse` | Lighthouse on the login page and the signed-in blotter, through Playwright's Chromium; reports in `frontend/lighthouse/` | the compose stack | login 100 / 100 / 96 / 100, blotter 98 / 96 / 100 / 100 (performance, accessibility, best practices, SEO, desktop preset) |
 | `npm run test:all` | The first three in sequence | the compose stack | |
 
 The browser tier needs Playwright's Chromium once: `cd frontend && npx playwright install chromium`.
