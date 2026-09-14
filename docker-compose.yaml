@@ -67,8 +67,8 @@ services:
       LIVE_FEED_ENABLED: ${LIVE_FEED_ENABLED:-true}
       LIVE_FEED_MIN_INTERVAL_MS: ${LIVE_FEED_MIN_INTERVAL_MS:-3000}
       LIVE_FEED_MAX_INTERVAL_MS: ${LIVE_FEED_MAX_INTERVAL_MS:-8000}
-    ports:
-      - "${BACKEND_PORT:-5000}:5000"
+    # No published port. The API is reachable only on the blotter network, through the web server's
+    # forwarding, and /metrics is not forwarded, so the counters stay inside the network too.
     depends_on:
       database:
         condition: service_healthy
@@ -107,7 +107,8 @@ services:
       dockerfile: frontend/Dockerfile
       target: runtime
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5000}
+        # Where the web server forwards the API's paths, compiled into its rewrites at build time.
+        API_INTERNAL_URL: http://backend:5000
     image: tp-icap/frontend:local
     pull_policy: build
     restart: unless-stopped
@@ -116,10 +117,6 @@ services:
       PORT: "3000"
       HOSTNAME: 0.0.0.0
       NEXT_TELEMETRY_DISABLED: "1"
-      # The browser talks to the API directly, for HTTP and for the socket, so this is the only
-      # address the web app needs. It is baked in at build time, which is why the Dockerfile reads
-      # it as a build argument as well.
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5000}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:

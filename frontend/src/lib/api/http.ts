@@ -48,8 +48,6 @@ export interface RequestOptions {
   body?: unknown;
   /** Bearer token for the Authorization header. Omit for the public auth routes. */
   token?: string | null;
-  /** Send and accept cookies. Only the auth routes need the refresh cookie. */
-  with_cookies?: boolean;
   signal?: AbortSignal;
 }
 
@@ -103,7 +101,10 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
       method: options.method ?? 'GET',
       headers,
       ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) }),
-      credentials: options.with_cookies === true ? 'include' : 'omit',
+      // Same origin since the web server forwards the API. Cookies authenticate nothing here (the
+      // guard reads only the bearer header); the refresh cookie is scoped to the auth routes, and
+      // whatever an edge in front of the site set, such as a tunnel's warning pass, rides along.
+      credentials: 'same-origin',
       ...(options.signal === undefined ? {} : { signal: options.signal }),
     });
   } catch (error) {

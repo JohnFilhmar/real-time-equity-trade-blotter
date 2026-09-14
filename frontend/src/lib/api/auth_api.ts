@@ -21,7 +21,6 @@ export function login(credentials: LoginRequest): Promise<AuthSession> {
   return api_json(`${prefix}/login`, auth_session_schema, {
     method: 'POST',
     body: credentials,
-    with_cookies: true,
   });
 }
 
@@ -37,7 +36,6 @@ export function login(credentials: LoginRequest): Promise<AuthSession> {
 export function refresh(): Promise<AuthSession> {
   return api_json(`${prefix}/refresh`, auth_session_schema, {
     method: 'POST',
-    with_cookies: true,
   });
 }
 
@@ -57,5 +55,5 @@ export function me(token: string): Promise<AuthUser> {
  * @param token - The access token.
  */
 export function logout(token: string): Promise<void> {
-  return api_void(`${prefix}/logout`, { method: 'POST', token, with_cookies: true });
+  return api_void(`${prefix}/logout`, { method: 'POST', token });
 }
