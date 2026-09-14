@@ -72,8 +72,8 @@
       passing; anything not run says so.
     </p>
     <div class="meta">
-      <span>Verified <b>2026-09-14, 02:40 UTC</b></span>
-      <span>Branch <b>worktree-login-revamp</b> at <b>4389abf</b></span>
+      <span>Verified <b>2026-09-14, 07:49 UTC</b></span>
+      <span>Branch <b>worktree-same-origin-proxy</b> at <b>c005dcd</b></span>
       <span>Platform <b>Windows 11, Docker Desktop 28.5, Node 22.12</b></span>
     </div>
   </header>
@@ -146,11 +146,11 @@
       <thead><tr><th>Expectation</th><th>Result</th><th>Evidence</th></tr></thead>
       <tbody>
         <tr><td>Clean code</td><td><span class="flag pass">pass</span></td><td>Typecheck and lint clean in every workspace; one canonical schema per model; routes parse, delegate, answer; JSDoc on every export; no source file over 250 lines after the repositories and the trade service were split into directories.</td></tr>
-        <tr><td>Unit tests</td><td><span class="flag pass">pass</span></td><td><code>npm test</code>: 297 pass (39 shared, 186 backend, 72 frontend), no skips.</td></tr>
+        <tr><td>Unit tests</td><td><span class="flag pass">pass</span></td><td><code>npm test</code>: 306 pass (39 shared, 189 backend, 78 frontend), no skips.</td></tr>
         <tr><td>Sensible architecture</td><td><span class="flag pass">pass</span></td><td>Shared contract package; service layer behind repository ports with an in-memory and a Prisma implementation; broadcaster port; providers at the root, server state in TanStack Query, one cache-patch function for sockets and mutations alike.</td></tr>
         <tr><td>Appropriate use of TypeScript</td><td><span class="flag pass">pass</span></td><td>No <code>any</code>, no silencing casts; types inferred from schemas; typed socket event maps on both sides; <code>unknown</code> narrowed at every boundary.</td></tr>
         <tr><td>Reasonable error handling</td><td><span class="flag pass">pass</span></td><td>RFC 9457 problem documents with a correlation id; the client parses them into one <code>ApiError</code>; seven designed table states; a 409 shows the diff instead of retrying.</td></tr>
-        <tr><td>Automated testing where appropriate</td><td><span class="flag pass">pass</span></td><td>Unit and route tier, integration tier against Postgres and Redis (38), Playwright (9), k6 and Lighthouse scripts. CI runs the first two on every push.</td></tr>
+        <tr><td>Automated testing where appropriate</td><td><span class="flag pass">pass</span></td><td>Unit and route tier, integration tier against Postgres and Redis (38), Playwright (10), k6 and Lighthouse scripts. CI runs the first two on every push.</td></tr>
         <tr><td>Thoughtful UX</td><td><span class="flag pass">pass</span></td><td>Built to <a href="../superpowers/specs/2026-09-12-interface-behaviour-design.md">the interface spec</a>: three connection states, mutations blocked with a reason, flash throttle with a direction arrow, scroll pinning with a count pill, ARIA grid with roving row focus, permission-aware controls, three themes, phone layout. The sign-in door, chosen from <a href="login_page_options.html">six laid-out options</a>: the desk panel, clock and readiness line render before the session check answers, the form's space is reserved so nothing moves, Caps Lock is reported, a lockout counts down, the button says what is happening after submit, and faded photographs crossfade behind it every five seconds, still under reduced motion. The positions trend line fills its column.</td></tr>
       </tbody>
     </table></div>
@@ -183,7 +183,7 @@
         <tr><td>User authentication</td><td><span class="flag pass">pass</span></td><td>Rotating refresh tokens in an httpOnly cookie, bcrypt, lockout, three roles mapped to permissions, ownership rule, authenticated socket handshake.</td></tr>
         <tr><td>Trade validation rules</td><td><span class="flag pass">pass</span></td><td>Positive quantity and price, symbol allowlist, future-date bound, per-currency notional ceiling, trader from the token.</td></tr>
         <tr><td>Virtualised grid</td><td><span class="flag pass">pass</span></td><td>TanStack Table with react-virtual; only the visible window renders, <code>aria-rowcount</code> carries the server total.</td></tr>
-        <tr><td>Containerisation</td><td><span class="flag pass">pass</span></td><td>Multi-stage Dockerfiles, compose with healthchecks, resource limits, read-only root filesystems.</td></tr>
+        <tr><td>Containerisation</td><td><span class="flag pass">pass</span></td><td>Multi-stage Dockerfiles, compose with healthchecks, resource limits, read-only root filesystems. Only the web app's port faces the host: the API has no published port and is reached through the web server's forwarding, and <code>/metrics</code> is not forwarded.</td></tr>
         <tr><td>Deployment: cloud, or a repository that installs and runs locally, OS agnostic</td><td><span class="flag warn">pass, one OS observed</span></td><td>Local repository route. Run and verified on Windows 11; CI runs on Ubuntu; macOS not run.</td></tr>
       </tbody>
     </table></div>
@@ -196,11 +196,11 @@
       <tbody>
         <tr><td>Typecheck</td><td><code>npm run typecheck</code></td><td>Clean, three workspaces.</td></tr>
         <tr><td>Lint</td><td><code>npm run lint</code></td><td>Clean (frontend; the API and contract have no lint script by the owner's choice).</td></tr>
-        <tr><td>Unit and route</td><td><code>npm test</code></td><td>297 pass, 0 skipped.</td></tr>
+        <tr><td>Unit and route</td><td><code>npm test</code></td><td>306 pass, 0 skipped.</td></tr>
         <tr><td>Integration</td><td><code>npm run test:integration</code></td><td>38 pass, 2 files, against the compose Postgres and Redis.</td></tr>
         <tr><td>Browser end to end</td><td><code>npm run test:e2e</code></td><td>7 pass in 29 seconds against the compose build, one worker, two browser contexts where the journey needs them.</td></tr>
-        <tr><td>Load</td><td><code>npm run test:load</code></td><td>k6, 4 virtual users, 60 seconds: 259 requests, 0 failed, 319 of 319 checks, p95 78ms overall, list p95 104ms, create p95 28ms. Both thresholds met.</td></tr>
-        <tr><td>Page audit</td><td><code>npm run test:lighthouse</code></td><td>Desktop preset. Login: performance 100, accessibility 100, best practices 96, SEO 100 (the door rebuilt as a ledger split with the backdrop carousel, 2026-09-14). Blotter, signed in: 98, 96, 100, 100 (rerun 2026-09-13, 10:36 UTC, on the merged tree at e0f8eae). Reports in <code>frontend/lighthouse/</code>, not committed.</td></tr>
+        <tr><td>Load</td><td><code>npm run test:load</code></td><td>k6, 4 virtual users, 60 seconds, through the web origin: 244 requests, 0 failed, 301 of 301 checks, p95 209ms overall, list p95 149ms, create p95 133ms. Both thresholds met. The forwarding hop shows: straight at the API before the change, p95 was 78ms.</td></tr>
+        <tr><td>Page audit</td><td><code>npm run test:lighthouse</code></td><td>Desktop preset. Login: performance 100, accessibility 100, best practices 96, SEO 100 (the door rebuilt as a ledger split with the backdrop carousel, 2026-09-14). Blotter, signed in: 99, 96, 100, 100. Both rerun 2026-09-14, 07:49 UTC, through the web origin at c005dcd. Reports in <code>frontend/lighthouse/</code>, not committed.</td></tr>
         <tr><td>Compose stack</td><td><code>npm run start</code></td><td>Five services healthy: database, redis, migrate (exited 0, four migrations applied), backend, frontend. The redis service needed a fix found only by running it (see the README's decisions and the prompt log).</td></tr>
       </tbody>
     </table></div>
@@ -215,7 +215,7 @@
         <tr><td>TypeScript usage: type safety, domain modelling, API contracts</td><td>20%</td><td><code>shared/</code> as the contract both sides import; typed socket event maps; no <code>any</code>; problem documents and envelopes parsed at the client boundary.</td></tr>
         <tr><td>Full stack design: interaction, database, API</td><td>20%</td><td>Keyset paging, optimistic concurrency, the broadcast envelope with a sequence, cache patching with gap resync, RFC 9457 errors, append-only audit, permissions enforced server-side and mirrored in the interface.</td></tr>
         <tr><td>User experience: usability, responsiveness, error handling</td><td>10%</td><td>The interface spec implemented: table states, connection states, flash with direction, keyboard, ARIA, three themes, tablet and phone layouts, conflict shown as a diff.</td></tr>
-        <tr><td>Testing: unit and integration, sensible coverage</td><td>10%</td><td>297 unit and route tests, 38 integration against real datastores, 9 browser journeys including the brief's literal acceptance criterion, a load script inside the API's own limits.</td></tr>
+        <tr><td>Testing: unit and integration, sensible coverage</td><td>10%</td><td>306 unit and route tests, 38 integration against real datastores, 10 browser journeys including the brief's literal acceptance criterion, a load script inside the API's own limits.</td></tr>
         <tr><td>Communication: README, AI usage report, explanation of decisions</td><td>10%</td><td>README in the brief's order with four-line decisions and a not-built section; AI report naming rejections; two specs recording the options each decision came from; this table.</td></tr>
       </tbody>
     </table></div>
@@ -250,7 +250,7 @@
         <li>The positions integration test races the simulated feed on a shared database, so it asserts the walk's invariants against Postgres and leaves exact arithmetic to the in-memory and shared tests. Possible, rare, noted.</li>
         <li>macOS was not run. Windows observed; Ubuntu through CI.</li>
         <li>Lighthouse and the browser tier run locally against the built stack, not in CI.</li>
-        <li>The frontend calls the API at a build-time address. Serving the two from different hosts needs <code>NEXT_PUBLIC_API_URL</code> at build and <code>CORS_ORIGINS</code> at run.</li>
+        <li>The API has no published port; the web server forwards its paths, so only the web origin faces the network. That narrows what is exposed, it does not make the API private: authentication, validation and rate limits still carry the security. A public address in front of the web app, a tunnel for instance, has to be listed in <code>CORS_ORIGINS</code> for the socket handshake.</li>
       </ul>
     </div>
   </section>

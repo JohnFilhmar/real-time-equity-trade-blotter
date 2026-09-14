@@ -34,6 +34,16 @@ Reconnection with backoff comes for free and the event map is typed. Mutations s
 they get the same validation, error handling and rate limiting as any other write. Would change if
 the client had to work behind a proxy that blocks upgrades and long-polling.
 
+**One origin, the API behind the web server.** Over the browser calling the API directly. The web
+server forwards `/api/*`, `/socket.io/`, `/health` and `/ready` over the internal network; the API
+has no published port and `/metrics` is not forwarded. Every request and the socket are
+same-origin, so no API address is compiled into the bundle, the refresh cookie needs no cross-site
+settings, and a tunnel or TLS proxy in front of the web app needs only its address in
+`CORS_ORIGINS`. This narrows what is exposed. It does not make the API private: every route is
+still reachable through the forwarding, and authentication, validation and rate limits carry the
+security. Costs a hop through the web server on every request. Would change if the API gained
+clients other than this web app.
+
 **Keyset paging.** Over offset. The blotter inserts rows all day, so an offset computed on one
 request points somewhere else on the next: page two re-serves and skips rows. A cursor names a
 row. Would change if the list were static.
@@ -110,7 +120,7 @@ are cached. Without Docker, see [Running without Docker](#running-without-docker
 | | |
 |---|---|
 | Web app | <http://localhost:3000> |
-| API | <http://localhost:5000/health>, <http://localhost:5000/ready>, <http://localhost:5000/metrics> |
+| API | Through the web app only: <http://localhost:3000/ready>, <http://localhost:3000/health>. No published port; `/metrics` answers inside the compose network, see [the API reference](docs/api_reference.md) |
 | Sign in | `jsmith` or `abrown` (traders), `mjones` (desk head), `viewer` (read only); password `blotter-demo-2026` |
 
 An empty database is seeded with 500 realistic trades and the four accounts. A simulated desk
@@ -151,7 +161,7 @@ npm run build:shared
 npm run db:generate
 npm run dev:deps          # Postgres and Redis only, from compose
 npm run dev:backend       # http://localhost:5000, reads the root .env
-npm run dev:frontend      # http://localhost:3000
+npm run dev:frontend      # http://localhost:3000, forwards the API's paths to :5000
 ```
 
 The root `.env` needs at least `DATABASE_URL`, `REDIS_URL`, `JWT_ACCESS_SECRET` and
@@ -164,11 +174,11 @@ the Prisma client is generated rather than committed.
 
 | Script | Tier | Needs | Observed |
 |---|---|---|---|
-| `npm test` | Unit and route tests in all three workspaces: contract, service and route suites against an in-memory repository, the cache-patching and formatting logic on the client | nothing | 297 pass: 39 shared, 186 backend, 72 frontend |
+| `npm test` | Unit and route tests in all three workspaces: contract, service and route suites against an in-memory repository, the cache-patching and formatting logic on the client | nothing | 306 pass: 39 shared, 189 backend, 78 frontend |
 | `npm run test:integration` | Repository, refresh-token and positions tests against real Postgres and Redis, including the append-only trigger | the compose stack | 38 pass |
-| `npm run test:e2e` | Playwright, two browser contexts: a trade booked in one appears in the other, follows its amend and cancel, a concurrent amend is refused with a 409, the role rules hold, a dropped link blocks booking then resyncs on recovery, and the sign-in door shows the desk before the session check answers and keeps its form still on a bad password | the compose stack | 9 pass |
-| `npm run test:load` | k6, four virtual users for sixty seconds inside the API's own rate limits, p95 under 300ms | the compose stack and [k6](https://k6.io) | 259 requests, 0 failed, p95 78ms; list p95 104ms, create p95 28ms |
-| `npm run test:lighthouse` | Lighthouse on the login page and the signed-in blotter, through Playwright's Chromium; reports in `frontend/lighthouse/` | the compose stack | login 100 / 100 / 96 / 100, blotter 98 / 96 / 100 / 100 (performance, accessibility, best practices, SEO, desktop preset) |
+| `npm run test:e2e` | Playwright, two browser contexts: a trade booked in one appears in the other, follows its amend and cancel, a concurrent amend is refused with a 409, the role rules hold, a dropped link blocks booking then resyncs on recovery, the sign-in door shows the desk before the session check answers and keeps its form still on a bad password, and the API answers only through the web origin with its own port closed and `/metrics` not forwarded | the compose stack | 10 pass |
+| `npm run test:load` | k6, four virtual users for sixty seconds inside the API's own rate limits, p95 under 300ms | the compose stack and [k6](https://k6.io) | 244 requests, 0 failed, p95 209ms; list p95 149ms, create p95 133ms, through the web server's forwarding |
+| `npm run test:lighthouse` | Lighthouse on the login page and the signed-in blotter, through Playwright's Chromium; reports in `frontend/lighthouse/` | the compose stack | login 100 / 100 / 96 / 100, blotter 99 / 96 / 100 / 100 (performance, accessibility, best practices, SEO, desktop preset) |
 | `npm run test:all` | The first three in sequence | the compose stack | |
 
 The browser tier needs Playwright's Chromium once: `cd frontend && npx playwright install chromium`.
@@ -192,8 +202,10 @@ filtered, paged view, and that a stale version is dropped.
   brief's sample payload, which shows `trader` as a client field.
 - The brief states the model twice and the statements disagree; the model carries every field from
   both, plus `version`, `currency`, `createdAt` and `updatedAt`.
-- The browser reaches the API at `http://localhost:5000`. Another address is a build argument,
-  `NEXT_PUBLIC_API_URL`, because Next inlines it.
+- The browser reaches only the web app. Its server forwards the API's paths to `API_INTERNAL_URL`,
+  `http://backend:5000` in compose, which is compiled into the rewrites at build time. A public
+  address in front of the web app, a tunnel for instance, has to be added to `CORS_ORIGINS`,
+  because the socket handshake checks it.
 - The demo accounts share a documented password. They exist so a reviewer can sign in to a
   throwaway local stack, and nothing about that arrangement should survive a real deployment.
 - Sessions live in Redis with no persistence, so a Redis restart signs everybody out.

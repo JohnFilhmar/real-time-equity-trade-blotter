@@ -4,6 +4,10 @@ Everything lives under `/api/v1`. Payloads are camelCase, matching the brief's s
 query parameters are snake_case. A trade is addressed by its business identifier, `TRD-100001`,
 because that is the value a trader reads off the blotter.
 
+The API has no published port. Browsers reach it through the web app's own origin: the web
+server forwards `/api/*`, `/socket.io/`, `/health` and `/ready` to it over the internal network,
+so every request and the socket are same-origin. `/metrics` is not forwarded.
+
 | Method | Path | Permission | Purpose |
 |---|---|---|---|
 | `POST` | `/api/v1/auth/login` | public | Exchange credentials for a session |
@@ -203,7 +207,12 @@ One structured JSON line per request, carrying a correlation id taken from an in
 
 `GET /metrics` exposes Prometheus text: `blotter_socket_clients_connected`,
 `blotter_broadcasts_emitted_total`, and `blotter_broadcast_lag_seconds`, the distance between a
-change committing and its broadcast leaving the server.
+change committing and its broadcast leaving the server. The web server does not forward
+`/metrics`, so it answers only inside the compose network, for a scraper on that network or:
+
+```bash
+docker compose exec backend node -e "fetch('http://127.0.0.1:5000/metrics').then(r=>r.text()).then(console.log)"
+```
 
 ## Configuration
 
@@ -211,7 +220,7 @@ change committing and its broadcast leaving the server.
 |---|---|---|
 | `DATABASE_URL` | none, required | Postgres connection string |
 | `REDIS_URL` | none, required | Redis for sessions, lockouts and rate limits |
-| `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated origin allowlist for HTTP and the socket |
+| `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated origin allowlist; the socket handshake is refused from any other origin, so a public address in front of the web app, such as a tunnel, has to be listed |
 | `JWT_ACCESS_SECRET` | none, required | Signing key, refused under 32 characters |
 | `JWT_REFRESH_SECRET` | none, required | Signing key, refused under 32 characters |
 | `ACCESS_TOKEN_TTL_SECONDS` | `900` | Access token lifetime |
@@ -229,4 +238,4 @@ change committing and its broadcast leaving the server.
 | `WRITE_RATE_LIMIT` | `60` | Writes a minute, per user |
 | `LOGIN_MAX_ATTEMPTS` | `5` | Failures before an account locks |
 | `LOG_LEVEL` | `info` | pino level |
-| `NEXT_PUBLIC_API_URL` | `http://localhost:5000` | Where the browser reaches the API; baked into the web build |
+| `API_INTERNAL_URL` | `http://localhost:5000`, `http://backend:5000` in compose | Web app only: where its server forwards the API's paths, compiled into the rewrites at build |

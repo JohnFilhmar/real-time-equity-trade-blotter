@@ -740,3 +740,13 @@ Followed by:
 **Outcome:** The door now crossfades three images every five seconds at a theme-level opacity under a scrim, still under reduced motion and paused in a hidden tab, with script-drawn stand-ins in `frontend/public/login/` until the owner's generated photographs replace them file for file, and the runtime image copies `public/`, which the standalone bundle had left out. The positions trend line fills its column, 510px at 1440 wide where it drew 96; the login journey counts the images and passes, Lighthouse on the door stays at 100 / 100 / 96 / 100, and the three image prompts went to the owner in chat.
 
 **Commits:** `6372cf8`, `4389abf`, `ed61fd6`
+
+---
+
+### 2026-09-14T07:20Z - api_behind_the_web_origin
+
+**Prompt:** "2. keep ngrok and implement frontend self proxy to have backend server completely hidden and only have frontend exposed to the internet for increased security."
+
+**Outcome:** The web server now forwards the API's paths over the internal network, the API has no published port and `/metrics` is not forwarded, and requests became same-origin, which fixed the ngrok link without a vendor-specific header. Probing the fallback transport found that one unauthenticated long-polling request crashed the API, because Socket.IO attached before Express, and that was fixed test-first; 306 unit tests, 10 browser journeys, k6 (244 requests, 0 failed, p95 209ms through the forwarding) and Lighthouse pass on the rebuilt stack, and sign-in with live rows works through the tunnel.
+
+**Commits:** `19eff41`, `e7ae153`, `c005dcd`

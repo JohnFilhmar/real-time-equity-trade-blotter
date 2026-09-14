@@ -181,6 +181,21 @@ desk head behind, and a close-up of a desk after the close, each constrained to 
 no logos, faces out of focus and a dark cool grade so the copy in front keeps its contrast. When
 they replace the stand-ins, that is their provenance.
 
+## One origin
+
+For the presentation I asked for a public ngrok link. The first link signed in and went live, then
+showed "The blotter could not be loaded". The agent traced it through ngrok's own request log: the
+client sent its data requests without cookies, so the pass ngrok sets after its warning page never
+came along, and ngrok answered those requests with the warning page instead of forwarding them. It
+offered a vendor header, a different tunnel, a paid plan, or presenting locally. I chose a larger
+change: the web server forwards the API's paths, the API loses its published port, and only the
+web origin faces the network. The agent pushed back on two points before building it. Hiding the
+port narrows what is exposed but does not make the API private, because every route is still
+reachable through the forwarding. And forwarding alone would not fix the tunnel; what fixed it was
+the requests becoming same-origin with fetch's own credentials default, which it checked was safe
+because the auth guard reads only the bearer header and the refresh cookie is scoped to the auth
+routes.
+
 ## Where the AI was wrong, and caught
 
 **U-M4 in the gap analysis.** The first revision claimed the prototype had no up or down tick
@@ -197,6 +212,15 @@ three were found by running the stack rather than reasoning about it.
 
 **Feed price precision.** The live feed booked prices with six decimals, which the domain research
 lists as a tell that data is generated. Found by reading a real row from the running API.
+
+**The polling crash.** The socket server was attached to the HTTP server before Express was
+registered, so Express became a second listener that also answered Socket.IO's long-polling
+requests, and the second answer threw `ERR_HTTP_HEADERS_SENT` and killed the process. Every test
+and browser journey connected over websockets, which Express never sees, so nothing caught it for
+the whole project. It surfaced when the public link made the agent probe the fallback transport:
+one unauthenticated GET raised the API container's restart count from 4 to 5. The fix registers the
+request handler before the socket server attaches, with a test that composes the server in
+production order and asserts a polling handshake is answered once and the server keeps serving.
 
 ## Rejected suggestions
 
