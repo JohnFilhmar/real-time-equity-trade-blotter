@@ -9,9 +9,12 @@ import { Trend } from 'k6/metrics';
 // not capacity; a blotter desk does not hit 300 reads a minute per person.
 //
 // Run with the compose stack up:  k6 run load-testing/api_load.js
-// Override the target with:        k6 run -e API_URL=http://localhost:5000 load-testing/api_load.js
+// Override the target with:        k6 run -e API_URL=http://localhost:3000 load-testing/api_load.js
+//
+// The API has no published port, so the load goes through the web server's forwarding, which is
+// the path a browser takes.
 
-const base = __ENV.API_URL || 'http://localhost:5000';
+const base = __ENV.API_URL || 'http://localhost:3000';
 const password = __ENV.SEED_USER_PASSWORD || 'blotter-demo-2026';
 const accounts = ['jsmith', 'abrown', 'mjones', 'viewer'];
 
