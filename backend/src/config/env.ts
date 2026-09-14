@@ -57,10 +57,12 @@ const env_schema = z.object({
   LIVE_FEED_MIN_INTERVAL_MS: z.coerce.number().int().min(250).max(600_000).default(3_000),
   LIVE_FEED_MAX_INTERVAL_MS: z.coerce.number().int().min(250).max(600_000).default(8_000),
   /**
-   * The most active trades the simulated desk keeps.
+   * The size the simulated desk keeps its active book near.
    *
-   * The desk creates seven times as often as it cancels, so without a cap the book, and the size of
-   * every figure derived from it, grows for as long as the stack runs.
+   * The desk creates seven times as often as it cancels, so without this the active book, and the
+   * figures derived from it (net position, P&L, the active count), grow for as long as the stack
+   * runs. It is a soft limit on active trades only: trades people book count toward it, and
+   * cancelled trades and audit rows still accumulate.
    */
   LIVE_FEED_MAX_ACTIVE_TRADES: z.coerce.number().int().min(1).max(100_000).default(2_000),
   /**

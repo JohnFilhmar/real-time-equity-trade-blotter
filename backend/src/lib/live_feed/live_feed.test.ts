@@ -1,3 +1,4 @@
+import { faker } from '@faker-js/faker';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { instruments, type Trade, type TradeSide } from '@blotter/shared';
 import { create_in_memory_trade_repository } from '../../repositories/in_memory_trade_repository/index.js';
@@ -8,6 +9,9 @@ import { create_live_feed, type LiveFeedOptions } from './live_feed.js';
 
 /** A fixed pace, so a test advances the clock by a known amount rather than guessing. */
 const one_second: LiveFeedOptions = { min_interval_ms: 1000, max_interval_ms: 1000, max_active_trades: 10_000 };
+
+/** Fixes every random draw in this file, so a failing run can be replayed exactly. */
+const test_seed = 20_260_915;
 
 /**
  * Builds a feed over an in-memory blotter.
@@ -68,6 +72,10 @@ async function fill(repository: TradeRepository, per_symbol: number, side: Trade
 describe('live feed', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    faker.seed(test_seed);
+    // The in-memory repository picks its random trade with Math.random. Drawing that from the
+    // seeded generator as well makes every run of this file identical.
+    vi.spyOn(Math, 'random').mockImplementation(() => faker.number.float({ min: 0, max: 0.999_999 }));
   });
 
   afterEach(() => {
@@ -136,21 +144,43 @@ describe('live feed', () => {
     expect(warn).toHaveBeenCalledTimes(3);
   });
 
-  it('never lets the book grow past its cap, and still books when there is room', async () => {
+  it('keeps booking while its book is over the cap, and works the book back toward it', async () => {
     const repository = create_in_memory_trade_repository();
     const cap = 12;
-    await fill(repository, 1, 'BUY', 100);
+    await fill(repository, 5, 'BUY', 100);
     const { feed, sent } = build_feed(repository, { ...one_second, max_active_trades: cap });
 
+    let booked_over_cap = false;
     feed.start();
-    for (let tick = 0; tick < 60; tick += 1) {
+    for (let tick = 0; tick < 150; tick += 1) {
+      const active_before = await repository.count_active();
+      const sent_before = sent.length;
       await vi.advanceTimersByTimeAsync(1000);
-      expect(await repository.count_active()).toBeLessThanOrEqual(cap);
+      if (active_before > cap && sent.slice(sent_before).includes('trade.created')) {
+        booked_over_cap = true;
+      }
     }
     feed.stop();
 
-    expect(sent).toContain('trade.cancelled');
-    expect(sent).toContain('trade.created');
+    expect(booked_over_cap).toBe(true);
+    expect(await repository.count_active()).toBeLessThan(2 * cap);
+  });
+
+  it('holds a growing book close to its cap', async () => {
+    const repository = create_in_memory_trade_repository();
+    const cap = 12;
+    const { feed } = build_feed(repository, { ...one_second, max_active_trades: cap });
+
+    let largest = 0;
+    feed.start();
+    for (let tick = 0; tick < 300; tick += 1) {
+      await vi.advanceTimersByTimeAsync(1000);
+      largest = Math.max(largest, await repository.count_active());
+    }
+    feed.stop();
+
+    expect(largest).toBeGreaterThanOrEqual(cap - 2);
+    expect(largest).toBeLessThanOrEqual(cap + 6);
   });
 
   it('sells into a book that is long, rather than adding to it at random', async () => {

@@ -5,6 +5,7 @@ import {
   type AmendableTrade,
   type CreateTrade,
   type Currency,
+  type Instrument,
   type TradeSide,
   type TradeStatus,
 } from '@blotter/shared';
@@ -61,31 +62,31 @@ export interface GeneratedTrade {
 }
 
 /**
- * Builds a run of trading sessions, skipping weekends.
+ * Lists the trading sessions before a given day, skipping weekends.
  *
- * Five consecutive calendar days from a Tuesday lands the fifth on a Saturday, and a weekend trade
- * date is on the standard list of tells that a dataset was generated rather than observed. Walking
- * forward and stepping over Saturday and Sunday costs four lines and removes it.
+ * The seed dates its trades in the sessions leading up to the day the stack first starts, so a
+ * fresh blotter always opens on recent history and the live desk, booking on the day itself,
+ * carries on from it. A weekend trade date is on the standard list of tells that a dataset was
+ * generated rather than observed, so Saturday and Sunday are stepped over.
  *
  * Exchange holidays are not handled. That is a deliberate limit rather than an oversight: a real
  * calendar is per-venue and this universe spans two.
  *
- * @param start - Midnight UTC of the first session to consider.
+ * @param day - Any instant on the day to count back from. That day itself is never included.
  * @param count - How many trading days to produce.
- * @returns `count` weekday sessions, earliest first.
+ * @returns `count` weekday sessions at midnight UTC, earliest first.
  */
-export function build_sessions(start: Date, count: number): Date[] {
+export function sessions_before(day: Date, count: number): Date[] {
   const sessions: Date[] = [];
-  const day = new Date(start);
+  const cursor = new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate()));
 
   while (sessions.length < count) {
-    const weekday = day.getUTCDay();
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+    const weekday = cursor.getUTCDay();
 
     if (weekday !== 0 && weekday !== 6) {
-      sessions.push(new Date(day));
+      sessions.unshift(new Date(cursor));
     }
-
-    day.setUTCDate(day.getUTCDate() + 1);
   }
 
   return sessions;
@@ -140,13 +141,14 @@ function pick_quantity(): number {
  * roughly one trade in twenty is already cancelled so the status filter has something to find.
  *
  * @param count - How many trades to generate. The brief asks for 100 to 1,000.
- * @param seed - Fixed so a given count always produces the same dataset.
+ * @param seed - Fixed so a given count always produces the same trades.
+ * @param today - The day the seed runs. Trades land in the five sessions before it.
  * @returns Trades ordered oldest first, ready for a bulk insert.
  */
-export function generate_trades(count: number, seed = 20260818): GeneratedTrade[] {
+export function generate_trades(count: number, seed = 20260818, today: Date = new Date()): GeneratedTrade[] {
   faker.seed(seed);
 
-  const sessions = build_sessions(new Date(Date.UTC(2026, 7, 18)), 5);
+  const sessions = sessions_before(today, 5);
 
   const trades = Array.from({ length: count }, () => {
     const instrument = faker.helpers.arrayElement(instruments);
@@ -165,9 +167,7 @@ export function generate_trades(count: number, seed = 20260818): GeneratedTrade[
       book: instrument.book,
       counterparty: faker.helpers.arrayElement(counterparties),
       tradeTimestamp: pick_session_time(session),
-      status: (faker.number.float({ min: 0, max: 1 }) < 0.05
-        ? 'CANCELLED'
-        : 'ACTIVE') as TradeStatus,
+      status: faker.number.float({ min: 0, max: 1 }) < 0.05 ? 'CANCELLED' : 'ACTIVE',
     } satisfies GeneratedTrade;
   });
 
@@ -189,16 +189,17 @@ export function generate_trades(count: number, seed = 20260818): GeneratedTrade[
  * The price is quoted to two decimal places, which is how both USD and GBX names are quoted on
  * screen. A price like 443.497704 is one of the standard tells that a dataset was generated.
  *
+ * @param instrument - What to trade. The live desk chooses it, so it can read that symbol's position first.
+ * @param side - Which side to book. The live desk leans it against the symbol's net position.
  * @returns A create payload and the desk code to book it under.
  */
-export function generate_live_trade(): GeneratedLiveTrade {
-  const instrument = faker.helpers.arrayElement(instruments);
+export function generate_live_trade(instrument: Instrument, side: TradeSide): GeneratedLiveTrade {
   const drift = faker.number.float({ min: -0.04, max: 0.04 });
 
   return {
     payload: {
       symbol: instrument.symbol,
-      side: faker.helpers.arrayElement(trade_side_values),
+      side,
       quantity: pick_quantity(),
       price: Number((instrument.base_price * (1 + drift)).toFixed(2)),
       book: instrument.book,

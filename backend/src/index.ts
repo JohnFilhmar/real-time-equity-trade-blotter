@@ -138,6 +138,7 @@ async function main(): Promise<void> {
       {
         min_interval_ms: live_feed_options.min_interval_ms,
         max_interval_ms: live_feed_options.max_interval_ms,
+        max_active_trades: live_feed_options.max_active_trades,
       },
       'live_feed_started',
     );

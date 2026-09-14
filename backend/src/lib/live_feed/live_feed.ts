@@ -1,9 +1,11 @@
 import { faker } from '@faker-js/faker';
+import { instruments } from '@blotter/shared';
 import type { TradeRepository } from '../../interfaces/trade_repository.js';
 import type { TradeActor, TradeService } from '../../services/trade_service/index.js';
 import { AppError } from '../errors/app_error.js';
 import { logger } from '../logging/logger.js';
 import { generate_live_amendment, generate_live_trade } from '../seed/generate_trades.js';
+import { choose_action } from './choose_action.js';
 import { lean_side } from './lean_side.js';
 
 /** How the feed paces itself and how large a book it keeps. */
@@ -14,7 +16,7 @@ export interface LiveFeedOptions {
   /** Longest gap between two actions, in milliseconds. */
   max_interval_ms: number;
 
-  /** The most active trades the feed holds. At the cap, a create becomes a cancel. */
+  /** The size the feed keeps its active book near. See `choose_action` for how. */
   max_active_trades: number;
 }
 
@@ -43,10 +45,13 @@ const feed_actions = [
  * events fire and the grid is seen updating rows in place rather than only growing. Its interval is
  * jittered, because a metronome reads as synthetic on screen.
  *
- * It also behaves like a desk that manages its risk. It creates far more often than it cancels, so
- * left alone the book would grow for as long as the stack runs; at `max_active_trades` a create
- * becomes a cancel instead. And each new ticket's side leans against that symbol's current net
- * position, so the book stays near flat instead of wandering hundreds of millions long or short.
+ * It also behaves like a desk that manages its risk. It draws far more bookings than cancels, so
+ * left alone the active book would grow for as long as the stack runs; as the book nears
+ * `max_active_trades`, more and more bookings become cancels, and a book at or over that size still
+ * books one ticket in seven while it drains. Each new ticket's side leans against that symbol's
+ * current net position, so the book stays near flat instead of wandering hundreds of millions long
+ * or short. The limit is soft and covers active trades only: trades people book count toward it,
+ * and cancelled trades and audit rows still accumulate.
  *
  * A conflict is expected rather than exceptional: the feed can pick a trade a user is amending at
  * the same moment. Those are swallowed. Anything else is logged and the loop continues, because a
@@ -83,10 +88,11 @@ export function create_live_feed(
    * Books a brand new trade, on the side that works the symbol's position back toward flat.
    */
   async function do_create(): Promise<void> {
-    const generated = generate_live_trade();
-    const position = await service.position_for(generated.payload.symbol);
+    const instrument = faker.helpers.arrayElement(instruments);
+    const position = await service.position_for(instrument.symbol);
     const side = lean_side(position.netQuantity, faker.number.float({ min: 0, max: 1 }));
-    await service.create({ ...generated.payload, side }, actor_for(generated.trader));
+    const generated = generate_live_trade(instrument, side);
+    await service.create(generated.payload, actor_for(generated.trader));
   }
 
   /**
@@ -128,8 +134,8 @@ export function create_live_feed(
     const drawn = faker.helpers.weightedArrayElement(feed_actions);
 
     try {
-      const at_cap = drawn === 'create' && (await repository.count_active()) >= options.max_active_trades;
-      const action = at_cap ? 'cancel' : drawn;
+      const active = drawn === 'create' ? await repository.count_active() : 0;
+      const action = choose_action(drawn, active, options.max_active_trades, faker.number.float({ min: 0, max: 1 }));
 
       if (action === 'create') {
         await do_create();
