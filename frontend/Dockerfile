@@ -28,6 +28,8 @@ ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0 NEXT_TELEMETRY_DISABLED=1
 # Next traces from the workspace root, so the standalone bundle already carries the layout below.
 COPY --from=build --chown=node:node /app/frontend/.next/standalone ./
 COPY --from=build --chown=node:node /app/frontend/.next/static ./frontend/.next/static
+# Static files are not part of the standalone bundle; the sign-in backdrops live here.
+COPY --from=build --chown=node:node /app/frontend/public ./frontend/public
 
 USER node
 

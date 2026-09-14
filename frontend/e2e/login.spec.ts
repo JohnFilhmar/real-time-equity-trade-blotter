@@ -13,6 +13,7 @@ test.describe('the login page @critical', () => {
     await expect(page.getByRole('complementary', { name: 'Desk' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
     await expect(page.getByRole('group', { name: 'Theme' })).toBeVisible();
+    await expect(page.locator('[data-backdrop] img')).toHaveCount(3);
 
     const clock = page.locator('time').first();
     await expect(clock).toHaveText(/^\d{2}:\d{2}:\d{2}$/);

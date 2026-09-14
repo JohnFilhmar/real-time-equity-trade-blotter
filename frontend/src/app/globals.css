@@ -95,6 +95,8 @@
   --grid_line:    rgba(157, 176, 202, .055);
   --beam:         rgba(34, 211, 238, .08);
   --panel_shadow: 0 10px 30px -18px rgba(3, 8, 16, .8);
+  /* how much of a photograph shows through behind the door; a dark image over a light ground needs less */
+  --backdrop_opacity: .34;
 
   color-scheme: dark;
 }
@@ -175,6 +177,7 @@
     --grid_line:    rgba(15, 27, 42, .05);
     --beam:         rgba(8, 145, 178, .07);
     --panel_shadow: 0 10px 26px -18px rgba(15, 27, 42, .35);
+    --backdrop_opacity: .16;
 
     color-scheme: light;
   }
@@ -255,6 +258,7 @@
   --grid_line:    rgba(15, 27, 42, .05);
   --beam:         rgba(8, 145, 178, .07);
   --panel_shadow: 0 10px 26px -18px rgba(15, 27, 42, .35);
+  --backdrop_opacity: .16;
 
   color-scheme: light;
 }

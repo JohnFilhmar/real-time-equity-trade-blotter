@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { ThemeToggle } from '@/components/shell/ThemeToggle';
 import { DeskPanel } from './DeskPanel';
+import { LoginBackdrop } from './LoginBackdrop';
 
 /**
  * The door: the desk panel on one side, the sign-in column on the other, and the theme switch in
@@ -13,9 +14,10 @@ import { DeskPanel } from './DeskPanel';
 export function LoginStage({ children }: { children: ReactNode }): ReactNode {
   return (
     <div className="relative flex min-h-dvh flex-col md:flex-row">
+      <LoginBackdrop />
       <DeskPanel />
 
-      <main className="flex flex-1 items-center justify-center px-6 py-10 md:justify-start md:px-16">
+      <main className="relative flex flex-1 items-center justify-center px-6 py-10 md:justify-start md:px-16">
         <div className="flex w-full max-w-[330px] flex-col gap-[14px]">
           <div className="animate-rise-stagger [animation-delay:70ms]">
             <h1 className="text-display-sm font-semibold text-text">Sign in</h1>
