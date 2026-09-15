@@ -124,10 +124,47 @@ describe('trade service', () => {
       ]);
     });
 
-    it('refuses a ticket over the desk notional limit', async () => {
+    it('refuses a ticket over the desk limit, saying what a US trade is worth in dollars', async () => {
       await expect(
-        service.create(a_create_payload({ quantity: 1_000_000, price: 100 }), trader_actor),
-      ).rejects.toMatchObject({ status: 422 });
+        service.create(a_create_payload({ quantity: 250_000, price: 250 }), trader_actor),
+      ).rejects.toMatchObject({
+        status: 422,
+        message: 'This trade is worth $62,500,000, over the $50,000,000 limit for US names.',
+        details: [{ field: 'quantity', message: 'This trade is over the desk limit. Lower the quantity or price.' }],
+      });
+    });
+
+    it('shows a London trade and its limit in pounds rather than pence', async () => {
+      await expect(
+        service.create(a_create_payload({ symbol: 'SHEL.L', quantity: 1_000_000, price: 4100 }), trader_actor),
+      ).rejects.toMatchObject({
+        status: 422,
+        message: 'This trade is worth £41,000,000, over the £40,000,000 limit for London names.',
+      });
+    });
+
+    it('rounds the worth up to the whole unit, so it never reads as equal to the limit', async () => {
+      // 1,000,003 x 51.37 is $51,370,154.11. 7 x 7,142,857.143 is a tenth of a cent over the limit,
+      // which rounding to the cent alone would show as equal to it.
+      await expect(
+        service.create(a_create_payload({ quantity: 1_000_003, price: 51.37 }), trader_actor),
+      ).rejects.toMatchObject({
+        message: 'This trade is worth $51,370,155, over the $50,000,000 limit for US names.',
+      });
+      await expect(
+        service.create(a_create_payload({ quantity: 7, price: 7_142_857.143 }), trader_actor),
+      ).rejects.toMatchObject({
+        message: 'This trade is worth $50,000,001, over the $50,000,000 limit for US names.',
+      });
+    });
+
+    it('keeps floating-point residue from adding a unit to a whole worth', async () => {
+      // 5,242,900 x 10.05 is exactly $52,691,145, which binary arithmetic makes 52,691,145.00000001.
+      await expect(
+        service.create(a_create_payload({ quantity: 5_242_900, price: 10.05 }), trader_actor),
+      ).rejects.toMatchObject({
+        message: 'This trade is worth $52,691,145, over the $50,000,000 limit for US names.',
+      });
     });
 
     it('applies the limit in the instrument currency, not one global figure', async () => {

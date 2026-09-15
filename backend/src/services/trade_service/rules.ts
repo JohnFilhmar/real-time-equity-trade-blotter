@@ -5,6 +5,40 @@ import type { TradeActor } from '../../interfaces/trade_service.js';
 import { AppError } from '../../lib/errors/app_error.js';
 
 /**
+ * How a limit message speaks of each quote currency: the symbol it shows, how many quote units make
+ * one shown unit, and the names the limit covers.
+ */
+const limit_wording: Readonly<Record<Currency, { symbol: string; divisor: number; names: string }>> = {
+  USD: { symbol: '$', divisor: 1, names: 'US names' },
+  GBX: { symbol: '£', divisor: 100, names: 'London names' },
+};
+
+/**
+ * Words a breach of the desk limit the way a trader reads it, in whole dollars or pounds with
+ * thousands separators.
+ *
+ * GBX amounts are pence, so both figures are divided by 100 and shown as pounds. The limit rounds
+ * down, the worth rounds up, and the worth never shows below one unit over the limit, so a trade
+ * over the limit cannot read as equal to it. The worth is rounded to the cent or penny before it is
+ * rounded up. Binary arithmetic can leave a whole worth a hair above itself, so 5,242,900 x 10.05
+ * comes out as 52,691,145.00000001, and a plain round-up would add a unit.
+ *
+ * @param notional - Quantity times price in the quote currency, already known to be over `limit`.
+ * @param limit - The desk limit in the quote currency.
+ * @param currency - The quote currency.
+ * @returns The sentence for the problem detail.
+ */
+function describe_limit_breach(notional: number, limit: number, currency: Currency): string {
+  const { symbol, divisor, names } = limit_wording[currency];
+  const shown_limit = Math.floor(limit / divisor);
+  const worth_to_the_cent = Math.round((notional / divisor) * 100) / 100;
+  const shown_worth = Math.max(Math.ceil(worth_to_the_cent), shown_limit + 1);
+  const whole = (units: number): string => `${symbol}${units.toLocaleString('en-GB')}`;
+
+  return `This trade is worth ${whole(shown_worth)}, over the ${whole(shown_limit)} limit for ${names}.`;
+}
+
+/**
  * Rejects a ticket whose notional breaches the desk limit for its currency.
  *
  * The pre-trade control the brief never asks for and a trading firm would expect: it is the check
@@ -14,17 +48,17 @@ import { AppError } from '../../lib/errors/app_error.js';
  * @param quantity - Share count.
  * @param price - Price in the instrument's own currency.
  * @param currency - The instrument's quote currency.
- * @throws {AppError} 422 when the notional is over the limit.
+ * @throws {AppError} 422 when the notional is over the limit. The detail gives the trade's worth and
+ * the limit in dollars or pounds, and the message under quantity asks for a lower quantity or price.
  */
 export function enforce_notional_limit(quantity: number, price: number, currency: Currency): void {
   const notional = quantity * price;
   const limit = notional_limits[currency];
 
   if (notional > limit) {
-    throw AppError.validation_failed(
-      `Notional ${notional.toFixed(2)} ${currency} exceeds the ${limit.toFixed(2)} ${currency} desk limit`,
-      [{ field: 'quantity', message: 'quantity times price exceeds the desk notional limit' }],
-    );
+    throw AppError.validation_failed(describe_limit_breach(notional, limit, currency), [
+      { field: 'quantity', message: 'This trade is over the desk limit. Lower the quantity or price.' },
+    ]);
   }
 }
 

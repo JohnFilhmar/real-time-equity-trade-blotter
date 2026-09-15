@@ -344,7 +344,10 @@ describe(`POST ${api_prefix}/trades`, () => {
       .send({ ...a_trade_body, quantity: 1_000_000, price: 100 });
 
     expect(response.status).toBe(422);
-    expect(response.body.detail).toContain('desk limit');
+    expect(response.body.detail).toBe('This trade is worth $100,000,000, over the $50,000,000 limit for US names.');
+    expect(response.body.errors).toEqual([
+      { field: 'quantity', message: 'This trade is over the desk limit. Lower the quantity or price.' },
+    ]);
   });
 });
 
