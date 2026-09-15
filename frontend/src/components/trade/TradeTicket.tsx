@@ -15,19 +15,12 @@ import { format_notional, format_price, format_quantity } from '@/lib/format/mon
 import { settle_trade } from '@/lib/query/settleTrade';
 import { useToastStore } from '@/lib/stores/toastStore';
 import { useAccessToken } from '@/providers/SessionProvider';
+import type { ConflictNote, TicketErrors, TicketValues } from '@/types/ticket';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  amendable_fields,
-  describe_conflict,
-  initial_values,
-  parse_amend,
-  parse_create,
-  shows_required,
-  to_refusal_errors,
-  type ConflictNote,
-  type TicketErrors,
-  type TicketValues,
-} from './ticketForm';
+import { amendable_fields, parse_amend } from './ticketForm/amend';
+import { describe_conflict } from './ticketForm/conflict';
+import { to_refusal_errors } from './ticketForm/errors';
+import { initial_values, parse_create, shows_required } from './ticketForm/values';
 
 /** Whether the ticket books a new trade or amends the selected one. */
 export type TicketMode = { kind: 'new' } | { kind: 'amend'; trade: Trade };
