@@ -14,6 +14,7 @@ import { active_filter_count, type TradeListQuery } from '@/lib/query/tradeQuery
 import { useSession } from '@/providers/SessionProvider';
 import type { ConnectionStatus } from '@/types/connection';
 import { ActiveChips } from './ActiveChips';
+import { FilterPanel } from './FilterPanel';
 import { BookButton, FilterRail, RowCount } from './FilterRail';
 import { ConnectionBanner, TableEmptyState, type EmptyState } from './TableState';
 import { TradeCards } from './TradeCards';
@@ -45,10 +46,23 @@ function empty_state_for(
   return status === 'live' ? { kind: 'filtered_live', onClear: actions.clear } : { kind: 'no_results', onClear: actions.clear };
 }
 
+/** The screen: the rail's column beside everything else. The blotter skeleton is built on the same classes. */
+export const blotter_screen_classes = 'relative flex min-h-0 flex-1';
+
+/** Holds the rail beside the grid from `lg` up. Below that the rail opens in the filters panel. */
+export const blotter_rail_wrapper_classes = 'hidden lg:flex';
+
+/** The column right of the rail: the toolbar, the connection banner, then the grid or the cards. */
+export const blotter_body_classes = 'flex min-h-0 min-w-0 flex-1 flex-col';
+
+/** The toolbar row above the grid. */
+export const blotter_toolbar_classes = 'flex shrink-0 flex-wrap items-center gap-2.25 border-b border-rule px-3.5 py-2.5';
+
 /**
- * The blotter page: filter rail, toolbar, grid or cards, and the detail panel. Filters and sort
- * live in the URL; selection is held by trade id so a row cannot change identity under the user
- * while the feed moves.
+ * The blotter page: filter rail, toolbar, grid or cards, and the detail panel. Below `lg` the rail
+ * has no room, so a Filters button in the toolbar opens it in a panel. Filters and sort live in the
+ * URL; selection is held by trade id so a row cannot change identity under the user while the feed
+ * moves.
  *
  * @returns The screen.
  */
@@ -87,23 +101,28 @@ export function BlotterScreen(): ReactNode {
     retry: () => void refetch(),
   });
 
+  const rail_props = {
+    query,
+    onChange: update,
+    onClear: clear_filters,
+    loaded: trades.rows.length,
+    total: trades.total,
+  };
+
   return (
-    <div className="relative flex min-h-0 flex-1">
+    <div className={blotter_screen_classes}>
       {!is_phone ? (
-        <div className="hidden lg:flex">
-          <FilterRail
-            query={query}
-            onChange={update}
-            onClear={clear_filters}
-            loaded={trades.rows.length}
-            total={trades.total}
-            book_button={can_book ? <BookButton onClick={open_ticket} disabled_reason={book_reason} /> : null}
-          />
+        <div className={blotter_rail_wrapper_classes}>
+          <FilterRail {...rail_props} book_button={can_book ? <BookButton onClick={open_ticket} disabled_reason={book_reason} /> : null} />
         </div>
       ) : null}
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <div className="flex shrink-0 flex-wrap items-center gap-2.25 border-b border-rule px-3.5 py-2.5">
+      <div className={blotter_body_classes}>
+        <div className={blotter_toolbar_classes}>
+          <FilterPanel active_count={active_filter_count(query)}>
+            {/* No book button in the panel: below lg the toolbar and the phone button book, and a ticket opened from the panel would stack a modal on a modal. */}
+            <FilterRail {...rail_props} book_button={null} layout="panel" />
+          </FilterPanel>
           <div className="flex min-w-0 flex-wrap gap-1.5">
             <ActiveChips query={query} onRemove={(key) => update({ [key]: undefined })} />
           </div>

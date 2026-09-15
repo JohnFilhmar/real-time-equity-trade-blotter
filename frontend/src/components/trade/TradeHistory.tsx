@@ -6,6 +6,19 @@ import { Skeleton } from '@/components/ui/Note';
 import { useTradeEvents } from '@/hooks/useTrades';
 import { format_clock_or_date } from '@/lib/format/clock';
 
+/**
+ * The layout of one history line: the row, the action dot, the text column, and its headline,
+ * change and time lines. The audit trail's skeleton lines are built on the same classes.
+ */
+export const history_row_layout = {
+  row: 'flex gap-2.5 border-b border-rule-soft py-2.5 last:border-b-0',
+  dot: 'mt-1.25 h-1.75 w-1.75 shrink-0 rounded-full',
+  body: 'flex min-w-0 flex-1 flex-col gap-0.75',
+  headline: 'text-[12px] text-text-2',
+  changes: 'mt-0.5 flex flex-wrap gap-x-2.25 gap-y-1 font-mono text-[11px]',
+  meta: 'font-mono text-[10.5px] text-faint',
+} as const;
+
 const dot_colour: Record<TradeEvent['action'] | 'BOOKED', string> = {
   BOOKED: 'bg-brand',
   AMENDED: 'bg-warn',
@@ -44,15 +57,15 @@ export function HistoryRow({
   const deltas = Object.entries(changes).filter(([field]) => field !== 'status');
 
   return (
-    <div className="flex gap-2.5 border-b border-rule-soft py-2.5 last:border-b-0">
-      <div className={`mt-1.25 h-1.75 w-1.75 shrink-0 rounded-full ${dot_colour[action]}`} aria-hidden="true" />
-      <div className="flex min-w-0 flex-1 flex-col gap-0.75">
-        <div className="text-[12px] text-text-2">
+    <div className={history_row_layout.row}>
+      <div className={`${history_row_layout.dot} ${dot_colour[action]}`} aria-hidden="true" />
+      <div className={history_row_layout.body}>
+        <div className={history_row_layout.headline}>
           <b className="font-semibold text-text">{actor}</b> {verb[action]}
           {trade_id !== undefined ? <span className="ml-1.5 font-mono text-brand">{trade_id}</span> : null}
         </div>
         {deltas.length > 0 ? (
-          <div className="mt-0.5 flex flex-wrap gap-x-2.25 gap-y-1 font-mono text-[11px]">
+          <div className={history_row_layout.changes}>
             {deltas.map(([field, change]) => (
               <span key={field}>
                 <span className="text-muted">{field}</span> <s className="text-loss opacity-75">{String(change.from)}</s>{' '}
@@ -61,7 +74,7 @@ export function HistoryRow({
             ))}
           </div>
         ) : null}
-        <div className="font-mono text-[10.5px] text-faint">
+        <div className={history_row_layout.meta}>
           {format_clock_or_date(at)} {'·'} {source} {'·'} v{version}
         </div>
       </div>

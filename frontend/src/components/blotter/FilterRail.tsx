@@ -1,12 +1,28 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import { instruments } from '@blotter/shared';
 import { Button } from '@/components/ui/Button';
 import { Field, Input, Select } from '@/components/ui/Field';
 import { Toggle } from '@/components/ui/Toggle';
-import { from_datetime_local_value, to_datetime_local_value } from '@/lib/format/clock';
 import { active_filter_count, type TradeListQuery } from '@/lib/query/tradeQuery';
+import { DateRangeFields } from './DateRangeFields';
+
+/** Where the rail is shown: a column beside the grid, or the body of the filters panel. */
+export type FilterRailLayout = 'rail' | 'panel';
+
+/**
+ * The rail's column beside the grid, 216px wide. The rail skeleton is built on the same classes, so
+ * nothing beside the rail moves when the real one takes its place.
+ */
+export const filter_rail_classes =
+  'flex w-54 shrink-0 flex-col gap-3.75 overflow-y-auto border-r border-rule bg-glass-soft p-3.5';
+
+/** The frame per layout. The panel draws its own edge and glass, so the rail does not repeat them there. */
+const layout_classes: Record<FilterRailLayout, string> = {
+  rail: filter_rail_classes,
+  panel: 'flex w-54 max-w-full flex-col gap-3.75 overflow-y-auto p-3.5',
+};
 
 /** Props for {@link FilterRail}. */
 export interface FilterRailProps {
@@ -18,30 +34,28 @@ export interface FilterRailProps {
   total: number;
   /** Rendered only for a role that can book; `null` hides the button entirely. */
   book_button: ReactNode;
-}
-
-/**
- * Turns a `datetime-local` value into the query's ISO form, or clears the key when empty.
- *
- * @param value - The input value.
- * @returns The ISO timestamp, or `undefined`.
- */
-function iso_or_clear(value: string): string | undefined {
-  return from_datetime_local_value(value);
+  /** `rail`, the default, for the column beside the grid; `panel` inside the filters panel. */
+  layout?: FilterRailLayout;
 }
 
 /**
  * The left-hand filter rail: symbol, side, status, trader, book, counterparty and the trade date
- * range. Every filter writes straight to the URL, so the blotter is linkable in any filtered state.
+ * range. Every filter writes straight to the URL, so the blotter is linkable in any filtered state;
+ * the date range writes only once From is on or before To.
  *
- * @param props - The query, its setters, the counts, and the book button.
+ * Control ids are unique per rail, because below `lg` the hidden column and the open panel can both
+ * be on the page.
+ *
+ * @param props - The query, its setters, the counts, the book button and the layout.
  * @returns The rail.
  */
-export function FilterRail({ query, onChange, onClear, loaded, total, book_button }: FilterRailProps): ReactNode {
+export function FilterRail({ query, onChange, onClear, loaded, total, book_button, layout = 'rail' }: FilterRailProps): ReactNode {
   const active = active_filter_count(query);
+  const id = useId();
+  const Frame = layout === 'rail' ? 'aside' : 'div';
 
   return (
-    <aside className="flex w-54 shrink-0 flex-col gap-3.75 overflow-y-auto border-r border-rule bg-glass-soft p-3.5" aria-label="Filters">
+    <Frame className={layout_classes[layout]} aria-label={layout === 'rail' ? 'Filters' : undefined}>
       <div className="flex items-baseline justify-between gap-2">
         <span className="font-mono text-[9.5px] uppercase tracking-[.12em] text-faint">Filters</span>
         {active > 0 ? (
@@ -51,8 +65,8 @@ export function FilterRail({ query, onChange, onClear, loaded, total, book_butto
         ) : null}
       </div>
 
-      <Field id="f_symbol" label="Symbol">
-        <Select id="f_symbol" value={query.symbol ?? ''} onChange={(event) => onChange({ symbol: event.target.value || undefined })}>
+      <Field id={`${id}symbol`} label="Symbol">
+        <Select id={`${id}symbol`} value={query.symbol ?? ''} onChange={(event) => onChange({ symbol: event.target.value || undefined })}>
           <option value="">All</option>
           {instruments.map((instrument) => (
             <option key={instrument.symbol} value={instrument.symbol}>
@@ -90,37 +104,19 @@ export function FilterRail({ query, onChange, onClear, loaded, total, book_butto
         </div>
       </div>
 
-      <Field id="f_trader" label="Trader">
-        <Input id="f_trader" placeholder="JSMITH" value={query.trader ?? ''} onChange={(event) => onChange({ trader: event.target.value || undefined })} />
+      <Field id={`${id}trader`} label="Trader">
+        <Input id={`${id}trader`} placeholder="JSMITH" value={query.trader ?? ''} onChange={(event) => onChange({ trader: event.target.value || undefined })} />
       </Field>
 
-      <Field id="f_book" label="Book">
-        <Input id="f_book" placeholder="EQUITIES" value={query.book ?? ''} onChange={(event) => onChange({ book: event.target.value || undefined })} />
+      <Field id={`${id}book`} label="Book">
+        <Input id={`${id}book`} placeholder="EQUITIES" value={query.book ?? ''} onChange={(event) => onChange({ book: event.target.value || undefined })} />
       </Field>
 
-      <Field id="f_cpty" label="Counterparty">
-        <Input id="f_cpty" placeholder="Goldman" value={query.counterparty ?? ''} onChange={(event) => onChange({ counterparty: event.target.value || undefined })} />
+      <Field id={`${id}cpty`} label="Counterparty">
+        <Input id={`${id}cpty`} placeholder="Goldman" value={query.counterparty ?? ''} onChange={(event) => onChange({ counterparty: event.target.value || undefined })} />
       </Field>
 
-      <Field id="f_from" label="Trade date from (UTC)">
-        <Input
-          id="f_from"
-          type="datetime-local"
-          step={1}
-          value={query.date_from === undefined ? '' : to_datetime_local_value(new Date(query.date_from))}
-          onChange={(event) => onChange({ date_from: iso_or_clear(event.target.value) })}
-        />
-      </Field>
-
-      <Field id="f_to" label="Trade date to (UTC)">
-        <Input
-          id="f_to"
-          type="datetime-local"
-          step={1}
-          value={query.date_to === undefined ? '' : to_datetime_local_value(new Date(query.date_to))}
-          onChange={(event) => onChange({ date_to: iso_or_clear(event.target.value) })}
-        />
-      </Field>
+      <DateRangeFields id_prefix={id} range={{ date_from: query.date_from, date_to: query.date_to }} onChange={onChange} />
 
       <div className="mt-auto flex flex-col gap-2.25 border-t border-rule pt-3">
         <div className="font-mono text-[10.5px] text-muted">
@@ -128,7 +124,7 @@ export function FilterRail({ query, onChange, onClear, loaded, total, book_butto
         </div>
         {book_button}
       </div>
-    </aside>
+    </Frame>
   );
 }
 

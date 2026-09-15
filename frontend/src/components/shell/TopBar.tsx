@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { BrandMark } from '@/components/ui/BrandMark';
 import { IconButton } from '@/components/ui/IconButton';
+import { Skeleton } from '@/components/ui/Note';
 import { useSession } from '@/providers/SessionProvider';
 import { ConnectionPill } from './ConnectionPill';
 import { ThemeToggle } from './ThemeToggle';
@@ -74,6 +75,19 @@ export function TopBar(): ReactNode {
                 <path d="M16 17l5-5-5-5M21 12H9M13 21H5a2 2 0 01-2-2V5a2 2 0 012-2h8" />
               </svg>
             </IconButton>
+          </div>
+        ) : session.status === 'restoring' ? (
+          <div className="flex items-center gap-2" aria-hidden="true">
+            <Skeleton shape="pill" className="h-6.75 w-6.75" />
+            <div className="hidden flex-col leading-tight xl:flex">
+              <span className="text-[12px]">
+                <Skeleton inline className="h-2 w-20" />
+              </span>
+              <span className="font-mono text-[9.5px]">
+                <Skeleton inline className="h-1.5 w-12" />
+              </span>
+            </div>
+            <Skeleton shape="control" className="h-7 w-7" />
           </div>
         ) : null}
       </div>

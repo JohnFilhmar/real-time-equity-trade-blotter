@@ -1,14 +1,23 @@
 import { trade_query_schema } from '@blotter/shared';
-import type { z } from 'zod';
+import { z } from 'zod';
+
+/**
+ * The canonical query's fields without the page window, which is what the URL holds.
+ *
+ * Built from the shared schema's own field definitions rather than restating them. zod cannot
+ * `.omit()` from a schema that carries a cross-field check, so the fields are taken from `.shape`.
+ */
+const list_fields_schema = z.object(trade_query_schema.shape).omit({ limit: true, cursor: true });
 
 /**
  * The part of the blotter query the user controls: filters and sort, without the page window.
  *
- * Derived from the canonical query schema so a filter added to the API reaches the interface
+ * Parsed by the canonical query schema first, so a From later than To is refused here exactly as the
+ * API refuses it, then narrowed to the list fields. A filter added to the API reaches the interface
  * without a second declaration. Lives in the URL, so a filtered view is linkable and survives a
  * reload.
  */
-export const trade_list_query_schema = trade_query_schema.omit({ limit: true, cursor: true });
+export const trade_list_query_schema = trade_query_schema.transform((query) => list_fields_schema.parse(query));
 
 /** Filters and sort for the blotter list. */
 export type TradeListQuery = z.infer<typeof trade_list_query_schema>;
@@ -32,13 +41,15 @@ export const filter_keys = [
 export type FilterKey = (typeof filter_keys)[number];
 
 /**
- * Reads the list query out of URL search parameters.
+ * Reads the list query out of URL search parameters, dropping bad keys pass by pass until the rest parse.
  *
  * Unknown keys are ignored and a malformed value drops back to the default for that key rather
- * than failing the whole page, so a hand-edited link still opens the blotter.
+ * than failing the whole page, so a hand-edited link still opens the blotter. A From later than To
+ * drops the From. zod runs the range check only once every field parses, so dropping one bad key
+ * can uncover the reversed range on the next pass.
  *
  * @param params - The page's search parameters.
- * @returns The parsed query.
+ * @returns The parsed query. Falls back to the default view if a failure names no key it can drop.
  */
 export function parse_search_params(params: URLSearchParams): TradeListQuery {
   const candidate: Record<string, string> = {};
@@ -50,21 +61,24 @@ export function parse_search_params(params: URLSearchParams): TradeListQuery {
     }
   }
 
-  const parsed = trade_list_query_schema.safeParse(candidate);
+  let parsed = trade_list_query_schema.safeParse(candidate);
 
-  if (parsed.success) {
-    return parsed.data;
-  }
-
-  // Drop only the offending keys, keep the rest.
-  for (const issue of parsed.error.issues) {
-    const key = issue.path[0];
-    if (typeof key === 'string') {
-      delete candidate[key];
+  while (!parsed.success) {
+    let dropped = false;
+    for (const issue of parsed.error.issues) {
+      const key = issue.path[0];
+      if (typeof key === 'string' && key in candidate) {
+        delete candidate[key];
+        dropped = true;
+      }
     }
+    if (!dropped) {
+      return default_trade_list_query;
+    }
+    parsed = trade_list_query_schema.safeParse(candidate);
   }
 
-  return trade_list_query_schema.parse(candidate);
+  return parsed.data;
 }
 
 /**

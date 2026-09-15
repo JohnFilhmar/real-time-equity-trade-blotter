@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Skeleton } from '@/components/ui/Note';
 import type { ConnectionStatus } from '@/types/connection';
+import { BlotterRowsSkeleton } from './BlotterRowsSkeleton';
 
 /** The full-surface states: the grid is replaced by copy. */
 export type EmptyState =
@@ -13,20 +13,15 @@ export type EmptyState =
 
 /**
  * Renders one of the states in which the grid has nothing to show, each with copy that says what
- * happened and what to do next. An empty surface with no message is a bug.
+ * happened and what to do next. An empty surface with no message is a bug. While the first page
+ * loads, the grid's own skeleton rows stand in its place.
  *
  * @param props - Which state, and the action it offers.
- * @returns The state panel.
+ * @returns The state panel, or the skeleton rows while loading.
  */
 export function TableEmptyState({ state }: { state: EmptyState }): ReactNode {
   if (state.kind === 'loading') {
-    return (
-      <div className="flex flex-col gap-1.5 p-3.5" aria-busy="true" aria-label="Loading trades">
-        {Array.from({ length: 12 }, (_value, index) => (
-          <Skeleton key={index} className="h-6.5 w-full" />
-        ))}
-      </div>
-    );
+    return <BlotterRowsSkeleton />;
   }
 
   const copy: Record<Exclude<EmptyState['kind'], 'loading'>, { title: string; body: string }> = {

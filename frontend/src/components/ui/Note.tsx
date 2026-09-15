@@ -39,12 +39,42 @@ export function SectionLabel({ children }: { children: ReactNode }): ReactNode {
   );
 }
 
+/** The outline a {@link Skeleton} takes. */
+export type SkeletonShape = 'block' | 'control' | 'pill';
+
+const skeleton_shape_classes: Record<SkeletonShape, string> = {
+  block: 'rounded-sm',
+  control: 'rounded-r',
+  pill: 'rounded-full',
+};
+
+/** Props for {@link Skeleton}. */
+export interface SkeletonProps {
+  /** Size classes, plus spacing or breakpoint visibility where the block sits among other content. */
+  className?: string;
+  /** `block` stands in for text or a figure, `control` for an input or a button, `pill` for an avatar or a chip. */
+  shape?: SkeletonShape;
+  /**
+   * Sits the block inside a line of text, centred on it. The line keeps the height its text would
+   * give it, so a skeleton placed in an element that carries a real line's classes is exactly as
+   * tall as that line. Keep the block shorter than the line.
+   */
+  inline?: boolean;
+}
+
 /**
- * A grey block standing in for content that is loading.
+ * A grey block standing in for content that is loading. Every loading shape on the blotter is
+ * built from this one block.
  *
- * @param props - Extra classes for size.
- * @returns A div.
+ * @param props - Size classes, the shape, and whether the block sits in a line of text.
+ * @returns A div, or a span when inline.
  */
-export function Skeleton({ className = '' }: { className?: string }): ReactNode {
-  return <div className={`animate-pulse rounded-sm bg-glass-soft ${className}`} aria-hidden="true" />;
+export function Skeleton({ className = '', shape = 'block', inline = false }: SkeletonProps): ReactNode {
+  const classes = `animate-pulse bg-glass-soft ${skeleton_shape_classes[shape]} ${className}`;
+
+  return inline ? (
+    <span className={`inline-block align-middle ${classes}`} aria-hidden="true" />
+  ) : (
+    <div className={classes} aria-hidden="true" />
+  );
 }

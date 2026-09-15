@@ -167,28 +167,74 @@ export const trade_sort_columns = [
   'status',
 ] as const;
 
-/** Query parameters accepted by the blotter listing. */
-export const trade_query_schema = z.object({
-  symbol: z.string().optional(),
-  side: z.enum(trade_side_values).optional(),
-  status: z.enum(trade_status_values).optional(),
-  trader: z.string().optional(),
-  book: z.string().optional(),
-  counterparty: z.string().optional(),
-  date_from: z.iso.datetime().optional(),
-  date_to: z.iso.datetime().optional(),
-  sort_by: z.enum(trade_sort_columns).default('tradeTimestamp'),
-  sort_dir: z.enum(['asc', 'desc']).default('desc'),
-  limit: z.coerce.number().int().min(1).max(1000).default(100),
-  /**
-   * Opaque position marker from a previous page's `next_cursor`.
-   *
-   * Keyset rather than offset: the blotter inserts rows all day, so an offset computed on one
-   * request no longer points at the same place on the next, which makes page two re-serve rows
-   * already seen and skip others. A cursor names a row, so inserts above it change nothing.
-   */
-  cursor: z.string().optional(),
-});
+/** The refusal for a trade-date bound that is not a timestamp. */
+const valid_timestamp_message = 'Enter a valid date and time';
+
+/** The refusal for a page size outside the cap. */
+const page_size_message = 'Page size must be a whole number from 1 to 1,000';
+
+/**
+ * Whether a trade-date range runs backwards.
+ *
+ * An end that is not a timestamp parses to `NaN`, which compares false, so a malformed end is left
+ * to its own message instead of also being reported as out of order.
+ *
+ * @param date_from - The start of the range, or `undefined` when open.
+ * @param date_to - The end of the range, or `undefined` when open.
+ * @returns True only when both ends are set and From falls after To. Equal ends are a valid range.
+ */
+function is_reversed_range(date_from: string | undefined, date_to: string | undefined): boolean {
+  return (
+    date_from !== undefined && date_to !== undefined && Date.parse(date_from) > Date.parse(date_to)
+  );
+}
+
+/**
+ * Query parameters accepted by the blotter listing.
+ *
+ * Each refusal carries a plain-English message instead of zod's default, so a 422 and the blotter
+ * word a problem the same way. A From later than To is refused on the From field rather than
+ * answered with an empty page, which would read as "no trades" instead of as a mistake.
+ *
+ * zod refuses `.omit()`, `.pick()` and `.partial()` on an object carrying a cross-field check. A
+ * client that needs part of this shape builds it from `.shape` and parses through this schema
+ * first, so the range check still applies.
+ */
+export const trade_query_schema = z
+  .object({
+    symbol: z.string().optional(),
+    side: z.enum(trade_side_values, { error: 'Side must be BUY or SELL' }).optional(),
+    status: z.enum(trade_status_values, { error: 'Status must be ACTIVE or CANCELLED' }).optional(),
+    trader: z.string().optional(),
+    book: z.string().optional(),
+    counterparty: z.string().optional(),
+    date_from: z.iso.datetime({ error: valid_timestamp_message }).optional(),
+    date_to: z.iso.datetime({ error: valid_timestamp_message }).optional(),
+    sort_by: z
+      .enum(trade_sort_columns, { error: "Sort by one of the blotter's columns" })
+      .default('tradeTimestamp'),
+    sort_dir: z
+      .enum(['asc', 'desc'], { error: 'Sort direction must be asc or desc' })
+      .default('desc'),
+    limit: z.coerce
+      .number({ error: page_size_message })
+      .int({ error: page_size_message })
+      .min(1, { error: page_size_message })
+      .max(1000, { error: page_size_message })
+      .default(100),
+    /**
+     * Opaque position marker from a previous page's `next_cursor`.
+     *
+     * Keyset rather than offset: the blotter inserts rows all day, so an offset computed on one
+     * request no longer points at the same place on the next, which makes page two re-serve rows
+     * already seen and skip others. A cursor names a row, so inserts above it change nothing.
+     */
+    cursor: z.string().optional(),
+  })
+  .refine((query) => !is_reversed_range(query.date_from, query.date_to), {
+    path: ['date_from'],
+    error: 'From must be on or before To',
+  });
 
 /**
  * Envelope returned by the blotter listing.

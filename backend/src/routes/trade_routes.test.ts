@@ -250,6 +250,31 @@ describe(`GET ${api_prefix}/trades`, () => {
     expect(response.status).toBe(422);
     expect(response.body.code).toBe('validation_failed');
   });
+
+  it('refuses a trade-date range whose From falls after its To, naming the From field', async () => {
+    const { app } = build_test_app();
+
+    const response = await request(app)
+      .get(`${trades_path}?date_from=2026-08-18T12:00:00.000Z&date_to=2026-08-18T09:00:00.000Z`)
+      .set('Authorization', bearer(token_for(own_desk)));
+
+    expect(response.status).toBe(422);
+    expect(response.body.code).toBe('validation_failed');
+    expect(response.body.errors).toEqual([
+      { field: 'date_from', message: 'From must be on or before To' },
+    ]);
+  });
+
+  it('accepts a trade-date range whose ends are the same instant', async () => {
+    const { app } = build_test_app();
+    const instant = '2026-08-18T09:15:23.000Z';
+
+    const response = await request(app)
+      .get(`${trades_path}?date_from=${instant}&date_to=${instant}`)
+      .set('Authorization', bearer(token_for(own_desk)));
+
+    expect(response.status).toBe(200);
+  });
 });
 
 describe(`POST ${api_prefix}/trades`, () => {

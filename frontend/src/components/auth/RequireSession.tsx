@@ -1,24 +1,36 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Skeleton } from '@/components/ui/Note';
 import { ConnectionProvider } from '@/providers/ConnectionProvider';
 import { useSession } from '@/providers/SessionProvider';
 
+/** Props for {@link RequireSession}. */
+export interface RequireSessionProps {
+  /** The authenticated section. */
+  children: ReactNode;
+  /**
+   * The skeleton for each section, by path, shown in the section's place while the first refresh is
+   * in flight. A path without one shows nothing until the session is known.
+   */
+  fallbacks: Readonly<Record<string, ReactNode>>;
+}
+
 /**
- * The session gate. Nothing under it renders without a signed-in user, and the socket only opens
- * once there is a token to open it with.
+ * The session gate for the section inside the frame. Nothing under it renders without a signed-in
+ * user, and the socket only opens once there is a token to open it with.
  *
- * While the first refresh is in flight a skeleton is shown rather than the login screen, so an
- * open session is not flashed a sign-in form on every reload.
+ * The frame around the gate renders straight away. While the first refresh is in flight the gate
+ * shows the skeleton for the section being opened rather than the login screen, so an open session
+ * is not flashed a sign-in form on every reload and the page keeps its shape.
  *
- * @param props - The authenticated subtree.
- * @returns The subtree, a skeleton, or nothing while redirecting.
+ * @param props - The section and the skeletons by path.
+ * @returns The section, its skeleton, or nothing while redirecting.
  */
-export function RequireSession({ children }: { children: ReactNode }): ReactNode {
+export function RequireSession({ children, fallbacks }: RequireSessionProps): ReactNode {
   const { session } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (session.status === 'anonymous') {
@@ -27,13 +39,7 @@ export function RequireSession({ children }: { children: ReactNode }): ReactNode
   }, [router, session.status]);
 
   if (session.status === 'restoring') {
-    return (
-      <div className="flex flex-1 flex-col gap-3 p-6" aria-busy="true" aria-label="Restoring your session">
-        <Skeleton className="h-13 w-full" />
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-80 w-full" />
-      </div>
-    );
+    return fallbacks[pathname] ?? null;
   }
 
   if (session.status === 'anonymous') {
