@@ -32,10 +32,10 @@ describe('build_change_set', () => {
     const changes = build_change_set(before, {
       quantity: 7500,
       price: 230.1,
-      counterparty: 'Nomura',
+      book: 'EQUITIES_US',
     });
 
-    expect(Object.keys(changes).sort()).toEqual(['counterparty', 'price', 'quantity']);
+    expect(Object.keys(changes).sort()).toEqual(['book', 'price', 'quantity']);
   });
 
   it('ignores a field resent at the value it already held', () => {
@@ -53,6 +53,7 @@ describe('build_change_set', () => {
 
     expect(changes).not.toHaveProperty('symbol');
     expect(changes).not.toHaveProperty('side');
+    expect(changes).not.toHaveProperty('counterparty');
     expect(changes).not.toHaveProperty('version');
     expect(changes).not.toHaveProperty('status');
   });

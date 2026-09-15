@@ -25,7 +25,10 @@ export interface TicketValues {
 export type TicketErrors = Partial<Record<keyof TicketValues | 'form', string>>;
 
 /** The fields an amendment may change; the rest of the ticket is read-only in that mode. */
-export const amendable_fields: ReadonlySet<keyof TicketValues> = new Set(['quantity', 'price', 'book', 'counterparty']);
+export const amendable_fields: ReadonlySet<keyof TicketValues> = new Set(['quantity', 'price', 'book']);
+
+/** Every input the ticket renders, and so every place a field-level message can appear. */
+const ticket_inputs: readonly (keyof TicketValues)[] = ['symbol', 'side', 'quantity', 'price', 'book', 'counterparty', 'trade_time'];
 
 /**
  * Builds the ticket's initial values: a blank ticket for the first instrument, or the selected
@@ -60,21 +63,44 @@ export function initial_values(trade: Trade | null): TicketValues {
 }
 
 /**
+ * Whether a field name from a validation message is one of the ticket's inputs.
+ *
+ * @param field - The field name, already translated from the API's spelling.
+ * @returns True when the ticket has an input to show the message beside.
+ */
+function is_ticket_input(field: string): field is keyof TicketValues {
+  return ticket_inputs.some((input) => input === field);
+}
+
+/**
+ * Reads a number box, treating a blank one as missing.
+ *
+ * `Number('')` is zero, which would tell a trader their blank quantity is too small. The blank
+ * becomes `null` rather than `undefined` because the amendment schema reads an absent field as
+ * unchanged, while `null` still reaches the rule and asks for a value.
+ *
+ * @param value - The box's text.
+ * @returns The number, `NaN` for text that is not a number, or `null` for a blank box.
+ */
+function read_number(value: string): number | null {
+  return value.trim() === '' ? null : Number(value);
+}
+
+/**
  * Maps zod issues and server field errors onto ticket inputs.
  *
+ * Each input keeps the first message it is given. A message naming a field the ticket has no input
+ * for goes to the form line instead of being dropped, and the form line keeps the first of those.
+ *
  * @param errors - Field errors in the API's shape.
- * @returns Messages keyed by input.
+ * @returns Messages keyed by input, with `form` holding any message no input can show.
  */
 export function to_ticket_errors(errors: readonly ProblemFieldError[]): TicketErrors {
   const mapped: TicketErrors = {};
   for (const error of errors) {
     const field = error.field === 'tradeTimestamp' ? 'trade_time' : error.field;
-    if (field in mapped) continue;
-    if (['symbol', 'side', 'quantity', 'price', 'book', 'counterparty', 'trade_time'].includes(field)) {
-      mapped[field as keyof TicketValues] = error.message;
-    } else {
-      mapped.form = error.message;
-    }
+    const key = is_ticket_input(field) ? field : 'form';
+    mapped[key] ??= error.message;
   }
   return mapped;
 }
@@ -89,8 +115,8 @@ export function parse_create(values: TicketValues): { ok: true; input: CreateTra
   const candidate = {
     symbol: values.symbol,
     side: values.side,
-    quantity: Number(values.quantity),
-    price: Number(values.price),
+    quantity: read_number(values.quantity),
+    price: read_number(values.price),
     book: values.book,
     counterparty: values.counterparty,
     tradeTimestamp: from_datetime_local_value(values.trade_time) ?? '',
@@ -109,6 +135,7 @@ export function parse_create(values: TicketValues): { ok: true; input: CreateTra
 
 /**
  * Validates an amendment: only the fields that differ from the trade are sent, plus the version.
+ * The counterparty is never sent, because it is fixed once the trade is booked.
  *
  * @param values - The inputs.
  * @param trade - The trade being amended.
@@ -116,13 +143,10 @@ export function parse_create(values: TicketValues): { ok: true; input: CreateTra
  */
 export function parse_amend(values: TicketValues, trade: Trade): { ok: true; input: AmendTrade } | { ok: false; errors: TicketErrors } {
   const candidate: Record<string, unknown> = { version: trade.version };
-  const quantity = Number(values.quantity);
-  const price = Number(values.price);
 
-  if (values.quantity !== trade.quantity.toString()) candidate.quantity = quantity;
-  if (values.price !== trade.price.toString()) candidate.price = price;
+  if (values.quantity !== trade.quantity.toString()) candidate.quantity = read_number(values.quantity);
+  if (values.price !== trade.price.toString()) candidate.price = read_number(values.price);
   if (values.book !== trade.book) candidate.book = values.book;
-  if (values.counterparty !== trade.counterparty) candidate.counterparty = values.counterparty;
 
   if (Object.keys(candidate).length === 1) {
     return { ok: false, errors: { form: 'Change at least one field before saving' } };

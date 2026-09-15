@@ -75,7 +75,6 @@ export async function amend(
       data: {
         ...(changes.quantity === undefined ? {} : { quantity: changes.quantity }),
         ...(changes.price === undefined ? {} : { price: changes.price.toFixed(6) }),
-        ...(changes.counterparty === undefined ? {} : { counterparty: changes.counterparty }),
         ...(changes.book === undefined ? {} : { book: changes.book }),
         version: { increment: 1 },
       },

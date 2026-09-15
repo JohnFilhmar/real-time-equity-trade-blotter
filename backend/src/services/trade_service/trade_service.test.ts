@@ -325,6 +325,21 @@ describe('trade service', () => {
       ).rejects.toMatchObject({ status: 422 });
     });
 
+    it('still corrects the book, and records the move', async () => {
+      const created = await service.create(a_create_payload({ book: 'EQUITIES_US' }), trader_actor);
+
+      const amended = await service.amend(
+        created.tradeId,
+        { version: created.version, book: 'TECH_GROWTH' },
+        trader_actor,
+      );
+      const [event] = await service.list_events(created.tradeId);
+
+      expect(amended.book).toBe('TECH_GROWTH');
+      expect(amended.counterparty).toBe('Goldman Sachs');
+      expect(event?.changes).toEqual({ book: { from: 'EQUITIES_US', to: 'TECH_GROWTH' } });
+    });
+
     it('refuses an amendment that would breach the notional limit', async () => {
       const created = await service.create(a_create_payload(), trader_actor);
 

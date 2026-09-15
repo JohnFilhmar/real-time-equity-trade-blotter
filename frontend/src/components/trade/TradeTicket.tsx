@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import { find_instrument, instruments, type Trade } from '@blotter/shared';
+import { counterparties, find_instrument, instruments, type Trade } from '@blotter/shared';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { Field, Input, Select } from '@/components/ui/Field';
@@ -143,7 +143,7 @@ export function TradeTicket({ mode, onClose, onBooked }: TradeTicketProps): Reac
       description={
         base === null
           ? 'Validation is the same schema the API runs. Your trader code is stamped by the server.'
-          : `Currently version ${base.version.toString()}. Saving writes an audit row and increments the version. Symbol, side and execution time cannot change: that would be a rebooking.`
+          : `Currently version ${base.version.toString()}. Saving writes an audit row and increments the version. Symbol, side, counterparty and execution time cannot change: that would be a rebooking.`
       }
       onClose={onClose}
       footer={
@@ -182,7 +182,9 @@ export function TradeTicket({ mode, onClose, onBooked }: TradeTicketProps): Reac
               SELL
             </Toggle>
           </div>
-          <div className="min-h-3.5 text-[11px] text-muted">{read_only('side') ? 'Fixed on an amendment' : ''}</div>
+          <div className={`min-h-3.5 text-[11px] ${errors.side === undefined ? 'text-muted' : 'text-loss'}`} aria-live="polite">
+            {errors.side ?? (read_only('side') ? 'Fixed on an amendment' : '')}
+          </div>
         </div>
 
         <Field id="t_quantity" label="Quantity" error={errors.quantity}>
@@ -202,8 +204,13 @@ export function TradeTicket({ mode, onClose, onBooked }: TradeTicketProps): Reac
           </datalist>
         </Field>
 
-        <Field id="t_counterparty" label="Counterparty" error={errors.counterparty}>
-          <Input id="t_counterparty" placeholder="Goldman Sachs" value={values.counterparty} invalid={errors.counterparty !== undefined} onChange={(event) => set('counterparty', event.target.value)} />
+        <Field id="t_counterparty" label="Counterparty" required error={errors.counterparty} hint={read_only('counterparty') ? 'Fixed on an amendment. Cancel and rebook to change it.' : undefined}>
+          <Input id="t_counterparty" list="t_counterparties" placeholder="Goldman Sachs" aria-required value={values.counterparty} disabled={read_only('counterparty')} invalid={errors.counterparty !== undefined} onChange={(event) => set('counterparty', event.target.value)} />
+          <datalist id="t_counterparties">
+            {counterparties.map((name) => (
+              <option key={name} value={name} />
+            ))}
+          </datalist>
         </Field>
 
         <div className="md:col-span-2">

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { ZodType } from 'zod';
 import {
   amend_trade_schema,
   create_trade_schema,
@@ -42,6 +43,21 @@ function a_create_payload(overrides: Record<string, unknown> = {}) {
   };
 }
 
+/**
+ * Every message a schema gives for one top-level field, in the order it gives them.
+ *
+ * @param schema - The schema to run.
+ * @param input - The payload to parse.
+ * @param field - The field whose messages to collect.
+ * @returns The messages. Empty when that field broke no rule.
+ */
+function messages_for(schema: ZodType, input: unknown, field: string): string[] {
+  const result = schema.safeParse(input);
+  return result.success
+    ? []
+    : result.error.issues.filter((issue) => issue.path[0] === field).map((issue) => issue.message);
+}
+
 describe('trade_schema', () => {
   it('accepts the payload shape the brief supplies', () => {
     expect(trade_schema.safeParse(valid_trade).success).toBe(true);
@@ -53,6 +69,52 @@ describe('trade_schema', () => {
 
   it('rejects an empty trader', () => {
     expect(trade_schema.safeParse({ ...valid_trade, trader: '   ' }).success).toBe(false);
+  });
+
+  it('asks for Buy or Sell, and for a symbol from the list', () => {
+    expect(messages_for(trade_schema, { ...valid_trade, side: 'HOLD' }, 'side')).toEqual(['Choose Buy or Sell']);
+    expect(messages_for(trade_schema, { ...valid_trade, symbol: 'ZZZZ' }, 'symbol')).toEqual([
+      'Choose a symbol from the list',
+    ]);
+  });
+
+  it('reads a quantity or price that is absent or not a number as missing', () => {
+    for (const value of [undefined, null, '5000', Number.NaN]) {
+      expect(messages_for(trade_schema, { ...valid_trade, quantity: value }, 'quantity')).toEqual([
+        'Enter a quantity',
+      ]);
+      expect(messages_for(trade_schema, { ...valid_trade, price: value }, 'price')).toEqual(['Enter a price']);
+    }
+  });
+
+  it('says a quantity must be a whole number above zero, and caps it at ten million, once each', () => {
+    for (const quantity of [0, -100, 1.5, -1e20]) {
+      expect(messages_for(trade_schema, { ...valid_trade, quantity }, 'quantity')).toEqual([
+        'Quantity must be a whole number above zero',
+      ]);
+    }
+    for (const quantity of [10_000_001, 1e20]) {
+      expect(messages_for(trade_schema, { ...valid_trade, quantity }, 'quantity')).toEqual([
+        'Quantity cannot be more than 10,000,000',
+      ]);
+    }
+  });
+
+  it('names the length a trader code must be', () => {
+    for (const trader of ['   ', 'T'.repeat(33)]) {
+      expect(messages_for(trade_schema, { ...valid_trade, trader }, 'trader')).toEqual([
+        'Trader code must be 1 to 32 characters',
+      ]);
+    }
+  });
+
+  it('asks for a readable trade time and a current version', () => {
+    expect(messages_for(trade_schema, { ...valid_trade, tradeTimestamp: 'yesterday' }, 'tradeTimestamp')).toEqual([
+      'Enter the trade time as a valid date and time',
+    ]);
+    expect(messages_for(trade_schema, { ...valid_trade, version: 0 }, 'version')).toEqual([
+      'Reload the trade and try again',
+    ]);
   });
 
   it('rejects a symbol outside the tradable universe', () => {
@@ -122,6 +184,17 @@ describe('create_trade_schema', () => {
     expect(result.success).toBe(false);
   });
 
+  it('calls a future trade time exactly that, and an unreadable one only unreadable', () => {
+    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+    expect(
+      messages_for(create_trade_schema, a_create_payload({ tradeTimestamp: tomorrow }), 'tradeTimestamp'),
+    ).toEqual(['Trade time cannot be in the future']);
+    expect(
+      messages_for(create_trade_schema, a_create_payload({ tradeTimestamp: 'not a time' }), 'tradeTimestamp'),
+    ).toEqual(['Enter the trade time as a valid date and time']);
+  });
+
   it('tolerates a client clock a few seconds fast', () => {
     const slightly_ahead = new Date(Date.now() + 5_000).toISOString();
 
@@ -137,16 +210,33 @@ describe('amend_trade_schema', () => {
     expect(amend_trade_schema.safeParse({ quantity: 100 }).success).toBe(false);
   });
 
+  it('asks for a reload when the version is missing', () => {
+    expect(messages_for(amend_trade_schema, { quantity: 100 }, 'version')).toEqual([
+      'Reload the trade and try again',
+    ]);
+  });
+
   it('permits the fields a desk genuinely corrects', () => {
     const result = amend_trade_schema.safeParse({
       version: 1,
       quantity: 100,
       price: 1.5,
-      counterparty: 'Nomura',
       book: 'EQUITIES_UK',
     });
 
     expect(result.success).toBe(true);
+  });
+
+  it('refuses a counterparty, saying how to change one instead', () => {
+    const result = amend_trade_schema.safeParse({ version: 1, quantity: 100, counterparty: 'Nomura' });
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues).toEqual([
+      expect.objectContaining({
+        path: ['counterparty'],
+        message: 'Counterparty cannot be changed on an amendment. Cancel the trade and book it again.',
+      }),
+    ]);
   });
 
   it('refuses to re-point a trade at another instrument or flip its side', () => {

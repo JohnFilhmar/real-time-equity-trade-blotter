@@ -9,6 +9,12 @@ export interface FieldProps {
   /** Ties the label to the control. */
   id: string;
   label: string;
+  /**
+   * Marks a value the user must supply with an asterisk after the label. The asterisk is hidden
+   * from assistive tech and the row cannot reach the control, so give the control `aria-required`
+   * too.
+   */
+  required?: boolean | undefined;
   /** Validation message; an empty string keeps the row height so the form does not jump. */
   error?: string | undefined;
   /** Explanatory line under the control when there is no error. */
@@ -21,10 +27,11 @@ export interface FieldProps {
 /**
  * A labelled form row: mono uppercase label, the control, and a message line.
  *
- * @param props - The label, the control, and the error, warning or hint line.
+ * @param props - The label, whether the value is required, the control, and the error, warning or
+ * hint line.
  * @returns The row.
  */
-export function Field({ id, label, error, warning, hint, children }: FieldProps): ReactNode {
+export function Field({ id, label, required = false, error, warning, hint, children }: FieldProps): ReactNode {
   const message_id = `${id}_message`;
   const tone = error ? 'text-loss' : warning ? 'text-warn' : 'text-muted';
 
@@ -32,6 +39,11 @@ export function Field({ id, label, error, warning, hint, children }: FieldProps)
     <div className="flex min-w-0 flex-col gap-1.25">
       <label htmlFor={id} className="font-mono text-[9.5px] uppercase tracking-[.11em] text-faint">
         {label}
+        {required ? (
+          <span aria-hidden="true" className="ml-0.5 text-loss">
+            *
+          </span>
+        ) : null}
       </label>
       {children}
       <div

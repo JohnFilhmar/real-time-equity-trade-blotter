@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { instruments, trade_side_values, trade_status_values } from '@blotter/shared';
+import {
+  amend_trade_schema,
+  counterparties,
+  instruments,
+  trade_side_values,
+  trade_status_values,
+} from '@blotter/shared';
 import {
   generate_live_amendment,
   generate_live_trade,
@@ -87,6 +93,12 @@ describe('generate_trades', () => {
     }
   });
 
+  it('books every counterparty from the shared list the ticket suggests', () => {
+    for (const trade of generate_trades(200)) {
+      expect(counterparties).toContain(trade.counterparty);
+    }
+  });
+
   it('returns trades ordered oldest first', () => {
     const trades = generate_trades(200);
     const timestamps = trades.map((trade) => trade.tradeTimestamp.getTime());
@@ -133,6 +145,12 @@ describe('generate_live_trade', () => {
     expect(generated.payload.symbol).toBe(instrument.symbol);
     expect(generated.payload.side).toBe('SELL');
   });
+
+  it('faces a counterparty from the shared list the ticket suggests', () => {
+    for (const instrument of instruments) {
+      expect(counterparties).toContain(generate_live_trade(instrument, 'BUY').payload.counterparty);
+    }
+  });
 });
 
 describe('generate_live_amendment', () => {
@@ -140,5 +158,12 @@ describe('generate_live_amendment', () => {
     for (let index = 0; index < sample_size; index += 1) {
       expect(String(generate_live_amendment(443.497704).price)).toMatch(at_most_two_decimals);
     }
+  });
+
+  it('moves only quantity and price, never the counterparty, in a shape the amend schema accepts', () => {
+    const amendment = generate_live_amendment(227.45);
+
+    expect(Object.keys(amendment).sort()).toEqual(['price', 'quantity']);
+    expect(amend_trade_schema.safeParse({ version: 1, ...amendment }).success).toBe(true);
   });
 });
