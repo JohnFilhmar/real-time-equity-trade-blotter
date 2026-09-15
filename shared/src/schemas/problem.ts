@@ -8,6 +8,7 @@ export const problem_codes = {
   not_found: 'not_found',
   conflict: 'conflict',
   rate_limited: 'rate_limited',
+  locked_out: 'locked_out',
   internal: 'internal',
 } as const;
 
@@ -59,6 +60,7 @@ export const problem_schema = z.object({
     problem_codes.not_found,
     problem_codes.conflict,
     problem_codes.rate_limited,
+    problem_codes.locked_out,
     problem_codes.internal,
   ]),
   errors: z.array(problem_field_error_schema).optional(),

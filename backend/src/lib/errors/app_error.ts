@@ -111,7 +111,8 @@ export class AppError extends Error {
   }
 
   /**
-   * Builds a 429 for an account-level lockout, as distinct from the request rate limiter.
+   * Builds a 429 for an account-level lockout. It carries its own `locked_out` code, so a client
+   * can tell a locked account from the per-address request limit, which answers `rate_limited`.
    *
    * The wait goes out twice: in the detail for a person to read, and as `Retry-After` so a client
    * can count down without parsing the sentence.
@@ -122,7 +123,7 @@ export class AppError extends Error {
   static locked_out(seconds: number): AppError {
     return new AppError(
       429,
-      error_codes.rate_limited,
+      error_codes.locked_out,
       `Too many failed attempts. Try again in ${seconds.toString()} seconds.`,
       undefined,
       seconds,

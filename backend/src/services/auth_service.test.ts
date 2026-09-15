@@ -112,6 +112,7 @@ describe('auth service', () => {
       // Even the correct password is refused once the account is locked.
       await expect(service.login({ username: 'jsmith', password })).rejects.toMatchObject({
         status: 429,
+        code: 'locked_out',
       });
     });
 

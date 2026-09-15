@@ -109,6 +109,7 @@ describe(`POST ${api_prefix}/auth/login`, () => {
       Array.from({ length: env.LOGIN_MAX_ATTEMPTS }, () => ({ status: 401, retry_after: undefined })),
     );
     expect(locked.status).toBe(429);
+    expect(locked.body.code).toBe('locked_out');
     expect(locked.headers['retry-after']).toBe(env.LOGIN_LOCKOUT_SECONDS.toString());
     expect(locked.body.detail).toBe(
       `Too many failed attempts. Try again in ${env.LOGIN_LOCKOUT_SECONDS.toString()} seconds.`,

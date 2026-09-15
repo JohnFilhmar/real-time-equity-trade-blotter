@@ -19,6 +19,7 @@ const titles: Readonly<Record<ProblemCode, string>> = {
   not_found: 'Resource not found',
   conflict: 'Conflict',
   rate_limited: 'Too many requests',
+  locked_out: 'Too many requests',
   internal: 'Internal server error',
 };
 
