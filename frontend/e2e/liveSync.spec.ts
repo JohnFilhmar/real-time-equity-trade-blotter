@@ -18,6 +18,9 @@ test.describe('live sync between two clients @critical', () => {
     await open_trade(a, trade_id);
     await a.getByRole('button', { name: 'Amend' }).click();
     const ticket = a.getByRole('dialog');
+    // The counterparty is fixed once booked, so the amend ticket shows it locked with the way out.
+    await expect(ticket.locator('#t_counterparty')).toBeDisabled();
+    await expect(ticket.getByText('Fixed on an amendment. Cancel and rebook to change it.')).toBeVisible();
     await ticket.locator('#t_quantity').fill('2500');
     await ticket.getByRole('button', { name: 'Save amendment' }).click();
     await expect(a.getByText(`Amended ${trade_id}`)).toBeVisible();
