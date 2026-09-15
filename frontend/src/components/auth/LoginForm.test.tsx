@@ -147,4 +147,56 @@ describe('LoginForm', () => {
     expect(login).toHaveBeenCalledWith({ username: 'jsmith', password: 'blotter-demo-2026' });
     expect(login_locks.read('jsmith', Date.now())).toBeNull();
   });
+
+  it('shows the account lock over a running address countdown, and holds Sign in until both end', async () => {
+    login.mockRejectedValue(too_many('rate_limited', 42));
+    login_locks.remember('jsmith', Date.now() + 90_000, Date.now());
+    render(<LoginForm />);
+
+    type_credentials('abrown', 'not-the-password');
+    await press_sign_in();
+    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'jsmith' } });
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Too many failed attempts. Try again in 1:30.');
+    expect(sign_in_button()).toBeDisabled();
+
+    act(() => {
+      vi.advanceTimersByTime(42_000);
+    });
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Too many failed attempts. Try again in 0:48.');
+    expect(sign_in_button()).toBeDisabled();
+
+    act(() => {
+      vi.advanceTimersByTime(48_000);
+    });
+
+    expect(sign_in_button()).toBeEnabled();
+    expect(screen.getByRole('alert')).not.toHaveTextContent('Too many');
+  });
+
+  it('goes on holding Sign in for the address countdown when the account lock ends first', async () => {
+    login.mockRejectedValue(too_many('rate_limited', 42));
+    login_locks.remember('jsmith', Date.now() + 30_000, Date.now());
+    render(<LoginForm />);
+
+    type_credentials('abrown', 'not-the-password');
+    await press_sign_in();
+    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'jsmith' } });
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Too many failed attempts. Try again in 0:30.');
+
+    act(() => {
+      vi.advanceTimersByTime(30_000);
+    });
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Too many sign-in attempts from this network. Try again in 0:12.');
+    expect(sign_in_button()).toBeDisabled();
+
+    act(() => {
+      vi.advanceTimersByTime(12_000);
+    });
+
+    expect(sign_in_button()).toBeEnabled();
+  });
 });
