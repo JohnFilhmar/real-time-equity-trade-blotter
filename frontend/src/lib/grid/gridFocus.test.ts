@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { focus_grid, focus_trades, register_grid_focus, trade_cards_id, trade_state_message_id } from './gridFocus';
+import { focus_grid, focus_trades, register_grid_focus, trade_cards_id, trade_loading_id, trade_state_message_id } from './gridFocus';
 
 describe('grid focus target', () => {
   it('reports that nothing took focus when no grid is mounted', () => {
@@ -64,6 +64,13 @@ describe('skip link target', () => {
 
     expect(focus_trades()).toBe(true);
     expect(document.activeElement).toHaveAttribute('id', trade_state_message_id);
+  });
+
+  it('focuses the loading area while the first page of trades loads, so focus waits where the rows will appear', () => {
+    document.body.innerHTML = `<div id="${trade_loading_id}" tabindex="-1" role="status" aria-busy="true" aria-label="Loading trades"></div>`;
+
+    expect(focus_trades()).toBe(true);
+    expect(document.activeElement).toHaveAttribute('id', trade_loading_id);
   });
 
   it('reports that nothing took focus while none of them is on the page', () => {

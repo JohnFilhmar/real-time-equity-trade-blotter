@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { Skeleton } from '@/components/ui/Note';
+import { trade_loading_id } from '@/lib/grid/gridFocus';
 import { grid_min_width_classes, row_height, sortable_columns, trade_columns } from './columns';
 import { grid_header_label_classes, grid_header_row_classes } from './GridHeader';
 import { trade_card_classes, trade_card_line_classes } from './TradeCards';
@@ -124,11 +125,14 @@ function CardSkeleton(): ReactNode {
  * right at every width. The header, row and card boxes use the classes the real grid and cards
  * export, so a change to either reaches the skeleton too.
  *
+ * The area is named "Loading trades" and takes focus under a fixed id without joining the tab
+ * order, so the top bar's skip link lands where the rows will appear.
+ *
  * @returns The skeleton rows.
  */
 export function BlotterRowsSkeleton(): ReactNode {
   return (
-    <div className="flex min-h-0 flex-1 flex-col" aria-busy="true" aria-label="Loading trades">
+    <div id={trade_loading_id} tabIndex={-1} role="status" className="flex min-h-0 flex-1 flex-col" aria-busy="true" aria-label="Loading trades">
       <GridSkeleton />
       <div className="min-h-0 flex-1 overflow-hidden md:hidden">
         <div className="flex flex-col">

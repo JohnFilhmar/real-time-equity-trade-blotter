@@ -18,7 +18,8 @@ export type EmptyState =
  * loads, the grid's own skeleton rows stand in its place.
  *
  * The title and body sit in one focusable block under a fixed id, so the top bar's skip link lands
- * on the reason there are no trades to show.
+ * on the reason there are no trades to show. While loading, the skeleton rows carry their own id
+ * and take the skip link instead.
  *
  * @param props - Which state, and the action it offers.
  * @returns The state panel, or the skeleton rows while loading.

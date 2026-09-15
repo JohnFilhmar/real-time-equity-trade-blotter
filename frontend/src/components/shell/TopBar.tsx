@@ -23,7 +23,8 @@ export const nav_items: ReadonlyArray<{ href: string; label: string; short: stri
  *
  * On the blotter, the first thing Tab reaches is a "Skip to trades" link, shown only while it has
  * focus, which moves focus past the navigation and the header buttons to the trades: the grid's
- * current row, the first card on a phone, or the message shown when no trades are listed.
+ * current row, the first card on a phone, the message shown when no trades are listed, or the
+ * loading area while the first page loads.
  *
  * @returns The bar.
  */
