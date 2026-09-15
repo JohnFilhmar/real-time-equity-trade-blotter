@@ -87,9 +87,9 @@
 
   /* flash tints (U-M4, U-M13). The up and down tints are as strong as they can be while primary text
      keeps 4.5:1 and the direction arrows keep 3:1 over the tint on a plain, hovered or selected row.
-     The neutral tint matches their strength, measured as the tinted cell's contrast with its row, and
-     its cell shows all its text in the primary colour while it flashes, which keeps 4.5:1. The insert
-     tint is unchanged. */
+     The neutral tint matches their strength, measured as the tinted cell's contrast with its row.
+     While any cell flashes, all its text takes the primary colour, the currency code included, which
+     keeps 4.5:1 over all three tints. The arrows keep their own colours. The insert tint is unchanged. */
   --flash_up:      rgba(70, 212, 160, .35);
   --flash_down:    rgba(245, 133, 152, .43);
   --flash_changed: rgba(157, 176, 202, .38);

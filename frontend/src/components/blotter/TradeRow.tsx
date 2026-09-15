@@ -27,26 +27,31 @@ export interface TradeRowProps {
   register: (id: string, element: HTMLElement | null) => void;
 }
 
-/**
- * Tint animation per movement, with a still tint in its place when the user has turned motion off.
- * The negative margins and matching padding grow the tint to nearly the row's height without moving
- * the cell's content. For as long as a neutral flash is attached, everything in the cell takes the
- * primary text colour, which keeps 4.5:1 over a tint as strong as the up and down ones.
- */
+/** Tint animation per movement, with a still tint in its place when the user has turned motion off. */
 const cell_flash_classes: Record<CellFlashKind, string> = {
   up: 'animate-flash-up motion-reduce:animate-flash-hold-up',
   down: 'animate-flash-down motion-reduce:animate-flash-hold-down',
-  changed: 'animate-flash-changed motion-reduce:animate-flash-hold-changed text-text **:text-text',
+  changed: 'animate-flash-changed motion-reduce:animate-flash-hold-changed',
 };
+
+/**
+ * What a cell takes for as long as any flash is attached. The negative margins and matching padding
+ * grow the tint to nearly the row's height without moving the cell's content. All text in the cell,
+ * the currency code included, takes the primary colour, which keeps 4.5:1 over every tint in both
+ * themes. The colour rule skips anything hidden from assistive tech, so the direction arrows stay
+ * green or red.
+ */
+const flashing_cell_classes = '-mx-1.25 -my-1.5 rounded-sm px-1.25 py-1.5 text-text **:not-aria-hidden:text-text';
 
 /**
  * One trade in the grid. Positioned by the virtualiser, keyed by the trade's id by the caller, and
  * memoised so a broadcast that touches one row re-renders one row.
  *
- * A new row flashes as a whole. An amendment flashes only the cells it changed, and each numeric
- * cell shows a direction arrow for the length of its flash, which keeps the flash from carrying
- * direction by hue alone. A flashing cell is keyed by the version that set it off, so the next
- * amendment remounts it and the animation starts again.
+ * A new row flashes as a whole. An amendment flashes only the cells it changed. For the length of
+ * its flash each of those cells shows its text in the primary colour, and a numeric one shows a
+ * direction arrow, which keeps the flash from carrying direction by hue alone. A flashing cell is
+ * keyed by the version that set it off, so the next amendment remounts it and the animation starts
+ * again.
  *
  * @param props - The table row, its position, selection and focus state, and its flashes.
  * @returns A grid row.
@@ -90,7 +95,7 @@ export const TradeRow = memo(function TradeRow({
             role="gridcell"
             data-cell-flash={flash?.kind}
             className={`min-w-0 truncate ${meta?.numeric ? 'text-right font-mono tabular-nums' : ''} ${meta?.class_name ?? ''} ${
-              flash === undefined ? '' : `-mx-1.25 -my-1.5 rounded-sm px-1.25 py-1.5 ${cell_flash_classes[flash.kind]}`
+              flash === undefined ? '' : `${flashing_cell_classes} ${cell_flash_classes[flash.kind]}`
             } ${cancelled && (cell.column.id === 'symbol' || cell.column.id === 'tradeId') ? 'line-through' : ''}`}
           >
             {flash !== undefined && flash.kind !== 'changed' ? (
