@@ -38,7 +38,8 @@ export interface AuthService {
    *
    * @param credentials - Username and password.
    * @returns The session and its refresh token.
-   * @throws {AppError} 401 for any credential failure, 429 when the account is locked out.
+   * @throws {AppError} 401 for a credential failure. 429 with code `locked_out` when the account is
+   * locked, including on the failure that reaches the limit.
    */
   login(credentials: LoginRequest): Promise<AuthResult>;
 
@@ -148,6 +149,13 @@ export function create_auth_service(
       if (user === null || !matched) {
         await attempts.record_failure(credentials.username);
         logger.warn({ username: credentials.username }, 'login_failed');
+
+        // Read after recording, so the failure that reaches the limit answers with the lock itself.
+        const locked_now = await attempts.seconds_locked(credentials.username);
+        if (locked_now > 0) {
+          throw AppError.locked_out(locked_now);
+        }
+
         throw AppError.unauthenticated('Username or password is incorrect');
       }
 

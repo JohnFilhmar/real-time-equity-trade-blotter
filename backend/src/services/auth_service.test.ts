@@ -35,6 +35,28 @@ describe('auth service', () => {
     });
   }
 
+  /**
+   * Signs in with a wrong password five times, the configured limit, and keeps each refusal.
+   *
+   * @param username - The account to attempt, which need not exist.
+   * @returns The status and code of each refusal, in order. Anything that is not an `AppError` is
+   * kept as it was thrown, so an assertion shows it.
+   */
+  async function five_wrong_passwords(username: string): Promise<unknown[]> {
+    const outcomes: unknown[] = [];
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const outcome = await service.login({ username, password: 'wrong' }).catch((error: unknown) => error);
+      outcomes.push(outcome instanceof AppError ? { status: outcome.status, code: outcome.code } : outcome);
+    }
+    return outcomes;
+  }
+
+  /** Four refusals for the credentials, then the lockout on the failure that reaches the limit. */
+  const locked_on_the_fifth = [
+    ...Array.from({ length: 4 }, () => ({ status: 401, code: 'unauthenticated' })),
+    { status: 429, code: 'locked_out' },
+  ];
+
   beforeEach(() => {
     users = create_in_memory_user_repository();
     refresh_store = create_in_memory_refresh_store();
@@ -102,18 +124,22 @@ describe('auth service', () => {
       }
     });
 
-    it('locks an account out after enough failures', async () => {
+    it('locks the account on the failure that reaches the limit', async () => {
       await given_user('jsmith');
 
-      for (let attempt = 0; attempt < 5; attempt += 1) {
-        await service.login({ username: 'jsmith', password: 'wrong' }).catch(() => undefined);
-      }
+      expect(await five_wrong_passwords('jsmith')).toEqual(locked_on_the_fifth);
 
       // Even the correct password is refused once the account is locked.
       await expect(service.login({ username: 'jsmith', password })).rejects.toMatchObject({
         status: 429,
         code: 'locked_out',
       });
+    });
+
+    it('locks a username with no account on the same failure, so a lock reveals nothing', async () => {
+      await given_user('jsmith');
+
+      expect(await five_wrong_passwords('nobody')).toEqual(locked_on_the_fifth);
     });
 
     it('clears the failure count on a successful login', async () => {

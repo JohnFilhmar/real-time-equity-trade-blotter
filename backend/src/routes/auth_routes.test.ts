@@ -90,30 +90,42 @@ describe(`POST ${api_prefix}/auth/login`, () => {
     expect(response.status).toBe(422);
   });
 
-  it('tells a locked account how long to wait in a Retry-After header, not only in the detail', async () => {
+  it('locks on the failure that reaches the limit and says how long in a Retry-After header', async () => {
     const { app } = await with_user();
-    const failures: Array<{ status: number; retry_after: unknown }> = [];
+    const answers: Array<{ status: number; code: unknown; detail: unknown; retry_after: unknown }> = [];
 
     for (let attempt = 0; attempt < env.LOGIN_MAX_ATTEMPTS; attempt += 1) {
       const response = await request(app)
         .post(`${api_prefix}/auth/login`)
         .send({ username: 'jsmith', password: 'nope' });
-      failures.push({ status: response.status, retry_after: response.headers['retry-after'] });
+      answers.push({
+        status: response.status,
+        code: response.body.code,
+        detail: response.body.detail,
+        retry_after: response.headers['retry-after'],
+      });
     }
 
-    const locked = await request(app)
+    const correct_password = await request(app)
       .post(`${api_prefix}/auth/login`)
       .send({ username: 'jsmith', password });
 
-    expect(failures).toEqual(
-      Array.from({ length: env.LOGIN_MAX_ATTEMPTS }, () => ({ status: 401, retry_after: undefined })),
-    );
-    expect(locked.status).toBe(429);
-    expect(locked.body.code).toBe('locked_out');
-    expect(locked.headers['retry-after']).toBe(env.LOGIN_LOCKOUT_SECONDS.toString());
-    expect(locked.body.detail).toBe(
-      `Too many failed attempts. Try again in ${env.LOGIN_LOCKOUT_SECONDS.toString()} seconds.`,
-    );
+    expect(answers).toEqual([
+      ...Array.from({ length: env.LOGIN_MAX_ATTEMPTS - 1 }, () => ({
+        status: 401,
+        code: 'unauthenticated',
+        detail: 'Username or password is incorrect',
+        retry_after: undefined,
+      })),
+      {
+        status: 429,
+        code: 'locked_out',
+        detail: `Too many failed attempts. Try again in ${env.LOGIN_LOCKOUT_SECONDS.toString()} seconds.`,
+        retry_after: env.LOGIN_LOCKOUT_SECONDS.toString(),
+      },
+    ]);
+    expect(correct_password.status).toBe(429);
+    expect(correct_password.body.code).toBe('locked_out');
   });
 });
 
