@@ -10,6 +10,7 @@ import { useListQuery } from '@/hooks/useListQuery';
 import { phone_query, useMediaQuery } from '@/hooks/useMediaQuery';
 import { useTrades, type TradesResult } from '@/hooks/useTrades';
 import { can } from '@/lib/auth/permissions';
+import { focus_grid } from '@/lib/grid/gridFocus';
 import { active_filter_count, type TradeListQuery } from '@/lib/query/tradeQuery';
 import { useSession } from '@/providers/SessionProvider';
 import type { ConnectionStatus } from '@/types/connection';
@@ -77,6 +78,7 @@ export function BlotterScreen(): ReactNode {
   const is_phone = useMediaQuery(phone_query);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [panelTakesFocus, setPanelTakesFocus] = useState(true);
   const [booking, setBooking] = useState(false);
 
   const selected = trades.rows.find((row) => row.id === selectedId) ?? null;
@@ -85,6 +87,19 @@ export function BlotterScreen(): ReactNode {
 
   const on_select = useCallback((trade: Trade | null) => {
     setSelectedId(trade?.id ?? null);
+    setPanelTakesFocus(true);
+  }, []);
+
+  // A selection made in the grid leaves focus on the row, so the arrow keys go on moving through
+  // trades while the panel follows them.
+  const on_grid_select = useCallback((trade: Trade | null) => {
+    setSelectedId(trade?.id ?? null);
+    setPanelTakesFocus(false);
+  }, []);
+
+  const close_panel = useCallback(() => {
+    setSelectedId(null);
+    focus_grid();
   }, []);
 
   const load_more = useCallback(() => {
@@ -157,15 +172,17 @@ export function BlotterScreen(): ReactNode {
             sort_by={query.sort_by}
             sort_dir={query.sort_dir}
             selected_id={selectedId}
+            view_key={trades.view_key}
+            pending={trades.query.isPlaceholderData}
             onSort={sort_by}
-            onSelect={on_select}
+            onSelect={on_grid_select}
             onLoadMore={load_more}
             has_more={hasNextPage}
           />
         )}
       </div>
 
-      {selected !== null ? <TradePanel trade={selected} onClose={() => setSelectedId(null)} /> : null}
+      {selected !== null ? <TradePanel trade={selected} take_focus={panelTakesFocus} onClose={close_panel} /> : null}
 
       {can_book && is_phone ? (
         <button
@@ -189,6 +206,7 @@ export function BlotterScreen(): ReactNode {
           onBooked={(trade) => {
             setBooking(false);
             setSelectedId(trade.id);
+            setPanelTakesFocus(true);
           }}
         />
       ) : null}

@@ -180,6 +180,19 @@ export interface TradeRepository {
   find_random_active(): Promise<Trade | null>;
 
   /**
+   * Picks one `ACTIVE` trade at random from the most recently executed, used by the live feed to
+   * amend trades that sit on the first screen of the blotter.
+   *
+   * Ordered on `tradeTimestamp` descending with the row id descending as the tiebreaker, the same
+   * order as the blotter's default view.
+   *
+   * @param newest - How many of the newest active trades to choose among, a whole number. Below one
+   * chooses nothing, and fewer active trades than this makes every one a candidate.
+   * @returns A trade, or `null` when there is nothing to choose.
+   */
+  find_random_recent_active(newest: number): Promise<Trade | null>;
+
+  /**
    * Counts the `ACTIVE` trades, used by the live feed to keep its book under a cap.
    *
    * @returns How many trades are active. Zero when none are.

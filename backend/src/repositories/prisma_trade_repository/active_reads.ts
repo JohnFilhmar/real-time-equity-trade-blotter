@@ -33,3 +33,23 @@ export async function find_random_active(prisma: PrismaClient): Promise<Trade | 
 
   return row === null ? null : to_wire_trade(row);
 }
+
+/**
+ * The Postgres side of `TradeRepository.find_random_recent_active`. One read of at most `newest`
+ * rows, served by the status-first timestamp index, then a pick among them.
+ */
+export async function find_random_recent_active(prisma: PrismaClient, newest: number): Promise<Trade | null> {
+  // A negative `take` would read from the other end of the order, which is the oldest trades.
+  if (newest < 1) {
+    return null;
+  }
+
+  const rows = await prisma.trade.findMany({
+    where: { status: 'ACTIVE' },
+    orderBy: [{ tradeTimestamp: 'desc' }, { id: 'desc' }],
+    take: newest,
+  });
+  const row = rows[Math.floor(Math.random() * rows.length)];
+
+  return row === undefined ? null : to_wire_trade(row);
+}

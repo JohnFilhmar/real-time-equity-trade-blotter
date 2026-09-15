@@ -1,36 +1,77 @@
 import { describe, expect, it } from 'vitest';
-import { flash_for, flash_throttle_ms, is_flash_throttled } from './flash';
+import type { Trade } from '@blotter/shared';
+import { changed_cells, flash_throttle_ms, is_flash_throttled } from './flash';
 
-describe('flash_for', () => {
-  it('flashes a row it has not seen before as new', () => {
-    expect(flash_for(undefined, { version: 1, price: 10 })).toBe('new');
+/**
+ * A stored trade at version 1, with any field replaced.
+ *
+ * @param overrides - Fields to replace.
+ * @returns The trade.
+ */
+function a_trade(overrides: Partial<Trade> = {}): Trade {
+  return {
+    id: '5b0e1c1a-7d0e-4c55-9a53-6a4f3f4f2a10',
+    tradeId: 'TRD-100001',
+    symbol: 'AAPL',
+    side: 'BUY',
+    quantity: 5000,
+    price: 227.45,
+    currency: 'USD',
+    trader: 'JSMITH',
+    book: 'EQUITIES_US',
+    counterparty: 'Goldman Sachs',
+    tradeTimestamp: '2026-09-15T09:15:23.000Z',
+    status: 'ACTIVE',
+    version: 1,
+    createdAt: '2026-09-15T09:15:23.000Z',
+    updatedAt: '2026-09-15T09:15:23.000Z',
+    ...overrides,
+  };
+}
+
+describe('changed_cells', () => {
+  it('lights the price and the notional up when an amendment raised the price', () => {
+    const cells = changed_cells(a_trade(), a_trade({ version: 2, price: 229.1 }));
+
+    expect(Object.fromEntries(cells)).toEqual({ price: 'up', notional: 'up' });
   });
 
-  it('does not flash a row whose version did not move', () => {
-    expect(flash_for({ version: 2, price: 10 }, { version: 2, price: 11 })).toBeNull();
+  it('lights the quantity and the notional down when an amendment cut the quantity', () => {
+    const cells = changed_cells(a_trade(), a_trade({ version: 2, quantity: 3000 }));
+
+    expect(Object.fromEntries(cells)).toEqual({ quantity: 'down', notional: 'down' });
   });
 
-  it('does not flash a stale row that arrived after a newer one', () => {
-    expect(flash_for({ version: 3, price: 10 }, { version: 2, price: 12 })).toBeNull();
+  it('gives each numeric cell its own direction when they move opposite ways', () => {
+    const cells = changed_cells(a_trade({ quantity: 100, price: 10 }), a_trade({ version: 2, quantity: 200, price: 6 }));
+
+    expect(Object.fromEntries(cells)).toEqual({ quantity: 'up', price: 'down', notional: 'up' });
   });
 
-  it('flashes up when a new version raised the price', () => {
-    expect(flash_for({ version: 1, price: 10 }, { version: 2, price: 10.5 })).toBe('up');
+  it('marks a changed text column as changed, keyed by that column', () => {
+    const cells = changed_cells(a_trade(), a_trade({ version: 2, counterparty: 'Nomura', book: 'TECH_GROWTH' }));
+
+    expect(Object.fromEntries(cells)).toEqual({ counterparty: 'changed', book: 'changed' });
   });
 
-  it('flashes down when a new version lowered the price', () => {
-    expect(flash_for({ version: 1, price: 10 }, { version: 2, price: 9.5 })).toBe('down');
+  it('lights nothing when a new version changed no cell, such as an amendment back to the same price', () => {
+    expect(changed_cells(a_trade(), a_trade({ version: 2 })).size).toBe(0);
   });
 
-  it('flashes changed when a new version left the price alone', () => {
-    expect(flash_for({ version: 1, price: 10 }, { version: 2, price: 10 })).toBe('changed');
+  it('lights nothing for a cancellation, which moves only the status', () => {
+    expect(changed_cells(a_trade(), a_trade({ version: 2, status: 'CANCELLED' })).size).toBe(0);
+  });
+
+  it('lights nothing for a stale or repeated version, even when its fields differ', () => {
+    expect(changed_cells(a_trade({ version: 3 }), a_trade({ version: 2, price: 300 })).size).toBe(0);
+    expect(changed_cells(a_trade({ version: 2 }), a_trade({ version: 2, price: 300 })).size).toBe(0);
   });
 });
 
 describe('is_flash_throttled', () => {
   const started_at = 10_000;
 
-  it('never throttles a row that has not flashed yet', () => {
+  it('never throttles a cell that has not flashed yet', () => {
     expect(is_flash_throttled(undefined, started_at)).toBe(false);
   });
 

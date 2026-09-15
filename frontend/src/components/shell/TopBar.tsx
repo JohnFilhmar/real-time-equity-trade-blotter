@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import { BrandMark } from '@/components/ui/BrandMark';
 import { IconButton } from '@/components/ui/IconButton';
 import { Skeleton } from '@/components/ui/Note';
+import { focus_grid, trade_grid_id } from '@/lib/grid/gridFocus';
 import { useSession } from '@/providers/SessionProvider';
 import { ConnectionPill } from './ConnectionPill';
 import { ThemeToggle } from './ThemeToggle';
@@ -20,6 +21,9 @@ export const nav_items: ReadonlyArray<{ href: string; label: string; short: stri
 /**
  * The top bar: wordmark, section navigation, the connection pill, the theme switch and the user.
  *
+ * On the blotter, the first thing Tab reaches is a "Skip to trades" link, shown only while it has
+ * focus, which puts focus on the grid's current row past the navigation and the header buttons.
+ *
  * @returns The bar.
  */
 export function TopBar(): ReactNode {
@@ -29,6 +33,19 @@ export function TopBar(): ReactNode {
 
   return (
     <header className="flex h-13 shrink-0 items-center gap-3.5 border-b border-rule bg-glass px-4 shadow-[inset_0_1px_0_var(--glass_edge_soft)] backdrop-blur-[18px] backdrop-saturate-[1.4]">
+      {pathname === '/' ? (
+        <a
+          href={`#${trade_grid_id}`}
+          onClick={(event) => {
+            if (focus_grid()) {
+              event.preventDefault();
+            }
+          }}
+          className="sr-only rounded-md border border-brand-edge bg-surface px-3 py-2 text-[12.5px] font-medium text-brand-lo shadow-glass focus:not-sr-only focus:absolute focus:top-2.5 focus:left-3 focus:z-[70]"
+        >
+          Skip to trades
+        </a>
+      ) : null}
       <div className="flex shrink-0 items-center gap-2.25">
         <BrandMark />
         <b className="hidden whitespace-nowrap text-[13.5px] font-semibold tracking-[-.012em] md:inline">Fusion Blotter</b>

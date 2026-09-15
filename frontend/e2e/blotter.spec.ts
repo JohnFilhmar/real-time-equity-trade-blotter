@@ -12,12 +12,15 @@ test.describe('blotter basics @smoke', () => {
     await page.getByRole('button', { name: /^Quantity/ }).click();
     await expect(page.locator('[role="columnheader"][aria-sort="ascending"]')).toContainText('Quantity');
     await expect(page).toHaveURL(/sort_by=quantity/);
+    // The previous rows stay on screen, dimmed, until the sorted page lands and the grid is no longer busy.
+    await expect(page.locator('[role="grid"]')).not.toHaveAttribute('aria-busy', 'true');
     await expect(rows.nth(1)).toBeVisible();
 
     const quantities = await page
       .locator('[role="grid"] [role="row"][aria-rowindex] [role="gridcell"]:nth-child(4)')
       .allTextContents();
-    const numbers = quantities.slice(0, 10).map((text) => Number(text.replace(/,/g, '')));
+    // An amended quantity carries a direction arrow for a moment, so only the digits are read.
+    const numbers = quantities.slice(0, 10).map((text) => Number(text.replace(/\D/g, '')));
     expect(numbers).toEqual([...numbers].sort((left, right) => left - right));
 
     // Filter side SELL: every rendered side cell reads SELL and a chip appears.
