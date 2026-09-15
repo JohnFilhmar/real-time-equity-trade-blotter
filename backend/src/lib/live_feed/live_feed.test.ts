@@ -5,6 +5,7 @@ import { create_in_memory_trade_repository } from '../../repositories/in_memory_
 import { create_trade_service } from '../../services/trade_service/index.js';
 import { logger } from '../logging/logger.js';
 import type { TradeRepository } from '../../interfaces/trade_repository.js';
+import { recent_amend_window } from './choose_amend_scope.js';
 import { create_live_feed, type LiveFeedOptions } from './live_feed.js';
 
 /** A fixed pace, so a test advances the clock by a known amount rather than guessing. */
@@ -125,6 +126,28 @@ describe('live feed', () => {
     );
   });
 
+  it('draws about half of its amendments from the newest trades and the rest from the whole book', async () => {
+    const repository = create_in_memory_trade_repository();
+    await fill(repository, 5, 'BUY', 100);
+    const recent = vi.spyOn(repository, 'find_random_recent_active');
+    const anywhere = vi.spyOn(repository, 'find_random_active');
+    const { feed, sent } = build_feed(repository);
+
+    feed.start();
+    await vi.advanceTimersByTimeAsync(400_000);
+    feed.stop();
+
+    const amended = sent.filter((event) => event === 'trade.amended').length;
+    const cancelled = sent.filter((event) => event === 'trade.cancelled').length;
+
+    // Each amendment and each cancel looks for its target once, and a cancel always looks across the
+    // whole book, so every recent lookup belongs to an amendment.
+    expect(recent.mock.calls.length + anywhere.mock.calls.length).toBe(amended + cancelled);
+    expect(recent).toHaveBeenCalledWith(recent_amend_window);
+    expect(recent.mock.calls.length).toBeGreaterThan(amended * 0.35);
+    expect(recent.mock.calls.length).toBeLessThan(amended * 0.65);
+  });
+
   it('keeps running after an unexpected failure', async () => {
     const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
     const failing: TradeRepository = {
@@ -133,6 +156,7 @@ describe('live feed', () => {
         throw new Error('database is on fire');
       },
       find_random_active: async (): Promise<Trade | null> => null,
+      find_random_recent_active: async (): Promise<Trade | null> => null,
       count_active: async (): Promise<number> => 0,
     };
     const { feed } = build_feed(failing);

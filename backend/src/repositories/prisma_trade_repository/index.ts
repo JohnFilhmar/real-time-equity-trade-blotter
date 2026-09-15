@@ -9,7 +9,7 @@ import type {
   TradeRepository,
   TradeWriteContext,
 } from '../../interfaces/trade_repository.js';
-import { count_active, find_active_trades, find_random_active } from './active_reads.js';
+import { count_active, find_active_trades, find_random_active, find_random_recent_active } from './active_reads.js';
 import { find_events, list_events } from './event_reads.js';
 import { find_by_trade_id, list } from './trade_reads.js';
 import { amend, cancel, create } from './writes.js';
@@ -70,6 +70,10 @@ export function create_prisma_trade_repository(prisma: PrismaClient): TradeRepos
 
     async find_random_active(): Promise<Trade | null> {
       return find_random_active(prisma);
+    },
+
+    async find_random_recent_active(newest: number): Promise<Trade | null> {
+      return find_random_recent_active(prisma, newest);
     },
 
     async count_active(): Promise<number> {

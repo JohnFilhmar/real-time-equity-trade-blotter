@@ -19,6 +19,7 @@ import {
   build_change_set,
 } from '../../lib/audit/build_change_set.js';
 import { decode_cursor, encode_cursor } from '../../lib/paging/cursor.js';
+import { pick_random_recent } from './active_reads.js';
 import { find_events, list_events } from './events.js';
 import { compare_on, matches_text, within_range } from './filtering.js';
 
@@ -241,6 +242,10 @@ export function create_in_memory_trade_repository(initial: Trade[] = []): TradeR
       }
 
       return active[Math.floor(Math.random() * active.length)] ?? null;
+    },
+
+    async find_random_recent_active(newest: number): Promise<Trade | null> {
+      return pick_random_recent([...trades.values()].filter((trade) => is_active(trade)), newest);
     },
 
     async count_active(): Promise<number> {

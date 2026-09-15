@@ -222,6 +222,24 @@ describe.skipIf(test_database_url === undefined)('prisma trade repository', () =
       // A different read path as the oracle: every active row loaded, rather than counted.
       expect(await repository.count_active()).toBe((await repository.find_active_trades()).length);
     });
+
+    it('picks a recent active trade only from the newest by execution time', async () => {
+      // Executed a day ahead of anything the seed or the live feed writes, so these are the newest
+      // rows in a shared database without clearing it.
+      const ahead = Date.now() + 86_400_000;
+      const newest = await repository.create(a_new_trade({ tradeTimestamp: new Date(ahead + 2000).toISOString() }));
+      const second = await repository.create(a_new_trade({ tradeTimestamp: new Date(ahead + 1000).toISOString() }));
+      const dropped = await repository.create(a_new_trade({ tradeTimestamp: new Date(ahead + 3000).toISOString() }));
+      await repository.cancel(dropped.tradeId, dropped.version, api_context);
+
+      const picked = new Set<string>();
+      for (let draw = 0; draw < 40; draw += 1) {
+        picked.add((await repository.find_random_recent_active(2))?.tradeId ?? 'none');
+      }
+
+      expect(picked).toEqual(new Set([newest.tradeId, second.tradeId]));
+      await expect(repository.find_random_recent_active(0)).resolves.toBeNull();
+    });
   });
 
   describe('concurrency', () => {

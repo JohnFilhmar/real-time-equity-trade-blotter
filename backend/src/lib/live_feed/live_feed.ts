@@ -6,6 +6,7 @@ import { AppError } from '../errors/app_error.js';
 import { logger } from '../logging/logger.js';
 import { generate_live_amendment, generate_live_trade } from '../seed/generate_trades.js';
 import { choose_action } from './choose_action.js';
+import { choose_amend_scope, recent_amend_window } from './choose_amend_scope.js';
 import { lean_side } from './lean_side.js';
 
 /** How the feed paces itself and how large a book it keeps. */
@@ -97,9 +98,16 @@ export function create_live_feed(
 
   /**
    * Amends a randomly chosen active trade, falling back to a create when the blotter holds none.
+   *
+   * Half the time the target is one of the newest trades, the rows on a trader's first screen, so
+   * an amendment is seen landing; otherwise it is any active trade in the book.
    */
   async function do_amend(): Promise<void> {
-    const target = await repository.find_random_active();
+    const scope = choose_amend_scope(faker.number.float({ min: 0, max: 1 }));
+    const target =
+      scope === 'recent'
+        ? await repository.find_random_recent_active(recent_amend_window)
+        : await repository.find_random_active();
 
     if (target === null) {
       await do_create();
