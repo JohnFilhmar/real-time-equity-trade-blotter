@@ -24,7 +24,8 @@ const to_before_from_message = 'To must be on or after From';
 /**
  * How long a reversed range must stand unchanged before its message shows, in milliseconds. Long
  * enough that retyping a year digit by digit says nothing, short enough that a real mistake is
- * explained moments after typing stops. Focus leaving the input shows the message at once.
+ * explained moments after typing stops. Focus leaving the input shows the message at once. Once
+ * shown, the message stays through further edits until the range is valid.
  */
 export const date_range_message_delay_ms = 1_000;
 

@@ -34,9 +34,10 @@ interface RangeError {
  * Each input keeps a draft. A From later than To never reaches the URL, so the grid keeps the last
  * valid range. The reason shows under the input that was just edited, which is marked invalid, once
  * the value has stood unchanged for `date_range_message_delay_ms` or focus leaves the input, so
- * retyping a year digit by digit does not flash it. A valid pair clears it at once. The picker greys
- * out dates on the wrong side of the other end. When the range in the URL changes from elsewhere,
- * such as a removed chip, Clear or the back button, the drafts follow it.
+ * retyping a year digit by digit does not flash it. Once shown, it stays through further edits for
+ * as long as the pair is reversed, and clears the moment the pair is valid or either end is
+ * cleared. The picker greys out dates on the wrong side of the other end. When the range in the URL
+ * changes from elsewhere, such as a removed chip, Clear or the back button, the drafts follow it.
  *
  * @param props - The id prefix, the range from the URL, and the writer for a valid range.
  * @returns The two fields.
@@ -67,9 +68,9 @@ export function DateRangeFields({ id_prefix, range, onChange }: DateRangeFieldsP
     const next = { ...draft, [field]: value };
     const checked = check_date_range(next, field);
     setDraft(next);
-    setProblemShown(false);
     if (checked.valid) {
       setProblem(null);
+      setProblemShown(false);
       onChange(checked.range);
     } else {
       setProblem({ field: checked.field, message: checked.message });

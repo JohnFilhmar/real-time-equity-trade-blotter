@@ -125,6 +125,54 @@ describe('DateRangeFields', () => {
     expect(screen.getByText('To must be on or after From')).toBeInTheDocument();
   });
 
+  it('keeps a shown explanation through edits that leave the range reversed, without waiting again', () => {
+    const { to, on_change } = render_fields({ date_from: nine, date_to: noon });
+
+    fireEvent.change(to, { target: { value: '2026-08-18T08:00:05' } });
+    wait(date_range_message_delay_ms);
+
+    for (const value of ['2026-08-18T07:00:05', '2026-08-18T06:00:05', '2026-08-18T08:59:05']) {
+      fireEvent.change(to, { target: { value } });
+
+      expect(to).toHaveAttribute('aria-invalid', 'true');
+      expect(screen.getByText('To must be on or after From')).toBeInTheDocument();
+
+      wait(300);
+    }
+    expect(on_change).not.toHaveBeenCalled();
+  });
+
+  it('clears a shown explanation the moment the pair is valid, and waits again before explaining the next reversal', () => {
+    const { to, on_change } = render_fields({ date_from: nine, date_to: noon });
+
+    fireEvent.change(to, { target: { value: '2026-08-18T08:00:05' } });
+    wait(date_range_message_delay_ms);
+    fireEvent.change(to, { target: { value: '2026-08-18T07:00:05' } });
+    fireEvent.change(to, { target: { value: '2026-08-18T10:00:05' } });
+
+    expect(to).not.toHaveAttribute('aria-invalid');
+    expect(screen.queryByText('To must be on or after From')).toBeNull();
+    expect(on_change).toHaveBeenCalledTimes(1);
+    expect(on_change).toHaveBeenCalledWith({ date_from: nine, date_to: '2026-08-18T10:00:05.000Z' });
+
+    fireEvent.change(to, { target: { value: '2026-08-18T08:30:05' } });
+
+    expect(to).not.toHaveAttribute('aria-invalid');
+    expect(screen.queryByText('To must be on or after From')).toBeNull();
+  });
+
+  it('clears a shown explanation the moment either end is cleared, and writes the open range', () => {
+    const { from, to, on_change } = render_fields({ date_from: nine, date_to: noon });
+
+    fireEvent.change(to, { target: { value: '2026-08-18T08:00:05' } });
+    wait(date_range_message_delay_ms);
+    fireEvent.change(from, { target: { value: '' } });
+
+    expect(to).not.toHaveAttribute('aria-invalid');
+    expect(screen.queryByText('To must be on or after From')).toBeNull();
+    expect(on_change).toHaveBeenCalledWith({ date_from: undefined, date_to: '2026-08-18T08:00:05.000Z' });
+  });
+
   it('clears the explanation the moment an edit to the other end makes the pair valid, and writes both ends', () => {
     const { from, to, on_change } = render_fields({ date_from: nine, date_to: noon });
 
