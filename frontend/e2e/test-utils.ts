@@ -1,4 +1,4 @@
-import { expect, test as base, type Browser, type BrowserContext, type Page } from '@playwright/test';
+import { expect, test as base, type APIRequestContext, type Browser, type BrowserContext, type Page } from '@playwright/test';
 
 /** The demo password every seeded account shares. Configuration on the API side, so overridable. */
 export const demo_password = process.env.SEED_USER_PASSWORD ?? 'blotter-demo-2026';
@@ -49,6 +49,38 @@ export async function sign_in(browser: Browser, username: string): Promise<{ con
   await expect(page.locator('[role="grid"], [role="list"][aria-label="Trade blotter"]').first()).toBeVisible();
   await expect(page.locator('[data-state="live"]')).toBeVisible();
   return { context, page };
+}
+
+/**
+ * Waits, only when it has to, until the credential endpoints will take `needed` more requests from
+ * this address in the current rate-limit window.
+ *
+ * The API allows ten credential requests a minute per address, and every page load spends one on
+ * the session restore. A test about to spend several calls this first. It sends one refresh with
+ * no cookie, which counts against the same budget, reads what is left from the `RateLimit` header
+ * (`limit=10, remaining=7, reset=42`), and sleeps into the next window when that is not enough.
+ * Without the header it returns at once. The wait can approach a minute, so callers mark
+ * themselves `test.slow()`.
+ *
+ * @param request - An API context carrying no session cookie, such as the `request` fixture.
+ * @param needed - Credential requests the test makes after this probe.
+ * @throws {Error} When `needed` is more than a whole window allows, since no wait would help.
+ */
+export async function ensure_auth_budget(request: APIRequestContext, needed: number): Promise<void> {
+  const probe = await request.post('/api/v1/auth/refresh');
+  const budget = /limit=(\d+),\s*remaining=(\d+),\s*reset=(\d+)/.exec(probe.headers()['ratelimit'] ?? '');
+  if (budget === null) {
+    return;
+  }
+
+  const [limit, remaining, reset] = [Number(budget[1]), Number(budget[2]), Number(budget[3])];
+  if (remaining >= needed) {
+    return;
+  }
+  if (needed > limit) {
+    throw new Error(`The test needs ${needed.toString()} credential requests; one window allows ${limit.toString()}`);
+  }
+  await new Promise<void>((resolve) => setTimeout(resolve, (reset + 1) * 1000));
 }
 
 /** The suite's `test`, extended with the shared desk. */

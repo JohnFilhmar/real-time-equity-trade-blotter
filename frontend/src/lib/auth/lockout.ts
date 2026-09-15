@@ -1,22 +1,13 @@
-const lockout_sentence = /try again in (\d+) seconds/i;
-
 /**
- * Reads the lockout duration out of the API's problem detail, when the detail is a lockout.
+ * Counts the whole seconds left on a lock, rounding a part second up so the countdown never shows
+ * `0:00` while the lock still holds.
  *
- * The API says "Too many failed attempts. Try again in 900 seconds." and carries the number
- * nowhere else, so that sentence is the contract this reads; a `Retry-After` header would be the
- * cleaner one and is the change to make if the sentence ever needs to move.
- *
- * @param detail - The problem detail as returned.
- * @returns Whole seconds remaining, or `null` when the detail is not a lockout.
+ * @param expires_at - When the lock ends, in epoch milliseconds.
+ * @param now - The current time, in epoch milliseconds.
+ * @returns Seconds remaining. Zero at the expiry and after it.
  */
-export function lockout_seconds_from_detail(detail: string): number | null {
-  const match = lockout_sentence.exec(detail);
-  if (match === null) {
-    return null;
-  }
-  const seconds = Number(match[1]);
-  return Number.isInteger(seconds) && seconds > 0 ? seconds : null;
+export function seconds_until(expires_at: number, now: number): number {
+  return Math.max(0, Math.ceil((expires_at - now) / 1000));
 }
 
 /**

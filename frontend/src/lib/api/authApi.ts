@@ -15,7 +15,7 @@ const prefix = '/api/v1/auth';
  * @param credentials - Username and password.
  * @returns The access token, its lifetime, and the signed-in user.
  * @throws {ApiError} 401 on bad credentials, 429 when the account is locked or the address is
- * rate limited.
+ * rate limited. Both 429s carry the wait from their `Retry-After` header as `retry_after_seconds`.
  */
 export function login(credentials: LoginRequest): Promise<AuthSession> {
   return api_json(`${prefix}/login`, auth_session_schema, {

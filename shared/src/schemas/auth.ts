@@ -6,15 +6,22 @@ import { permission_values, role_values } from '../reference/roles.js';
  *
  * Both fields are bounded. An unbounded password field is a cheap way to make a slow hash
  * comparison much slower, which is the shape of a denial-of-service rather than a login.
+ *
+ * Every rule carries the sentence a person reads. The login form validates with this schema and the
+ * API's 422 lists the same issues, so the message under a field is identical whichever side caught
+ * the mistake. Rules run in order, and the form shows the first message per field.
  */
 export const login_request_schema = z.object({
   username: z
-    .string()
+    .string({ error: 'Enter your username' })
     .trim()
-    .min(1)
-    .max(64)
-    .regex(/^[A-Za-z0-9._-]+$/, 'username may use letters, digits, dot, underscore and dash'),
-  password: z.string().min(1).max(200),
+    .min(1, 'Enter your username')
+    .max(64, 'Username cannot be longer than 64 characters')
+    .regex(/^[A-Za-z0-9._-]+$/, 'Username can only use letters, numbers, dots, underscores and dashes'),
+  password: z
+    .string({ error: 'Enter your password' })
+    .min(1, 'Enter your password')
+    .max(200, 'Password cannot be longer than 200 characters'),
 });
 
 /**
