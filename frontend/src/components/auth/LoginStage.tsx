@@ -18,7 +18,7 @@ export function LoginStage({ children }: { children: ReactNode }): ReactNode {
       <DeskPanel />
 
       <main className="relative flex flex-1 items-center justify-center px-6 py-10 md:justify-start md:px-16">
-        <div className="flex w-full max-w-[330px] flex-col gap-[14px]">
+        <div className="flex w-full max-w-82.5 flex-col gap-3.5">
           <div className="animate-rise-stagger [animation-delay:70ms]">
             <h1 className="text-display-sm font-semibold text-text">Sign in</h1>
             <p className="mt-2 text-[12.5px] leading-[1.6] text-text-2">

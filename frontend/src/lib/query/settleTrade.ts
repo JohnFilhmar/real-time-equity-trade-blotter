@@ -1,8 +1,8 @@
 import type { QueryClient } from '@tanstack/react-query';
 import type { Trade } from '@blotter/shared';
-import { apply_trade, type TradePages } from './apply_broadcast';
+import { apply_trade, type TradePages } from './applyBroadcast';
 import { trade_keys } from './keys';
-import { trade_list_query_schema } from './trade_query';
+import { trade_list_query_schema } from './tradeQuery';
 
 /**
  * Writes one changed trade into every list and detail cache that holds it.

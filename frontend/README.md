@@ -7,7 +7,7 @@ socket.io-client. Run it through the root scripts described in the [repository R
 src/app/          routes: the authenticated group, /login, providers, the global stylesheet and tokens
 src/providers/    query client, session, theme, and the socket that patches the cache
 src/components/   ui primitives, shell, blotter, trade, positions, audit, auth
-src/hooks/        camelCase hooks in snake_case files, per React's rules-of-hooks
+src/hooks/        useX hooks, one per camelCase file (useTrades.ts)
 src/lib/          api clients, query keys and the cache patch, formatting, permissions, stores
 src/types/        data shapes the components share
 e2e/              Playwright journeys, run with the compose stack up

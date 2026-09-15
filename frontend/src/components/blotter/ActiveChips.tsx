@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Chip } from '@/components/ui/Badges';
 import { format_date_time } from '@/lib/format/clock';
-import { filter_keys, type FilterKey, type TradeListQuery } from '@/lib/query/trade_query';
+import { filter_keys, type FilterKey, type TradeListQuery } from '@/lib/query/tradeQuery';
 
 const labels: Record<FilterKey, string> = {
   symbol: 'Symbol',

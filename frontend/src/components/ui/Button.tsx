@@ -52,7 +52,7 @@ export function Button({
       disabled={is_disabled}
       aria-disabled={is_disabled}
       title={disabled_reason ?? rest.title}
-      className={`inline-flex h-[31px] items-center justify-center gap-[7px] whitespace-nowrap rounded-r border px-[13px] text-[12.5px] font-medium transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${variant_classes[variant]} ${block ? 'w-full' : ''} ${className}`}
+      className={`inline-flex h-7.75 items-center justify-center gap-1.75 whitespace-nowrap rounded-r border px-3.25 text-[12.5px] font-medium transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${variant_classes[variant]} ${block ? 'w-full' : ''} ${className}`}
       {...rest}
     >
       {children}

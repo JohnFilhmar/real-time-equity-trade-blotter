@@ -17,7 +17,7 @@ export function AppShell({ children }: { children: ReactNode }): ReactNode {
     <div className="relative flex h-dvh min-w-0 flex-col overflow-hidden bg-[radial-gradient(760px_380px_at_8%_-8%,var(--brand_glow),transparent_60%)]">
       <TopBar />
       <KpiStrip />
-      <main className="flex min-h-0 min-w-0 flex-1 flex-col pb-[56px] md:pb-0">{children}</main>
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col pb-14 md:pb-0">{children}</main>
       <MobileTabs />
       <Toasts />
     </div>

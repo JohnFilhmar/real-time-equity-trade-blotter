@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { IBM_Plex_Mono, IBM_Plex_Sans } from 'next/font/google';
 import { Providers } from './providers';
-import { theme_storage_key } from '@/providers/theme_provider';
+import { theme_storage_key } from '@/providers/ThemeProvider';
 import './globals.css';
 
 const plex_sans = IBM_Plex_Sans({

@@ -25,7 +25,7 @@ export function GridHeader({ table, sort_by, sort_dir, onSort }: GridHeaderProps
     <div
       role="row"
       aria-rowindex={1}
-      className={`sticky top-0 z-[5] grid h-[31px] items-center gap-[10px] border-b border-rule bg-head px-[14px] backdrop-blur-[10px] ${grid_template_classes}`}
+      className={`sticky top-0 z-[5] grid h-7.75 items-center gap-2.5 border-b border-rule bg-head px-3.5 backdrop-blur-[10px] ${grid_template_classes}`}
     >
       {table.getFlatHeaders().map((header) => {
         const meta = header.column.columnDef.meta;

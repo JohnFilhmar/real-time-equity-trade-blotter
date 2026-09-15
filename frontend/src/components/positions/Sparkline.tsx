@@ -41,7 +41,7 @@ export function Sparkline({ values, tone, label }: SparklineProps): ReactNode {
   const colour = tone === 'gain' ? 'var(--gain)' : 'var(--loss)';
 
   return (
-    <svg className="block h-[22px] w-full" viewBox={`0 0 ${width.toString()} ${height.toString()}`} preserveAspectRatio="none" role="img" aria-label={label}>
+    <svg className="block h-5.5 w-full" viewBox={`0 0 ${width.toString()} ${height.toString()}`} preserveAspectRatio="none" role="img" aria-label={label}>
       <path d={path} fill="none" stroke={colour} strokeWidth="1.4" strokeLinejoin="round" strokeLinecap="round" opacity="0.9" vectorEffect="non-scaling-stroke" />
       <path d={`M${last[0].toFixed(1)} ${last[1].toFixed(1)} h0.01`} fill="none" stroke={colour} strokeWidth="3.8" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
     </svg>

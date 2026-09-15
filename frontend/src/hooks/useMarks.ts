@@ -1,6 +1,6 @@
 'use client';
 
-import { useMarkStore } from '@/lib/stores/mark_store';
+import { useMarkStore } from '@/lib/stores/markStore';
 
 /**
  * Reads one symbol's current mark. Re-renders only when that symbol's mark changes.

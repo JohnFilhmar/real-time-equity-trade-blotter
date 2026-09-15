@@ -42,9 +42,9 @@ export interface RovingRowsHandlers {
  * @returns Wiring for the grid and its rows.
  */
 export function useRovingRows(row_count: number, handlers: RovingRowsHandlers): RovingRows {
-  const [requested_index, set_requested_index] = useState(0);
+  const [requestedIndex, setRequestedIndex] = useState(0);
   const elements = useRef<Map<number, HTMLElement>>(new Map());
-  const focused_index = row_count === 0 ? 0 : Math.min(requested_index, row_count - 1);
+  const focused_index = row_count === 0 ? 0 : Math.min(requestedIndex, row_count - 1);
 
   const register_row = useCallback((index: number, element: HTMLElement | null) => {
     if (element === null) {
@@ -61,7 +61,7 @@ export function useRovingRows(row_count: number, handlers: RovingRowsHandlers): 
   const move_to = useCallback(
     (index: number) => {
       const clamped = Math.max(0, Math.min(index, row_count - 1));
-      set_requested_index(clamped);
+      setRequestedIndex(clamped);
       // The row may not be rendered yet when it is outside the virtual window; the grid scrolls it
       // into view on the next frame and focuses it through register_row.
       window.requestAnimationFrame(() => focus_row(clamped));
@@ -114,5 +114,5 @@ export function useRovingRows(row_count: number, handlers: RovingRowsHandlers): 
     [focused_index, handlers, move_to, row_count],
   );
 
-  return { focused_index, set_focused_index: set_requested_index, on_key_down, register_row, focus_row };
+  return { focused_index, set_focused_index: setRequestedIndex, on_key_down, register_row, focus_row };
 }

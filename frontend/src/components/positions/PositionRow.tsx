@@ -2,7 +2,7 @@
 
 import { memo, type ReactNode } from 'react';
 import { unrealised_pnl, type Position } from '@blotter/shared';
-import { useMark, useMarkHistory } from '@/hooks/use_marks';
+import { useMark, useMarkHistory } from '@/hooks/useMarks';
 import { format_money, format_price, format_quantity, to_display_notional } from '@/lib/format/money';
 import { Sparkline } from './Sparkline';
 
@@ -52,7 +52,7 @@ export const PositionRow = memo(function PositionRow({ position }: PositionRowPr
   const tone = (unrealised ?? 0) >= 0 ? 'gain' : 'loss';
 
   return (
-    <tr className={`grid h-[44px] items-center gap-[10px] border-b border-rule-soft px-[14px] text-[12.5px] ${position_grid_cols}`}>
+    <tr className={`grid h-11 items-center gap-2.5 border-b border-rule-soft px-3.5 text-[12.5px] ${position_grid_cols}`}>
       <td className="font-semibold">{position.symbol}</td>
       <td className="font-mono text-[10.5px] text-muted">{position.currency}</td>
       <td className={`text-right font-mono tabular-nums ${long ? 'text-gain' : 'text-loss'}`}>

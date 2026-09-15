@@ -1,6 +1,6 @@
 'use client';
 
-import { mutation_block_reason, mutations_allowed, useConnectionStore } from '@/lib/stores/connection_store';
+import { mutation_block_reason, mutations_allowed, useConnectionStore } from '@/lib/stores/connectionStore';
 import type { ConnectionStatus } from '@/types/connection';
 
 /**

@@ -3,8 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Skeleton } from '@/components/ui/Note';
-import { ConnectionProvider } from '@/providers/connection_provider';
-import { useSession } from '@/providers/session_provider';
+import { ConnectionProvider } from '@/providers/ConnectionProvider';
+import { useSession } from '@/providers/SessionProvider';
 
 /**
  * The session gate. Nothing under it renders without a signed-in user, and the socket only opens
@@ -29,9 +29,9 @@ export function RequireSession({ children }: { children: ReactNode }): ReactNode
   if (session.status === 'restoring') {
     return (
       <div className="flex flex-1 flex-col gap-3 p-6" aria-busy="true" aria-label="Restoring your session">
-        <Skeleton className="h-[52px] w-full" />
-        <Skeleton className="h-[64px] w-full" />
-        <Skeleton className="h-[320px] w-full" />
+        <Skeleton className="h-13 w-full" />
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-80 w-full" />
       </div>
     );
   }
@@ -68,9 +68,9 @@ export function RequireAnonymous({
 }): ReactNode {
   const { session } = useSession();
   const router = useRouter();
-  const [signed_in_here, set_signed_in_here] = useState(false);
-  if (session.status === 'anonymous' && !signed_in_here) {
-    set_signed_in_here(true);
+  const [signedInHere, setSignedInHere] = useState(false);
+  if (session.status === 'anonymous' && !signedInHere) {
+    setSignedInHere(true);
   }
 
   useEffect(() => {
@@ -83,7 +83,7 @@ export function RequireAnonymous({
     return fallback;
   }
 
-  if (session.status === 'authenticated' && !signed_in_here) {
+  if (session.status === 'authenticated' && !signedInHere) {
     return leaving;
   }
 

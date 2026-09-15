@@ -3,11 +3,11 @@
 import { keepPreviousData, useInfiniteQuery, useQuery, type UseInfiniteQueryResult, type UseQueryResult } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import type { Trade, TradeEvent } from '@blotter/shared';
-import { get_trade, list_trade_events, list_trades } from '@/lib/api/trade_api';
-import type { TradePages } from '@/lib/query/apply_broadcast';
+import { get_trade, list_trade_events, list_trades } from '@/lib/api/tradeApi';
+import type { TradePages } from '@/lib/query/applyBroadcast';
 import { trade_keys } from '@/lib/query/keys';
-import type { TradeListQuery } from '@/lib/query/trade_query';
-import { useAccessToken } from '@/providers/session_provider';
+import type { TradeListQuery } from '@/lib/query/tradeQuery';
+import { useAccessToken } from '@/providers/SessionProvider';
 
 /** Rows fetched per page. Large enough that a full screen never waits on a second request. */
 export const page_size = 200;

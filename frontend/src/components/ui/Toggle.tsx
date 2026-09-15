@@ -34,7 +34,7 @@ export function Toggle({ pressed, onToggle, tone = 'brand', label, children }: T
       aria-pressed={pressed}
       aria-label={label}
       onClick={onToggle}
-      className={`h-[33px] rounded-r border font-mono text-[11.5px] font-semibold tracking-[.06em] transition-all duration-150 ${
+      className={`h-8.25 rounded-r border font-mono text-[11.5px] font-semibold tracking-[.06em] transition-all duration-150 ${
         pressed ? pressed_classes[tone] : 'border-rule bg-sunk text-muted hover:text-text-2'
       }`}
     >

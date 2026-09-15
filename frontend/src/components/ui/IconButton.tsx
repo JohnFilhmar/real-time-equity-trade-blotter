@@ -21,7 +21,7 @@ export function IconButton({ label, className = '', type = 'button', ref, childr
       type={type}
       aria-label={label}
       title={label}
-      className={`grid h-7 w-7 place-items-center rounded-[6px] text-muted transition-colors duration-150 hover:bg-glass-soft hover:text-brand-lo ${className}`}
+      className={`grid h-7 w-7 place-items-center rounded-md text-muted transition-colors duration-150 hover:bg-glass-soft hover:text-brand-lo ${className}`}
       {...rest}
     >
       {children}

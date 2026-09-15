@@ -9,13 +9,13 @@ import {
   type TradeEventEnvelope,
 } from '@blotter/shared';
 import { event_feed_keys, position_keys, trade_keys } from '@/lib/query/keys';
-import { settle_event, settle_position } from '@/lib/query/settle_event';
-import { settle_trade } from '@/lib/query/settle_trade';
-import { create_socket, type BlotterSocket } from '@/lib/socket/create_socket';
+import { settle_event, settle_position } from '@/lib/query/settleEvent';
+import { settle_trade } from '@/lib/query/settleTrade';
+import { create_socket, type BlotterSocket } from '@/lib/socket/createSocket';
 import { is_next_in_sequence, order_by_seq } from '@/lib/socket/sequence';
-import { useConnectionStore } from '@/lib/stores/connection_store';
-import { useMarkStore } from '@/lib/stores/mark_store';
-import { useAccessToken } from '@/providers/session_provider';
+import { useConnectionStore } from '@/lib/stores/connectionStore';
+import { useMarkStore } from '@/lib/stores/markStore';
+import { useAccessToken } from '@/providers/SessionProvider';
 
 /** One broadcast waiting for the next frame, whatever it carries. */
 type Pending =

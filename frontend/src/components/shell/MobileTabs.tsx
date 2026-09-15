@@ -31,7 +31,7 @@ export function MobileTabs(): ReactNode {
             key={item.href}
             href={item.href}
             aria-current={current ? 'page' : undefined}
-            className={`flex min-h-[56px] flex-col items-center justify-center gap-[3px] px-1 py-[6px] text-[10px] ${current ? 'text-brand-lo' : 'text-muted'}`}
+            className={`flex min-h-14 flex-col items-center justify-center gap-0.75 px-1 py-1.5 text-[10px] ${current ? 'text-brand-lo' : 'text-muted'}`}
           >
             <span className="text-[15px] leading-none" aria-hidden="true">
               {glyph[item.href]}

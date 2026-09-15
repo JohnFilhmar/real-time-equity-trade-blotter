@@ -10,7 +10,7 @@ import type { ReactNode } from 'react';
 export function BrandMark(): ReactNode {
   return (
     <div
-      className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] bg-linear-145 from-brand-grad-hi to-brand-grad-lo text-brand-lo shadow-[inset_0_0_0_1px_var(--brand_edge)]"
+      className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-linear-145 from-brand-grad-hi to-brand-grad-lo text-brand-lo shadow-[inset_0_0_0_1px_var(--brand_edge)]"
       aria-hidden="true"
     >
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">

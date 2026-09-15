@@ -40,7 +40,7 @@ export function TradeCards({ rows, selected_id, onSelect, onLoadMore, has_more }
   }, [has_more, onLoadMore]);
 
   return (
-    <div className="flex flex-col pb-[78px]" role="list" aria-label="Trade blotter">
+    <div className="flex flex-col pb-19.5" role="list" aria-label="Trade blotter">
       {rows.map((trade) => {
         const selected = trade.id === selected_id;
         const cancelled = trade.status === 'CANCELLED';
@@ -51,14 +51,14 @@ export function TradeCards({ rows, selected_id, onSelect, onLoadMore, has_more }
             key={trade.id}
             data-trade-id={trade.tradeId}
             onClick={() => onSelect(selected ? null : trade)}
-            className={`flex min-h-[44px] w-full flex-col gap-[7px] border-b border-rule-soft px-[14px] py-[11px] text-left active:bg-brand-bg ${
+            className={`flex min-h-11 w-full flex-col gap-1.75 border-b border-rule-soft px-3.5 py-2.75 text-left active:bg-brand-bg ${
               selected ? 'bg-brand-bg' : ''
             } ${cancelled ? 'opacity-45' : ''}`}
           >
             <div className="flex items-center gap-2">
               <b className="text-[14px] font-semibold">{trade.symbol}</b>
               <SideMark side={trade.side} />
-              <span className="ml-auto flex items-center gap-[5px]">
+              <span className="ml-auto flex items-center gap-1.25">
                 <StatusBadge status={trade.status} />
                 <VersionPill version={trade.version} />
               </span>
@@ -71,7 +71,7 @@ export function TradeCards({ rows, selected_id, onSelect, onLoadMore, has_more }
               </span>
               <span className="ml-auto text-text-2">{format_notional(trade.quantity, trade.price, trade.currency)}</span>
             </div>
-            <div className="flex items-center gap-[10px] text-[11px] text-muted">
+            <div className="flex items-center gap-2.5 text-[11px] text-muted">
               <span className="font-mono text-[10.5px] text-brand">{trade.tradeId}</span>
               <span>{trade.trader}</span>
               <span className="ml-auto font-mono text-[10.5px]">{format_clock_or_date(trade.tradeTimestamp)}</span>

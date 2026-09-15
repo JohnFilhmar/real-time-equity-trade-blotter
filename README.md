@@ -196,8 +196,8 @@ push.
 
 The test worth reading is `backend/src/realtime/socket_broadcast.test.ts`: it boots the real HTTP
 server and Socket.IO, connects two clients, creates a trade over the network, and asserts the
-second client sees it. `frontend/e2e/live_sync.spec.ts` is the same claim in two real browsers.
-`frontend/src/lib/query/apply_broadcast.test.ts` covers where a broadcast lands in a sorted,
+second client sees it. `frontend/e2e/liveSync.spec.ts` is the same claim in two real browsers.
+`frontend/src/lib/query/applyBroadcast.test.ts` covers where a broadcast lands in a sorted,
 filtered, paged view, and that a stale version is dropped.
 
 ## Assumptions
@@ -222,8 +222,11 @@ filtered, paged view, and that a stale version is dropped.
 
 ## Trade-offs accepted
 
-- **Hooks are camelCase in a snake_case codebase.** React's rules-of-hooks lint requires the
-  `useX` form. Files stay snake_case; only the hook names follow the framework.
+- **The frontend follows React naming; the rest of the codebase stays snake_case.** In `frontend/`,
+  state pairs are camelCase (`[selectedId, setSelectedId]`), files that export a component are
+  PascalCase, and every other file is camelCase (`useTrades.ts`, `tradeApi.ts`). Tailwind classes
+  use the theme scale (`px-3.5`, not `px-[14px]`) wherever a step matches exactly. The backend,
+  `shared` and `database` keep `snake_case`.
 - **The React Compiler is not enabled.** TanStack Table v8 returns functions it cannot memoise,
   so the grid opts out with `'use no memo'` and memoises by hand. v9 shipped five weeks before
   submission and was not adopted.

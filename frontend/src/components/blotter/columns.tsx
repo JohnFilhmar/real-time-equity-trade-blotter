@@ -13,7 +13,7 @@ export const grid_template_classes =
   'grid-cols-[92px_72px_48px_88px_96px_82px_106px_110px] lg:grid-cols-[96px_76px_50px_96px_100px_86px_152px_108px_110px] xl:grid-cols-[96px_76px_50px_96px_100px_112px_86px_120px_152px_108px_110px]';
 
 /** Minimum grid width per breakpoint, so the tracks above never collapse. */
-export const grid_min_width_classes = 'min-w-[720px] lg:min-w-[940px] xl:min-w-[1140px]';
+export const grid_min_width_classes = 'min-w-180 lg:min-w-235 xl:min-w-285';
 
 /** Height of one row, matching the `row` spacing token. */
 export const row_height = 32;
@@ -110,7 +110,7 @@ export const trade_columns: ColumnDef<Trade>[] = [
     accessorKey: 'status',
     header: 'Status',
     cell: ({ row }) => (
-      <span className="flex items-center gap-[5px]">
+      <span className="flex items-center gap-1.25">
         <StatusBadge status={row.original.status} />
         <VersionPill version={row.original.version} />
       </span>

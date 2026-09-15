@@ -22,7 +22,7 @@ export function NewTradesPill({ count, onClick }: NewTradesPillProps): ReactNode
     <button
       type="button"
       onClick={onClick}
-      className="absolute top-[40px] left-1/2 z-[6] -translate-x-1/2 animate-rise rounded-[14px] border border-brand-edge bg-brand-bg px-3 py-[5px] font-mono text-[10.5px] font-semibold tracking-[.06em] text-brand-lo shadow-glass backdrop-blur-[12px] hover:text-brand-hi"
+      className="absolute top-10 left-1/2 z-[6] -translate-x-1/2 animate-rise rounded-[14px] border border-brand-edge bg-brand-bg px-3 py-1.25 font-mono text-[10.5px] font-semibold tracking-[.06em] text-brand-lo shadow-glass backdrop-blur-md hover:text-brand-hi"
     >
       {'↑'} {count.toString()} new {count === 1 ? 'trade' : 'trades'}
     </button>

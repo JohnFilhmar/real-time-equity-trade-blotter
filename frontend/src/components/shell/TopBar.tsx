@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { BrandMark } from '@/components/ui/BrandMark';
 import { IconButton } from '@/components/ui/IconButton';
-import { useSession } from '@/providers/session_provider';
+import { useSession } from '@/providers/SessionProvider';
 import { ConnectionPill } from './ConnectionPill';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -27,13 +27,13 @@ export function TopBar(): ReactNode {
   const user = session.user;
 
   return (
-    <header className="flex h-[52px] shrink-0 items-center gap-[14px] border-b border-rule bg-glass px-4 shadow-[inset_0_1px_0_var(--glass_edge_soft)] backdrop-blur-[18px] backdrop-saturate-[1.4]">
-      <div className="flex shrink-0 items-center gap-[9px]">
+    <header className="flex h-13 shrink-0 items-center gap-3.5 border-b border-rule bg-glass px-4 shadow-[inset_0_1px_0_var(--glass_edge_soft)] backdrop-blur-[18px] backdrop-saturate-[1.4]">
+      <div className="flex shrink-0 items-center gap-2.25">
         <BrandMark />
         <b className="hidden whitespace-nowrap text-[13.5px] font-semibold tracking-[-.012em] md:inline">Fusion Blotter</b>
       </div>
 
-      <nav aria-label="Sections" className="ml-[6px] hidden gap-[3px] md:flex">
+      <nav aria-label="Sections" className="ml-1.5 hidden gap-0.75 md:flex">
         {nav_items.map((item) => {
           const current = pathname === item.href;
           return (
@@ -41,7 +41,7 @@ export function TopBar(): ReactNode {
               key={item.href}
               href={item.href}
               aria-current={current ? 'page' : undefined}
-              className={`whitespace-nowrap rounded-[6px] px-[13px] py-[7px] text-[12.5px] font-medium transition-colors ${
+              className={`whitespace-nowrap rounded-md px-3.25 py-1.75 text-[12.5px] font-medium transition-colors ${
                 current ? 'bg-brand-bg text-brand-lo shadow-[inset_0_0_0_1px_var(--brand_edge)]' : 'text-muted hover:bg-glass-soft hover:text-text-2'
               }`}
             >
@@ -51,7 +51,7 @@ export function TopBar(): ReactNode {
         })}
       </nav>
 
-      <div className="ml-auto flex shrink-0 items-center gap-[9px]">
+      <div className="ml-auto flex shrink-0 items-center gap-2.25">
         <ConnectionPill />
         <div className="hidden lg:block">
           <ThemeToggle />
@@ -59,7 +59,7 @@ export function TopBar(): ReactNode {
         {user !== null ? (
           <div className="flex items-center gap-2">
             <div
-              className="grid h-[27px] w-[27px] place-items-center rounded-full bg-avatar font-mono text-[10.5px] font-semibold text-brand-lo shadow-[inset_0_0_0_1px_var(--brand_edge)]"
+              className="grid h-6.75 w-6.75 place-items-center rounded-full bg-avatar font-mono text-[10.5px] font-semibold text-brand-lo shadow-[inset_0_0_0_1px_var(--brand_edge)]"
               title={`${user.displayName} (${user.role})`}
               aria-hidden="true"
             >

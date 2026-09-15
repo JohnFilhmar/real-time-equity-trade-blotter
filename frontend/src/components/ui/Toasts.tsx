@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useToastStore, type ToastKind } from '@/lib/stores/toast_store';
+import { useToastStore, type ToastKind } from '@/lib/stores/toastStore';
 
 const edge: Record<ToastKind, string> = {
   ok: 'border-l-gain',
@@ -20,14 +20,14 @@ export function Toasts(): ReactNode {
 
   return (
     <div
-      className="pointer-events-none absolute right-[14px] bottom-[14px] z-[80] flex max-w-[calc(100%-28px)] flex-col items-end gap-2"
+      className="pointer-events-none absolute right-3.5 bottom-3.5 z-[80] flex max-w-[calc(100%-28px)] flex-col items-end gap-2"
       role="status"
       aria-live="polite"
     >
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`flex max-w-full animate-rise items-center gap-[9px] rounded-r border border-glass-edge border-l-2 bg-glass px-[14px] py-[10px] text-[12.5px] shadow-glass backdrop-blur-[18px] ${edge[toast.kind]}`}
+          className={`flex max-w-full animate-rise items-center gap-2.25 rounded-r border border-glass-edge border-l-2 bg-glass px-3.5 py-2.5 text-[12.5px] shadow-glass backdrop-blur-[18px] ${edge[toast.kind]}`}
         >
           <b className="font-semibold">{toast.title}</b>
           {toast.detail.length > 0 ? <span className="text-muted">{toast.detail}</span> : null}

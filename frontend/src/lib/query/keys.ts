@@ -1,4 +1,4 @@
-import type { TradeListQuery } from './trade_query';
+import type { TradeListQuery } from './tradeQuery';
 
 /**
  * Query keys for everything the blotter reads.

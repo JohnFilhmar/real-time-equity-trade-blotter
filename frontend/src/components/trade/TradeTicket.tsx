@@ -8,13 +8,13 @@ import { Field, Input, Select } from '@/components/ui/Field';
 import { FieldError } from '@/components/ui/FieldError';
 import { Note } from '@/components/ui/Note';
 import { Toggle } from '@/components/ui/Toggle';
-import { useMutationGate } from '@/hooks/use_connection';
-import { useAmendTrade, useCreateTrade } from '@/hooks/use_trade_mutations';
-import { get_trade } from '@/lib/api/trade_api';
+import { useMutationGate } from '@/hooks/useConnection';
+import { useAmendTrade, useCreateTrade } from '@/hooks/useTradeMutations';
+import { get_trade } from '@/lib/api/tradeApi';
 import { format_notional, format_price, format_quantity } from '@/lib/format/money';
-import { settle_trade } from '@/lib/query/settle_trade';
-import { useToastStore } from '@/lib/stores/toast_store';
-import { useAccessToken } from '@/providers/session_provider';
+import { settle_trade } from '@/lib/query/settleTrade';
+import { useToastStore } from '@/lib/stores/toastStore';
+import { useAccessToken } from '@/providers/SessionProvider';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   amendable_fields,
@@ -25,7 +25,7 @@ import {
   to_ticket_errors,
   type TicketErrors,
   type TicketValues,
-} from './ticket_form';
+} from './ticketForm';
 
 /** Whether the ticket books a new trade or amends the selected one. */
 export type TicketMode = { kind: 'new' } | { kind: 'amend'; trade: Trade };
@@ -53,9 +53,9 @@ export function TradeTicket({ mode, onClose, onBooked }: TradeTicketProps): Reac
   // The ticket edits its own copy, taken when it opened. A broadcast that changes the trade mid-edit
   // must not silently become the version this form sends; the server's 409 is the right answer.
   const [base] = useState<Trade | null>(() => (mode.kind === 'amend' ? mode.trade : null));
-  const [values, set_values] = useState<TicketValues>(() => initial_values(base));
-  const [errors, set_errors] = useState<TicketErrors>({});
-  const [conflict, set_conflict] = useState<{ current: Trade; lines: string[] } | null>(null);
+  const [values, setValues] = useState<TicketValues>(() => initial_values(base));
+  const [errors, setErrors] = useState<TicketErrors>({});
+  const [conflict, setConflict] = useState<{ current: Trade; lines: string[] } | null>(null);
   const create = useCreateTrade();
   const amend = useAmendTrade();
   const gate = useMutationGate();
@@ -72,7 +72,7 @@ export function TradeTicket({ mode, onClose, onBooked }: TradeTicketProps): Reac
   const read_only = (field: keyof TicketValues): boolean => base !== null && !amendable_fields.has(field);
 
   const set = (field: keyof TicketValues, value: string): void => {
-    set_values((current) => {
+    setValues((current) => {
       const next = { ...current, [field]: value };
       if (field === 'symbol' && base === null) {
         const chosen = find_instrument(value);
@@ -83,31 +83,31 @@ export function TradeTicket({ mode, onClose, onBooked }: TradeTicketProps): Reac
       }
       return next;
     });
-    set_errors((current) => ({ ...current, [field]: undefined, form: undefined }));
+    setErrors((current) => ({ ...current, [field]: undefined, form: undefined }));
   };
 
   const on_error = (error: { code: string; detail: string; errors: readonly { field: string; message: string }[] }): void => {
     if (error.code === 'validation_failed' && error.errors.length > 0) {
-      set_errors(to_ticket_errors(error.errors));
+      setErrors(to_ticket_errors(error.errors));
       return;
     }
     if (error.code === 'conflict' && base !== null) {
       void get_trade(token, base.tradeId).then((current) => {
         settle_trade(query_client, current);
-        set_conflict({ current, lines: describe_conflict(base, current) });
+        setConflict({ current, lines: describe_conflict(base, current) });
       });
-      set_errors({ form: error.detail });
+      setErrors({ form: error.detail });
       return;
     }
-    set_errors({ form: error.detail });
+    setErrors({ form: error.detail });
   };
 
   const submit = (): void => {
-    set_errors({});
+    setErrors({});
     if (base === null) {
       const parsed = parse_create(values);
       if (!parsed.ok) {
-        set_errors(parsed.errors);
+        setErrors(parsed.errors);
         return;
       }
       create.mutate(parsed.input, {
@@ -122,7 +122,7 @@ export function TradeTicket({ mode, onClose, onBooked }: TradeTicketProps): Reac
 
     const parsed = parse_amend(values, base);
     if (!parsed.ok) {
-      set_errors(parsed.errors);
+      setErrors(parsed.errors);
       return;
     }
     amend.mutate(
@@ -156,7 +156,7 @@ export function TradeTicket({ mode, onClose, onBooked }: TradeTicketProps): Reac
       }
     >
       <form
-        className="grid grid-cols-1 gap-[13px] md:grid-cols-2"
+        className="grid grid-cols-1 gap-3.25 md:grid-cols-2"
         onSubmit={(event) => {
           event.preventDefault();
           submit();
@@ -172,9 +172,9 @@ export function TradeTicket({ mode, onClose, onBooked }: TradeTicketProps): Reac
           </Select>
         </Field>
 
-        <div className="flex flex-col gap-[5px]">
+        <div className="flex flex-col gap-1.25">
           <span className="font-mono text-[9.5px] uppercase tracking-[.11em] text-faint">Side</span>
-          <div className="grid grid-cols-2 gap-[6px]">
+          <div className="grid grid-cols-2 gap-1.5">
             <Toggle tone="gain" pressed={values.side === 'BUY'} onToggle={() => (read_only('side') ? undefined : set('side', 'BUY'))}>
               BUY
             </Toggle>
@@ -182,7 +182,7 @@ export function TradeTicket({ mode, onClose, onBooked }: TradeTicketProps): Reac
               SELL
             </Toggle>
           </div>
-          <div className="min-h-[14px] text-[11px] text-muted">{read_only('side') ? 'Fixed on an amendment' : ''}</div>
+          <div className="min-h-3.5 text-[11px] text-muted">{read_only('side') ? 'Fixed on an amendment' : ''}</div>
         </div>
 
         <Field id="t_quantity" label="Quantity" error={errors.quantity}>
@@ -228,9 +228,9 @@ export function TradeTicket({ mode, onClose, onBooked }: TradeTicketProps): Reac
             type="button"
             className="font-semibold text-brand-lo underline"
             onClick={() => {
-              set_values(initial_values(conflict.current));
-              set_conflict(null);
-              set_errors({});
+              setValues(initial_values(conflict.current));
+              setConflict(null);
+              setErrors({});
               onClose();
             }}
           >

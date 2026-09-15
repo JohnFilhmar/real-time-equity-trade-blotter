@@ -21,7 +21,7 @@ export function FieldError({ message, lines = 1 }: FieldErrorProps): ReactNode {
     <div
       role="alert"
       aria-live="assertive"
-      className={`text-[12px] leading-[1.4] text-loss ${lines === 2 ? 'min-h-[34px]' : 'min-h-[17px]'}`}
+      className={`text-[12px] leading-[1.4] text-loss ${lines === 2 ? 'min-h-8.5' : 'min-h-4.25'}`}
     >
       {message ?? ''}
     </div>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { api_rewrites } from './proxy_routes';
+import { api_rewrites } from './proxyRoutes';
 
 describe('api_rewrites', () => {
   const rewrites = api_rewrites('http://backend:5000');

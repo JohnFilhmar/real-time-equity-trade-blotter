@@ -1,9 +1,9 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { QueryProvider } from '@/providers/query_provider';
-import { SessionProvider } from '@/providers/session_provider';
-import { ThemeProvider } from '@/providers/theme_provider';
+import { QueryProvider } from '@/providers/QueryProvider';
+import { SessionProvider } from '@/providers/SessionProvider';
+import { ThemeProvider } from '@/providers/ThemeProvider';
 
 /**
  * The root provider layer: everything the whole app needs, composed once.

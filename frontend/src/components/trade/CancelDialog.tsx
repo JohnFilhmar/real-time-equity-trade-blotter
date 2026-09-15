@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { FieldError } from '@/components/ui/FieldError';
 import { Note } from '@/components/ui/Note';
-import { useMutationGate } from '@/hooks/use_connection';
-import { useCancelTrade } from '@/hooks/use_trade_mutations';
+import { useMutationGate } from '@/hooks/useConnection';
+import { useCancelTrade } from '@/hooks/useTradeMutations';
 import { format_notional, format_price, format_quantity } from '@/lib/format/money';
-import { useToastStore } from '@/lib/stores/toast_store';
+import { useToastStore } from '@/lib/stores/toastStore';
 
 /** Props for {@link CancelDialog}. */
 export interface CancelDialogProps {
@@ -32,10 +32,10 @@ export function CancelDialog({ trade, onClose }: CancelDialogProps): ReactNode {
   const cancel = useCancelTrade();
   const gate = useMutationGate();
   const push = useToastStore((state) => state.push);
-  const [problem, set_problem] = useState<string | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
 
   const confirm = (): void => {
-    set_problem(null);
+    setProblem(null);
     cancel.mutate(
       { trade_id: trade.tradeId, input: { version: trade.version } },
       {
@@ -44,7 +44,7 @@ export function CancelDialog({ trade, onClose }: CancelDialogProps): ReactNode {
           onClose();
         },
         onError: (error) => {
-          set_problem(
+          setProblem(
             error.code === 'conflict'
               ? `${error.detail} Close this dialog to see the current row.`
               : error.detail,
@@ -69,22 +69,22 @@ export function CancelDialog({ trade, onClose }: CancelDialogProps): ReactNode {
         </>
       }
     >
-      <div className="grid grid-cols-1 gap-[11px] rounded-r border border-rule bg-sunk p-[13px] md:grid-cols-2">
-        <div className="flex flex-col gap-[3px]">
+      <div className="grid grid-cols-1 gap-2.75 rounded-r border border-rule bg-sunk p-3.25 md:grid-cols-2">
+        <div className="flex flex-col gap-0.75">
           <span className="font-mono text-[9px] uppercase tracking-[.11em] text-faint">Symbol</span>
           <span className="text-[12.5px]">
             {trade.symbol} <SideMark side={trade.side} />
           </span>
         </div>
-        <div className="flex flex-col gap-[3px]">
+        <div className="flex flex-col gap-0.75">
           <span className="font-mono text-[9px] uppercase tracking-[.11em] text-faint">Notional</span>
           <span className="font-mono text-[12.5px] tabular-nums">{format_notional(trade.quantity, trade.price, trade.currency)}</span>
         </div>
-        <div className="flex flex-col gap-[3px]">
+        <div className="flex flex-col gap-0.75">
           <span className="font-mono text-[9px] uppercase tracking-[.11em] text-faint">Quantity</span>
           <span className="font-mono text-[12.5px] tabular-nums">{format_quantity(trade.quantity)}</span>
         </div>
-        <div className="flex flex-col gap-[3px]">
+        <div className="flex flex-col gap-0.75">
           <span className="font-mono text-[9px] uppercase tracking-[.11em] text-faint">Price ({trade.currency})</span>
           <span className="font-mono text-[12.5px] tabular-nums">{format_price(trade.price)}</span>
         </div>

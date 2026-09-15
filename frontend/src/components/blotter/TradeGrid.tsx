@@ -4,8 +4,8 @@ import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { Trade, TradeSortColumn } from '@blotter/shared';
-import { useFlash } from '@/hooks/use_flash';
-import { useRovingRows } from '@/hooks/use_roving_rows';
+import { useFlash } from '@/hooks/useFlash';
+import { useRovingRows } from '@/hooks/useRovingRows';
 import { grid_min_width_classes, row_height, trade_columns } from './columns';
 import { GridHeader } from './GridHeader';
 import { NewTradesPill } from './NewTradesPill';
@@ -58,8 +58,8 @@ export function TradeGrid({
 
   const scroll_ref = useRef<HTMLDivElement>(null);
   const previous_ids = useRef<readonly string[]>([]);
-  const [pending_above, set_pending_above] = useState(0);
-  const [announcement, set_announcement] = useState('');
+  const [pendingAbove, setPendingAbove] = useState(0);
+  const [announcement, setAnnouncement] = useState('');
   const arrivals = useRef(0);
 
   // eslint-disable-next-line react-hooks/incompatible-library -- opted out of the compiler above; the lint still reports the library
@@ -114,7 +114,7 @@ export function TradeGrid({
 
     if (inserted_above > 0 && element.scrollTop > 0) {
       element.scrollTop += inserted_above * row_height;
-      set_pending_above((count) => count + inserted_above);
+      setPendingAbove((count) => count + inserted_above);
     }
   }, [rows, items]);
 
@@ -124,7 +124,7 @@ export function TradeGrid({
       if (arrivals.current > 0) {
         const count = arrivals.current;
         arrivals.current = 0;
-        set_announcement(`${count.toString()} new ${count === 1 ? 'trade' : 'trades'} on the blotter`);
+        setAnnouncement(`${count.toString()} new ${count === 1 ? 'trade' : 'trades'} on the blotter`);
       }
     }, 2000);
     return () => clearInterval(timer);
@@ -143,13 +143,13 @@ export function TradeGrid({
 
   const on_scroll = useCallback(() => {
     if ((scroll_ref.current?.scrollTop ?? 0) === 0) {
-      set_pending_above(0);
+      setPendingAbove(0);
     }
   }, []);
 
   const scroll_to_top = useCallback(() => {
     scroll_ref.current?.scrollTo({ top: 0, behavior: 'smooth' });
-    set_pending_above(0);
+    setPendingAbove(0);
   }, []);
 
   const select_index = useCallback(
@@ -163,7 +163,7 @@ export function TradeGrid({
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
-      <NewTradesPill count={pending_above} onClick={scroll_to_top} />
+      <NewTradesPill count={pendingAbove} onClick={scroll_to_top} />
       <div ref={scroll_ref} onScroll={on_scroll} className="min-h-0 flex-1 overflow-auto">
         <div
           role="grid"

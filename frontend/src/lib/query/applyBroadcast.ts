@@ -1,6 +1,6 @@
 import type { InfiniteData } from '@tanstack/react-query';
 import type { Trade, TradeList, TradeSortColumn } from '@blotter/shared';
-import type { TradeListQuery } from './trade_query';
+import type { TradeListQuery } from './tradeQuery';
 
 /** The cached shape of one blotter list: pages in fetch order. */
 export type TradePages = InfiniteData<TradeList>;

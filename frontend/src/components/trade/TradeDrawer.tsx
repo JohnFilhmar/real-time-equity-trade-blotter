@@ -6,12 +6,12 @@ import { SideMark, StatusBadge, VersionPill } from '@/components/ui/Badges';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 import { SectionLabel } from '@/components/ui/Note';
-import { useMutationGate } from '@/hooks/use_connection';
-import { useMark } from '@/hooks/use_marks';
+import { useMutationGate } from '@/hooks/useConnection';
+import { useMark } from '@/hooks/useMarks';
 import { can, can_act_on } from '@/lib/auth/permissions';
 import { format_date_time } from '@/lib/format/clock';
 import { format_money, format_notional, format_price, format_quantity, to_display_notional } from '@/lib/format/money';
-import { useSession } from '@/providers/session_provider';
+import { useSession } from '@/providers/SessionProvider';
 import { TradeHistory } from './TradeHistory';
 
 /** Props for {@link TradeDrawer}. */
@@ -30,7 +30,7 @@ export interface TradeDrawerProps {
  */
 function Value({ label, children, wide = false, mono = false }: { label: string; children: ReactNode; wide?: boolean; mono?: boolean }): ReactNode {
   return (
-    <div className={`flex min-w-0 flex-col gap-[3px] ${wide ? 'col-span-2' : ''}`}>
+    <div className={`flex min-w-0 flex-col gap-0.75 ${wide ? 'col-span-2' : ''}`}>
       <span className="font-mono text-[9px] uppercase tracking-[.11em] text-faint">{label}</span>
       <span className={`truncate text-[12.5px] text-text ${mono ? 'font-mono tabular-nums' : ''}`}>{children}</span>
     </div>
@@ -78,10 +78,10 @@ export function TradeDrawer({ trade, onClose, onAmend, onCancel }: TradeDrawerPr
       }}
       className="absolute top-0 right-0 bottom-0 z-[55] flex w-full min-h-0 animate-slide-in flex-col border-l border-glass-edge bg-glass shadow-drawer backdrop-blur-[20px] backdrop-saturate-150 md:w-[min(360px,88%)]"
     >
-      <div className="flex shrink-0 items-start gap-[10px] border-b border-rule px-[15px] py-[13px]">
+      <div className="flex shrink-0 items-start gap-2.5 border-b border-rule px-3.75 py-3.25">
         <div className="min-w-0 flex-1">
           <div className="font-mono text-[12.5px] text-brand">{trade.tradeId}</div>
-          <div className="mt-[5px] flex items-center gap-2">
+          <div className="mt-1.25 flex items-center gap-2">
             <b className="text-[16px] font-semibold">{trade.symbol}</b>
             <SideMark side={trade.side} />
             <StatusBadge status={trade.status} />
@@ -95,10 +95,10 @@ export function TradeDrawer({ trade, onClose, onAmend, onCancel }: TradeDrawerPr
         </IconButton>
       </div>
 
-      <div className="flex flex-1 flex-col gap-[17px] overflow-y-auto p-[15px]">
+      <div className="flex flex-1 flex-col gap-4.25 overflow-y-auto p-3.75">
         <section>
           <SectionLabel>Economics</SectionLabel>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-[13px]">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-3.25">
             <Value label="Quantity" mono>{format_quantity(trade.quantity)}</Value>
             <Value label={`Price (${trade.currency})`} mono>{format_price(trade.price)}</Value>
             <Value label="Notional" mono>{format_notional(trade.quantity, trade.price, trade.currency)}</Value>
@@ -118,7 +118,7 @@ export function TradeDrawer({ trade, onClose, onAmend, onCancel }: TradeDrawerPr
 
         <section>
           <SectionLabel>Booking</SectionLabel>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-[13px]">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-3.25">
             <Value label="Trader">{trade.trader}</Value>
             <Value label="Book">{trade.book}</Value>
             <Value label="Counterparty" wide>{trade.counterparty}</Value>
@@ -133,7 +133,7 @@ export function TradeDrawer({ trade, onClose, onAmend, onCancel }: TradeDrawerPr
       </div>
 
       {shows_actions ? (
-        <div className="flex shrink-0 gap-2 border-t border-rule px-[15px] py-3">
+        <div className="flex shrink-0 gap-2 border-t border-rule px-3.75 py-3">
           {can(user, 'trade.amend') ? (
             <Button block onClick={onAmend} disabled_reason={amend_reason}>
               Amend

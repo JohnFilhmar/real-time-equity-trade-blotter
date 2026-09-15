@@ -6,6 +6,20 @@ These conventions override `~/.claude/CLAUDE.md` where they disagree. Everything
 says that is not restated here still applies, including `snake_case` naming, the ban on `any`,
 and the sensitive-file rules.
 
+## Frontend naming and styling
+
+The React app in `frontend/` follows the owner's React practice instead of `snake_case`. The
+backend, `shared` and `database` stay `snake_case`.
+
+- **State pairs are camelCase:** `const [selectedId, setSelectedId] = useState<string | null>(null);`
+- **Files that export a component, providers included, are PascalCase:** `TradeGrid.tsx`,
+  `SessionProvider.tsx`. Every other file is camelCase: `useTrades.ts`, `tradeApi.ts`,
+  `applyEvent.test.ts`, `liveSync.spec.ts`. Next.js route files keep the names the framework
+  requires (`page.tsx`, `layout.tsx`).
+- **Tailwind never spells a pixel value the theme scale already has.** Write `px-3.5 py-2.5`, not
+  `px-[14px] py-[10px]`; `rounded-md`, not `rounded-[6px]`. An arbitrary pixel value stays only
+  where no scale step is identical, such as `rounded-[3px]` or `backdrop-blur-[18px]`.
+
 ## Prompt log
 
 The brief asks for a file of **significant prompts** with **relevant responses, summarised**, and

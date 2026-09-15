@@ -20,16 +20,16 @@ export interface TradePanelProps {
  * @returns The drawer and any open overlay.
  */
 export function TradePanel({ trade, onClose }: TradePanelProps): ReactNode {
-  const [amending, set_amending] = useState(false);
-  const [cancelling, set_cancelling] = useState(false);
+  const [amending, setAmending] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   return (
     <>
-      <TradeDrawer trade={trade} onClose={onClose} onAmend={() => set_amending(true)} onCancel={() => set_cancelling(true)} />
+      <TradeDrawer trade={trade} onClose={onClose} onAmend={() => setAmending(true)} onCancel={() => setCancelling(true)} />
       {amending ? (
-        <TradeTicket mode={{ kind: 'amend', trade }} onClose={() => set_amending(false)} onBooked={() => set_amending(false)} />
+        <TradeTicket mode={{ kind: 'amend', trade }} onClose={() => setAmending(false)} onBooked={() => setAmending(false)} />
       ) : null}
-      {cancelling ? <CancelDialog trade={trade} onClose={() => set_cancelling(false)} /> : null}
+      {cancelling ? <CancelDialog trade={trade} onClose={() => setCancelling(false)} /> : null}
     </>
   );
 }

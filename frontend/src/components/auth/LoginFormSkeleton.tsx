@@ -23,21 +23,21 @@ export function LoginFormSkeleton({ state }: LoginFormSkeletonProps): ReactNode 
   const opening = state === 'opening';
 
   return (
-    <div className="flex flex-col gap-[14px] animate-fade" aria-busy="true" aria-label={opening ? 'Opening the desk' : 'Checking for an open session'}>
-      <Skeleton className="h-[71px]" />
-      <Skeleton className="h-[71px]" />
-      <div className="min-h-[34px]" aria-hidden="true" />
+    <div className="flex flex-col gap-3.5 animate-fade" aria-busy="true" aria-label={opening ? 'Opening the desk' : 'Checking for an open session'}>
+      <Skeleton className="h-17.75" />
+      <Skeleton className="h-17.75" />
+      <div className="min-h-8.5" aria-hidden="true" />
       {opening ? (
-        <Button type="button" variant="primary" block className="h-[38px]" disabled>
+        <Button type="button" variant="primary" block className="h-9.5" disabled>
           Opening the desk
         </Button>
       ) : (
-        <Skeleton className="h-[38px]" />
+        <Skeleton className="h-9.5" />
       )}
-      <div role="status" aria-live="polite" className="min-h-[16px] font-mono text-[10.5px] text-brand-lo">
+      <div role="status" aria-live="polite" className="min-h-4 font-mono text-[10.5px] text-brand-lo">
         {opening ? `Session adopted ${'·'} opening the desk` : ''}
       </div>
-      <Skeleton className="h-[37px]" />
+      <Skeleton className="h-9.25" />
     </div>
   );
 }

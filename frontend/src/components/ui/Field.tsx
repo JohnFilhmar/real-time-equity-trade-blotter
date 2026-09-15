@@ -2,7 +2,7 @@ import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react
 
 /** The shared look of every text-like control: 33px tall, sunk fill, brand ring on focus. */
 export const control_classes =
-  'h-[33px] w-full min-w-0 rounded-r border border-rule bg-sunk px-[10px] text-[12.5px] text-text placeholder:text-faint transition-[border-color,background-color] duration-150 focus:border-brand-edge focus:bg-inp-focus focus:outline-none focus:ring-[3px] focus:ring-brand-ring aria-invalid:border-loss-invalid disabled:opacity-50';
+  'h-8.25 w-full min-w-0 rounded-r border border-rule bg-sunk px-2.5 text-[12.5px] text-text placeholder:text-faint transition-[border-color,background-color] duration-150 focus:border-brand-edge focus:bg-inp-focus focus:outline-none focus:ring-3 focus:ring-brand-ring aria-invalid:border-loss-invalid disabled:opacity-50';
 
 /** Props for {@link Field}. */
 export interface FieldProps {
@@ -29,14 +29,14 @@ export function Field({ id, label, error, warning, hint, children }: FieldProps)
   const tone = error ? 'text-loss' : warning ? 'text-warn' : 'text-muted';
 
   return (
-    <div className="flex min-w-0 flex-col gap-[5px]">
+    <div className="flex min-w-0 flex-col gap-1.25">
       <label htmlFor={id} className="font-mono text-[9.5px] uppercase tracking-[.11em] text-faint">
         {label}
       </label>
       {children}
       <div
         id={message_id}
-        className={`flex min-h-[14px] items-center gap-[5px] text-[11px] ${tone}`}
+        className={`flex min-h-3.5 items-center gap-1.25 text-[11px] ${tone}`}
         aria-live="polite"
       >
         {error ?? warning ?? hint ?? ''}

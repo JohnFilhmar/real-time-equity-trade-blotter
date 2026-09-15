@@ -7,7 +7,7 @@ import { FieldError } from '@/components/ui/FieldError';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { as_api_error } from '@/lib/api/http';
 import { format_lockout, lockout_seconds_from_detail } from '@/lib/auth/lockout';
-import { useSession } from '@/providers/session_provider';
+import { useSession } from '@/providers/SessionProvider';
 
 /** Where the sign-in is: waiting for a person, sending their credentials, or handing over. */
 type Phase = 'idle' | 'sending' | 'opening';
@@ -38,77 +38,77 @@ const handshake_copy: Record<Phase, string> = {
  */
 export function LoginForm(): ReactNode {
   const { login } = useSession();
-  const [username, set_username] = useState('');
-  const [password, set_password] = useState('');
-  const [caps_lock, set_caps_lock] = useState(false);
-  const [problem, set_problem] = useState<string | null>(null);
-  const [phase, set_phase] = useState<Phase>('idle');
-  const [locked_until, set_locked_until] = useState<number | null>(null);
-  const [now, set_now] = useState(() => Date.now());
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [capsLock, setCapsLock] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [phase, setPhase] = useState<Phase>('idle');
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    if (locked_until === null) {
+    if (lockedUntil === null) {
       return;
     }
     const timer = setInterval(() => {
       const current = Date.now();
-      if (current >= locked_until) {
-        set_locked_until(null);
+      if (current >= lockedUntil) {
+        setLockedUntil(null);
         return;
       }
-      set_now(current);
+      setNow(current);
     }, 1000);
     return () => clearInterval(timer);
-  }, [locked_until]);
+  }, [lockedUntil]);
 
-  const seconds_left = locked_until === null ? 0 : Math.max(0, Math.ceil((locked_until - now) / 1000));
+  const seconds_left = lockedUntil === null ? 0 : Math.max(0, Math.ceil((lockedUntil - now) / 1000));
   const locked = seconds_left > 0;
 
   const submit = async (): Promise<void> => {
-    set_problem(null);
-    set_phase('sending');
+    setProblem(null);
+    setPhase('sending');
     try {
       await login({ username: username.trim(), password });
-      set_phase('opening');
+      setPhase('opening');
     } catch (error) {
       const api_error = as_api_error(error);
       const seconds = api_error === null ? null : lockout_seconds_from_detail(api_error.detail);
       if (seconds === null) {
-        set_problem(api_error === null ? 'Something went wrong. Try again.' : api_error.detail);
+        setProblem(api_error === null ? 'Something went wrong. Try again.' : api_error.detail);
       } else {
         const started = Date.now();
-        set_now(started);
-        set_locked_until(started + seconds * 1000);
+        setNow(started);
+        setLockedUntil(started + seconds * 1000);
       }
-      set_phase('idle');
+      setPhase('idle');
     }
   };
 
   const read_caps_lock = (event: KeyboardEvent<HTMLInputElement>): void => {
-    set_caps_lock(event.getModifierState('CapsLock'));
+    setCapsLock(event.getModifierState('CapsLock'));
   };
 
   const message = locked ? `Too many failed attempts. Try again in ${format_lockout(seconds_left)}.` : problem;
 
   return (
     <form
-      className="flex flex-col gap-[14px] animate-fade"
+      className="flex flex-col gap-3.5 animate-fade"
       onSubmit={(event) => {
         event.preventDefault();
         void submit();
       }}
     >
       <Field id="login_username" label="Username" error={undefined}>
-        <Input id="login_username" name="username" autoComplete="username" spellCheck={false} autoFocus value={username} onChange={(event) => set_username(event.target.value)} />
+        <Input id="login_username" name="username" autoComplete="username" spellCheck={false} autoFocus value={username} onChange={(event) => setUsername(event.target.value)} />
       </Field>
 
-      <Field id="login_password" label="Password" error={undefined} warning={caps_lock ? 'Caps Lock is on' : undefined}>
+      <Field id="login_password" label="Password" error={undefined} warning={capsLock ? 'Caps Lock is on' : undefined}>
         <PasswordInput
           id="login_password"
           name="password"
           autoComplete="current-password"
           value={password}
-          onChange={(event) => set_password(event.target.value)}
+          onChange={(event) => setPassword(event.target.value)}
           onKeyDown={read_caps_lock}
           onKeyUp={read_caps_lock}
         />
@@ -116,11 +116,11 @@ export function LoginForm(): ReactNode {
 
       <FieldError message={message} lines={2} />
 
-      <Button type="submit" variant="primary" block className="h-[38px]" disabled={phase !== 'idle' || locked || username.length === 0 || password.length === 0}>
+      <Button type="submit" variant="primary" block className="h-9.5" disabled={phase !== 'idle' || locked || username.length === 0 || password.length === 0}>
         {button_copy[phase]}
       </Button>
 
-      <div role="status" aria-live="polite" className="min-h-[16px] font-mono text-[10.5px] text-brand-lo">
+      <div role="status" aria-live="polite" className="min-h-4 font-mono text-[10.5px] text-brand-lo">
         {handshake_copy[phase]}
       </div>
 

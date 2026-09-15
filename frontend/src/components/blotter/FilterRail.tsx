@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Field, Input, Select } from '@/components/ui/Field';
 import { Toggle } from '@/components/ui/Toggle';
 import { from_datetime_local_value, to_datetime_local_value } from '@/lib/format/clock';
-import { active_filter_count, type TradeListQuery } from '@/lib/query/trade_query';
+import { active_filter_count, type TradeListQuery } from '@/lib/query/tradeQuery';
 
 /** Props for {@link FilterRail}. */
 export interface FilterRailProps {
@@ -41,7 +41,7 @@ export function FilterRail({ query, onChange, onClear, loaded, total, book_butto
   const active = active_filter_count(query);
 
   return (
-    <aside className="flex w-[216px] shrink-0 flex-col gap-[15px] overflow-y-auto border-r border-rule bg-glass-soft p-[14px]" aria-label="Filters">
+    <aside className="flex w-54 shrink-0 flex-col gap-3.75 overflow-y-auto border-r border-rule bg-glass-soft p-3.5" aria-label="Filters">
       <div className="flex items-baseline justify-between gap-2">
         <span className="font-mono text-[9.5px] uppercase tracking-[.12em] text-faint">Filters</span>
         {active > 0 ? (
@@ -62,9 +62,9 @@ export function FilterRail({ query, onChange, onClear, loaded, total, book_butto
         </Select>
       </Field>
 
-      <div className="flex flex-col gap-[5px]">
+      <div className="flex flex-col gap-1.25">
         <span className="font-mono text-[9.5px] uppercase tracking-[.11em] text-faint">Side</span>
-        <div className="grid grid-cols-2 gap-[6px]">
+        <div className="grid grid-cols-2 gap-1.5">
           <Toggle tone="gain" pressed={query.side === 'BUY'} onToggle={() => onChange({ side: query.side === 'BUY' ? undefined : 'BUY' })}>
             BUY
           </Toggle>
@@ -74,9 +74,9 @@ export function FilterRail({ query, onChange, onClear, loaded, total, book_butto
         </div>
       </div>
 
-      <div className="flex flex-col gap-[5px]">
+      <div className="flex flex-col gap-1.25">
         <span className="font-mono text-[9.5px] uppercase tracking-[.11em] text-faint">Status</span>
-        <div className="grid grid-cols-2 gap-[6px]">
+        <div className="grid grid-cols-2 gap-1.5">
           <Toggle pressed={query.status === 'ACTIVE'} onToggle={() => onChange({ status: query.status === 'ACTIVE' ? undefined : 'ACTIVE' })}>
             ACTIVE
           </Toggle>
@@ -122,7 +122,7 @@ export function FilterRail({ query, onChange, onClear, loaded, total, book_butto
         />
       </Field>
 
-      <div className="mt-auto flex flex-col gap-[9px] border-t border-rule pt-3">
+      <div className="mt-auto flex flex-col gap-2.25 border-t border-rule pt-3">
         <div className="font-mono text-[10.5px] text-muted">
           {loaded.toLocaleString('en-GB')} of {total.toLocaleString('en-GB')} trades
         </div>

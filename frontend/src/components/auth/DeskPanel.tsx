@@ -17,19 +17,19 @@ export function DeskPanel(): ReactNode {
   return (
     <aside
       aria-label="Desk"
-      className="relative flex shrink-0 items-center gap-4 overflow-hidden border-b border-rule bg-ground px-5 py-3 md:w-[300px] md:flex-col md:items-stretch md:justify-between md:border-r md:border-b-0 md:px-[26px] md:py-7"
+      className="relative flex shrink-0 items-center gap-4 overflow-hidden border-b border-rule bg-ground px-5 py-3 md:w-75 md:flex-col md:items-stretch md:justify-between md:border-r md:border-b-0 md:px-6.5 md:py-7"
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[55%] bg-linear-to-b from-beam to-transparent" aria-hidden="true" />
 
-      <div className="relative flex items-center gap-[10px] animate-rise-stagger">
+      <div className="relative flex items-center gap-2.5 animate-rise-stagger">
         <BrandMark />
         <div>
           <b className="text-[15px] font-semibold tracking-[-.012em]">Fusion Blotter</b>
-          <div className="mt-[2px] hidden font-mono text-[10px] uppercase tracking-[.12em] text-text-2 md:block">Equity cash {'·'} London desk</div>
+          <div className="mt-0.5 hidden font-mono text-[10px] uppercase tracking-[.12em] text-text-2 md:block">Equity cash {'·'} London desk</div>
         </div>
       </div>
 
-      <div className="relative ml-auto flex items-center gap-3 animate-rise-stagger [animation-delay:70ms] md:ml-0 md:flex-col md:items-start md:gap-[6px]">
+      <div className="relative ml-auto flex items-center gap-3 animate-rise-stagger [animation-delay:70ms] md:ml-0 md:flex-col md:items-start md:gap-1.5">
         <div className="hidden font-mono text-[10px] uppercase tracking-[.12em] text-text-2 md:block">Session clock {'·'} UTC</div>
         <SessionClock className="text-[15px] font-medium text-text md:text-[26px] md:tracking-[-.01em]" />
         <dl className="hidden grid-cols-[auto_1fr] gap-x-3 gap-y-1 font-mono text-[10.5px] text-text-2 md:grid">
@@ -48,7 +48,7 @@ export function DeskPanel(): ReactNode {
       </div>
 
       <div className="relative hidden animate-rise-stagger [animation-delay:140ms] md:block">
-        <div className="mb-[10px] h-px bg-rule" />
+        <div className="mb-2.5 h-px bg-rule" />
         <div className="font-mono text-[10px] uppercase tracking-[.12em] text-text-2">Access issued by the desk head</div>
       </div>
     </aside>

@@ -6,8 +6,8 @@ import { HistoryRow } from '@/components/trade/TradeHistory';
 import { Chip } from '@/components/ui/Badges';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Note';
-import { useEventFeed } from '@/hooks/use_positions';
-import { useTrade } from '@/hooks/use_trades';
+import { useEventFeed } from '@/hooks/usePositions';
+import { useTrade } from '@/hooks/useTrades';
 
 /**
  * The global audit trail: every amendment and cancellation on the desk, newest first, paged by
@@ -18,8 +18,8 @@ import { useTrade } from '@/hooks/use_trades';
  */
 export function AuditScreen(): ReactNode {
   const feed = useEventFeed();
-  const [open_trade_id, set_open_trade_id] = useState<string | null>(null);
-  const open_trade = useTrade(open_trade_id);
+  const [openTradeId, setOpenTradeId] = useState<string | null>(null);
+  const open_trade = useTrade(openTradeId);
   const sentinel = useRef<HTMLDivElement>(null);
 
   const amendments = feed.events.filter((event) => event.action === 'AMENDED').length;
@@ -42,14 +42,14 @@ export function AuditScreen(): ReactNode {
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
-      <div className="flex shrink-0 flex-wrap items-center gap-[9px] border-b border-rule px-[14px] py-[10px]">
-        <div className="flex flex-wrap gap-[6px]">
+      <div className="flex shrink-0 flex-wrap items-center gap-2.25 border-b border-rule px-3.5 py-2.5">
+        <div className="flex flex-wrap gap-1.5">
           <Chip label="Events" value={feed.total.toLocaleString('en-GB')} />
           <Chip label="Amendments" value={<span className="text-warn">{amendments.toString()}</span>} />
           <Chip label="Cancellations" value={<span className="text-loss">{cancellations.toString()}</span>} />
           <Chip label="Actors" value={actors.toString()} />
         </div>
-        <div className="ml-auto flex items-center gap-[9px]">
+        <div className="ml-auto flex items-center gap-2.25">
           <span className="font-mono text-[10.5px] text-muted">
             {feed.events.length.toLocaleString('en-GB')} of {feed.total.toLocaleString('en-GB')} loaded
           </span>
@@ -61,9 +61,9 @@ export function AuditScreen(): ReactNode {
 
       <div className="min-h-0 flex-1 overflow-auto px-4">
         {feed.query.isPending ? (
-          <div className="flex flex-col gap-[6px] py-[14px]" aria-busy="true">
+          <div className="flex flex-col gap-1.5 py-3.5" aria-busy="true">
             {Array.from({ length: 10 }, (_value, index) => (
-              <Skeleton key={index} className="h-[48px] w-full" />
+              <Skeleton key={index} className="h-12 w-full" />
             ))}
           </div>
         ) : feed.query.isError ? (
@@ -85,7 +85,7 @@ export function AuditScreen(): ReactNode {
               <button
                 key={event.id}
                 type="button"
-                onClick={() => set_open_trade_id(event.tradeId)}
+                onClick={() => setOpenTradeId(event.tradeId)}
                 className="block w-full text-left hover:bg-brand-hover"
                 aria-label={`Open ${event.tradeId}`}
               >
@@ -101,12 +101,12 @@ export function AuditScreen(): ReactNode {
               </button>
             ))}
             <div ref={sentinel} className="h-px" aria-hidden="true" />
-            {feed.query.isFetchingNextPage ? <Skeleton className="my-2 h-[48px] w-full" /> : null}
+            {feed.query.isFetchingNextPage ? <Skeleton className="my-2 h-12 w-full" /> : null}
           </div>
         )}
       </div>
 
-      {open_trade.data !== undefined && open_trade_id !== null ? <TradePanel trade={open_trade.data} onClose={() => set_open_trade_id(null)} /> : null}
+      {open_trade.data !== undefined && openTradeId !== null ? <TradePanel trade={open_trade.data} onClose={() => setOpenTradeId(null)} /> : null}
     </div>
   );
 }

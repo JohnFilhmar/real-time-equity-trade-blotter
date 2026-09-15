@@ -1,6 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 import type { Position, TradeEvent } from '@blotter/shared';
-import { apply_event_to_feed, apply_event_to_history, apply_position, type EventPages } from './apply_event';
+import { apply_event_to_feed, apply_event_to_history, apply_position, type EventPages } from './applyEvent';
 import { event_feed_keys, position_keys, trade_keys } from './keys';
 
 /**

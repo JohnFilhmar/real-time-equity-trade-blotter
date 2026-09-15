@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Position, TradeEvent } from '@blotter/shared';
-import { apply_event_to_feed, apply_event_to_history, apply_position, type EventPages } from './apply_event';
+import { apply_event_to_feed, apply_event_to_history, apply_position, type EventPages } from './applyEvent';
 
 function event(id: string, version: number, occurred: string): TradeEvent {
   return {

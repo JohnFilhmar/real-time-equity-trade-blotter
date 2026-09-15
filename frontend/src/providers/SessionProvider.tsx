@@ -12,7 +12,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { AuthSession, LoginRequest } from '@blotter/shared';
-import { login as login_request, logout as logout_request, refresh } from '@/lib/api/auth_api';
+import { login as login_request, logout as logout_request, refresh } from '@/lib/api/authApi';
 import { as_api_error } from '@/lib/api/http';
 import type { SessionContextValue, SessionState } from '@/types/session';
 
@@ -33,7 +33,7 @@ const refresh_lead_seconds = 60;
  * @returns The provider.
  */
 export function SessionProvider({ children }: { children: ReactNode }): ReactNode {
-  const [session, set_session] = useState<SessionState>({ status: 'restoring', user: null, token: null });
+  const [session, setSession] = useState<SessionState>({ status: 'restoring', user: null, token: null });
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const query_client = useQueryClient();
 
@@ -46,7 +46,7 @@ export function SessionProvider({ children }: { children: ReactNode }): ReactNod
 
   const forget = useCallback(() => {
     clear_timer();
-    set_session({ status: 'anonymous', user: null, token: null });
+    setSession({ status: 'anonymous', user: null, token: null });
     query_client.clear();
   }, [clear_timer, query_client]);
 
@@ -57,7 +57,7 @@ export function SessionProvider({ children }: { children: ReactNode }): ReactNod
   const adopt = useCallback(
     (established: AuthSession) => {
       clear_timer();
-      set_session({ status: 'authenticated', user: established.user, token: established.accessToken });
+      setSession({ status: 'authenticated', user: established.user, token: established.accessToken });
 
       const delay_seconds = Math.max(established.expiresIn - refresh_lead_seconds, 15);
       timer.current = setTimeout(() => {
@@ -99,7 +99,7 @@ export function SessionProvider({ children }: { children: ReactNode }): ReactNod
         if (as_api_error(error) === null) {
           console.error(error);
         }
-        set_session({ status: 'anonymous', user: null, token: null });
+        setSession({ status: 'anonymous', user: null, token: null });
       });
 
     return () => {

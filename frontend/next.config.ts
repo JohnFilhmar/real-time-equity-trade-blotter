@@ -1,6 +1,6 @@
 import path from "node:path";
 import type { NextConfig } from "next";
-import { api_rewrites } from "./src/lib/api/proxy_routes";
+import { api_rewrites } from "./src/lib/api/proxyRoutes";
 
 const nextConfig: NextConfig = {
   output: "standalone",

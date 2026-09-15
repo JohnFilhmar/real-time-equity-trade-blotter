@@ -21,7 +21,7 @@ export function useFlash(rows: readonly Trade[]): ReadonlyMap<string, FlashKind>
   const snapshots = useRef<Map<string, FlashSnapshot> | null>(null);
   const last_flash_at = useRef<Map<string, number>>(new Map());
   const timers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
-  const [flashes, set_flashes] = useState<ReadonlyMap<string, FlashKind>>(new Map());
+  const [flashes, setFlashes] = useState<ReadonlyMap<string, FlashKind>>(new Map());
 
   useEffect(() => {
     const next_snapshots = new Map<string, FlashSnapshot>();
@@ -56,7 +56,7 @@ export function useFlash(rows: readonly Trade[]): ReadonlyMap<string, FlashKind>
     }
 
     const frame = window.requestAnimationFrame(() => {
-      set_flashes((current) => {
+      setFlashes((current) => {
         const next = new Map(current);
         for (const [id, kind] of started) {
           next.set(id, kind);
@@ -73,7 +73,7 @@ export function useFlash(rows: readonly Trade[]): ReadonlyMap<string, FlashKind>
           id,
           setTimeout(() => {
             timers.current.delete(id);
-            set_flashes((current) => {
+            setFlashes((current) => {
               if (!current.has(id)) {
                 return current;
               }

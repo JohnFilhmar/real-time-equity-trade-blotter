@@ -14,11 +14,11 @@ import { format_clock } from '@/lib/format/clock';
  * @returns A `time` element.
  */
 export function SessionClock({ className = '' }: { className?: string }): ReactNode {
-  const [now, set_now] = useState<Date | null>(null);
+  const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
     const tick = (): void => {
-      set_now(new Date());
+      setNow(new Date());
     };
     tick();
     const timer = setInterval(tick, 1000);

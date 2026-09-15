@@ -60,7 +60,7 @@ export const TradeRow = memo(function TradeRow({
       data-flash={flash}
       onClick={() => onSelect(index)}
       style={{ transform: `translateY(${offset.toString()}px)`, height: `${row_height.toString()}px` }}
-      className={`absolute top-0 left-0 grid w-full cursor-pointer items-center gap-[10px] border-b border-rule-soft px-[14px] text-[12.5px] transition-colors duration-100 hover:bg-brand-hover focus-visible:outline-offset-[-2px] ${grid_template_classes} ${
+      className={`absolute top-0 left-0 grid w-full cursor-pointer items-center gap-2.5 border-b border-rule-soft px-3.5 text-[12.5px] transition-colors duration-100 hover:bg-brand-hover focus-visible:-outline-offset-2 ${grid_template_classes} ${
         selected ? 'bg-brand-bg shadow-[inset_2px_0_0_var(--brand)]' : ''
       } ${cancelled ? 'opacity-40' : ''} ${flash !== undefined ? flash_classes[flash] : ''}`}
     >
@@ -78,7 +78,7 @@ export const TradeRow = memo(function TradeRow({
           >
             {flexRender(cell.column.columnDef.cell, cell.getContext())}
             {is_price && (flash === 'up' || flash === 'down') ? (
-              <span className={`ml-[3px] inline-block w-2 text-[9px] ${flash === 'up' ? 'text-gain' : 'text-loss'}`} aria-hidden="true">
+              <span className={`ml-0.75 inline-block w-2 text-[9px] ${flash === 'up' ? 'text-gain' : 'text-loss'}`} aria-hidden="true">
                 {flash === 'up' ? '▲' : '▼'}
               </span>
             ) : null}

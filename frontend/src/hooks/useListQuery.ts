@@ -7,7 +7,7 @@ import {
   parse_search_params,
   to_search_params,
   type TradeListQuery,
-} from '@/lib/query/trade_query';
+} from '@/lib/query/tradeQuery';
 
 /** The list query and the ways to change it. */
 export interface ListQueryState {

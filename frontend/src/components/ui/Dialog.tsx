@@ -71,7 +71,7 @@ export function Dialog({ title, description, size = 'md', onClose, footer, child
 
   return (
     <div
-      className="absolute inset-0 z-[60] flex animate-fade items-center justify-center bg-scrim p-4 backdrop-blur-[4px]"
+      className="absolute inset-0 z-[60] flex animate-fade items-center justify-center bg-scrim p-4 backdrop-blur-xs"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) {
           onClose();
@@ -84,28 +84,28 @@ export function Dialog({ title, description, size = 'md', onClose, footer, child
         aria-modal="true"
         aria-labelledby={title_id}
         onKeyDown={on_key_down}
-        className={`flex max-h-full w-full animate-rise flex-col overflow-hidden rounded-[12px] border border-glass-edge bg-glass shadow-glass backdrop-blur-[22px] backdrop-saturate-150 ${size === 'sm' ? 'max-w-[428px]' : 'max-w-[552px]'}`}
+        className={`flex max-h-full w-full animate-rise flex-col overflow-hidden rounded-xl border border-glass-edge bg-glass shadow-glass backdrop-blur-[22px] backdrop-saturate-150 ${size === 'sm' ? 'max-w-107' : 'max-w-138'}`}
       >
-        <div className="flex shrink-0 items-start gap-3 border-b border-rule px-[18px] py-[15px]">
+        <div className="flex shrink-0 items-start gap-3 border-b border-rule px-4.5 py-3.75">
           <div className="flex-1">
             <h2 id={title_id} className="m-0 text-[15px] font-semibold tracking-[-.012em] text-balance">
               {title}
             </h2>
-            {description !== undefined ? <p className="mt-[3px] mb-0 text-[12px] text-muted">{description}</p> : null}
+            {description !== undefined ? <p className="mt-0.75 mb-0 text-[12px] text-muted">{description}</p> : null}
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="grid h-7 w-7 place-items-center rounded-[6px] text-muted hover:bg-glass-soft hover:text-brand-lo"
+            className="grid h-7 w-7 place-items-center rounded-md text-muted hover:bg-glass-soft hover:text-brand-lo"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
               <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </button>
         </div>
-        <div className="flex flex-col gap-[15px] overflow-y-auto p-[18px]">{children}</div>
-        <div className="flex shrink-0 justify-end gap-[9px] border-t border-rule bg-foot px-[18px] py-[13px]">{footer}</div>
+        <div className="flex flex-col gap-3.75 overflow-y-auto p-4.5">{children}</div>
+        <div className="flex shrink-0 justify-end gap-2.25 border-t border-rule bg-foot px-4.5 py-3.25">{footer}</div>
       </div>
     </div>
   );

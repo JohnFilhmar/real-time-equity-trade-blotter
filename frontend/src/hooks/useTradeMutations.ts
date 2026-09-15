@@ -3,9 +3,9 @@
 import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query';
 import type { AmendTrade, CancelTrade, CreateTrade, Trade } from '@blotter/shared';
 import type { ApiError } from '@/lib/api/http';
-import { amend_trade, cancel_trade, create_trade } from '@/lib/api/trade_api';
-import { settle_trade } from '@/lib/query/settle_trade';
-import { useAccessToken } from '@/providers/session_provider';
+import { amend_trade, cancel_trade, create_trade } from '@/lib/api/tradeApi';
+import { settle_trade } from '@/lib/query/settleTrade';
+import { useAccessToken } from '@/providers/SessionProvider';
 
 /** Arguments for amending: which trade, and the changes plus the version last seen. */
 export interface AmendArguments {

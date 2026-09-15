@@ -4,7 +4,7 @@ import {
   default_trade_list_query,
   parse_search_params,
   to_search_params,
-} from './trade_query';
+} from './tradeQuery';
 
 describe('parse_search_params', () => {
   it('defaults to newest first with no filters', () => {

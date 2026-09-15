@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Trade, TradeList } from '@blotter/shared';
-import { apply_trade, compare_trades, matches_query, type TradePages } from './apply_broadcast';
-import { default_trade_list_query, type TradeListQuery } from './trade_query';
+import { apply_trade, compare_trades, matches_query, type TradePages } from './applyBroadcast';
+import { default_trade_list_query, type TradeListQuery } from './tradeQuery';
 
 function trade(overrides: Partial<Trade> & { id: string }): Trade {
   return {

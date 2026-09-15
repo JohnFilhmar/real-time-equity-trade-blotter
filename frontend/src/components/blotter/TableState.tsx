@@ -21,9 +21,9 @@ export type EmptyState =
 export function TableEmptyState({ state }: { state: EmptyState }): ReactNode {
   if (state.kind === 'loading') {
     return (
-      <div className="flex flex-col gap-[6px] p-[14px]" aria-busy="true" aria-label="Loading trades">
+      <div className="flex flex-col gap-1.5 p-3.5" aria-busy="true" aria-label="Loading trades">
         {Array.from({ length: 12 }, (_value, index) => (
-          <Skeleton key={index} className="h-[26px] w-full" />
+          <Skeleton key={index} className="h-6.5 w-full" />
         ))}
       </div>
     );
@@ -104,7 +104,7 @@ export function ConnectionBanner({ status }: { status: ConnectionStatus }): Reac
   const { title, body, tone } = copy[status];
 
   return (
-    <div role="status" className={`mx-[14px] mt-[10px] rounded-r border px-3 py-2 text-[12px] ${tone}`}>
+    <div role="status" className={`mx-3.5 mt-2.5 rounded-r border px-3 py-2 text-[12px] ${tone}`}>
       <b className="font-semibold">{title}.</b> <span className="text-text-2">{body}</span>
     </div>
   );

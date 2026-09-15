@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useConnectionStatus, useLastSeq } from '@/hooks/use_connection';
+import { useConnectionStatus, useLastSeq } from '@/hooks/useConnection';
 import type { ConnectionStatus } from '@/types/connection';
 
 const copy: Record<ConnectionStatus, string> = {
@@ -33,9 +33,9 @@ export function ConnectionPill(): ReactNode {
       data-state={status}
       role="status"
       aria-live="polite"
-      className={`flex h-[27px] items-center gap-[7px] whitespace-nowrap rounded-[14px] px-[10px] font-mono text-[10.5px] font-medium tracking-[.07em] ${tone[status]}`}
+      className={`flex h-6.75 items-center gap-1.75 whitespace-nowrap rounded-[14px] px-2.5 font-mono text-[10.5px] font-medium tracking-[.07em] ${tone[status]}`}
     >
-      <span className={`h-[6px] w-[6px] rounded-full bg-current ${status === 'reconnecting' ? 'animate-breathe' : 'animate-pulse-dot'}`} aria-hidden="true" />
+      <span className={`h-1.5 w-1.5 rounded-full bg-current ${status === 'reconnecting' ? 'animate-breathe' : 'animate-pulse-dot'}`} aria-hidden="true" />
       {copy[status]}
       {status === 'live' && last_seq !== null ? <span className="text-brand-lo">seq {last_seq}</span> : null}
     </div>

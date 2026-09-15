@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import type { Trade } from '@blotter/shared';
-import { useMark } from '@/hooks/use_marks';
+import { useMark } from '@/hooks/useMarks';
 import { format_price } from '@/lib/format/money';
 
 /**
@@ -21,7 +21,7 @@ export function PriceCell({ trade }: { trade: Trade }): ReactNode {
       {format_price(trade.price)}
       <span className="ml-1 text-[9.5px] text-faint">{trade.currency}</span>
       {tick !== null ? (
-        <span className={`ml-[3px] inline-block w-2 text-[9px] ${tick === 'up' ? 'text-gain' : 'text-loss'}`} title={`Mark ${tick === 'up' ? 'above' : 'below'} the execution price`} aria-hidden="true">
+        <span className={`ml-0.75 inline-block w-2 text-[9px] ${tick === 'up' ? 'text-gain' : 'text-loss'}`} title={`Mark ${tick === 'up' ? 'above' : 'below'} the execution price`} aria-hidden="true">
           {tick === 'up' ? '▲' : '▼'}
         </span>
       ) : null}

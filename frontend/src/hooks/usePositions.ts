@@ -4,9 +4,9 @@ import { useInfiniteQuery, useQuery, type UseInfiniteQueryResult, type UseQueryR
 import { useMemo } from 'react';
 import type { Position, TradeEvent, TradeEventList } from '@blotter/shared';
 import type { InfiniteData } from '@tanstack/react-query';
-import { list_event_feed, list_positions } from '@/lib/api/position_api';
+import { list_event_feed, list_positions } from '@/lib/api/positionApi';
 import { event_feed_keys, position_keys } from '@/lib/query/keys';
-import { useAccessToken } from '@/providers/session_provider';
+import { useAccessToken } from '@/providers/SessionProvider';
 
 /**
  * Reads the positions. Marked stale by every broadcast, so an open positions view refetches as

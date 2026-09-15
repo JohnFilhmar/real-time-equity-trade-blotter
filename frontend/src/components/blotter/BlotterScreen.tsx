@@ -5,13 +5,13 @@ import type { Trade } from '@blotter/shared';
 import { TradePanel } from '@/components/trade/TradePanel';
 import { TradeTicket } from '@/components/trade/TradeTicket';
 import { Button } from '@/components/ui/Button';
-import { useConnectionStatus, useMutationGate } from '@/hooks/use_connection';
-import { useListQuery } from '@/hooks/use_list_query';
-import { phone_query, useMediaQuery } from '@/hooks/use_media_query';
-import { useTrades, type TradesResult } from '@/hooks/use_trades';
+import { useConnectionStatus, useMutationGate } from '@/hooks/useConnection';
+import { useListQuery } from '@/hooks/useListQuery';
+import { phone_query, useMediaQuery } from '@/hooks/useMediaQuery';
+import { useTrades, type TradesResult } from '@/hooks/useTrades';
 import { can } from '@/lib/auth/permissions';
-import { active_filter_count, type TradeListQuery } from '@/lib/query/trade_query';
-import { useSession } from '@/providers/session_provider';
+import { active_filter_count, type TradeListQuery } from '@/lib/query/tradeQuery';
+import { useSession } from '@/providers/SessionProvider';
 import type { ConnectionStatus } from '@/types/connection';
 import { ActiveChips } from './ActiveChips';
 import { BookButton, FilterRail, RowCount } from './FilterRail';
@@ -62,15 +62,15 @@ export function BlotterScreen(): ReactNode {
   const gate = useMutationGate();
   const is_phone = useMediaQuery(phone_query);
 
-  const [selected_id, set_selected_id] = useState<string | null>(null);
-  const [booking, set_booking] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [booking, setBooking] = useState(false);
 
-  const selected = trades.rows.find((row) => row.id === selected_id) ?? null;
+  const selected = trades.rows.find((row) => row.id === selectedId) ?? null;
   const can_book = can(user, 'trade.create');
   const book_reason = can_book ? gate.reason : 'Your role cannot book trades';
 
   const on_select = useCallback((trade: Trade | null) => {
-    set_selected_id(trade?.id ?? null);
+    setSelectedId(trade?.id ?? null);
   }, []);
 
   const load_more = useCallback(() => {
@@ -79,7 +79,7 @@ export function BlotterScreen(): ReactNode {
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const open_ticket = useCallback(() => set_booking(true), []);
+  const open_ticket = useCallback(() => setBooking(true), []);
 
   const empty_state = empty_state_for(trades, query, status, can_book, {
     book: open_ticket,
@@ -103,11 +103,11 @@ export function BlotterScreen(): ReactNode {
       ) : null}
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <div className="flex shrink-0 flex-wrap items-center gap-[9px] border-b border-rule px-[14px] py-[10px]">
-          <div className="flex min-w-0 flex-wrap gap-[6px]">
+        <div className="flex shrink-0 flex-wrap items-center gap-2.25 border-b border-rule px-3.5 py-2.5">
+          <div className="flex min-w-0 flex-wrap gap-1.5">
             <ActiveChips query={query} onRemove={(key) => update({ [key]: undefined })} />
           </div>
-          <div className="ml-auto flex items-center gap-[9px]">
+          <div className="ml-auto flex items-center gap-2.25">
             <RowCount loaded={trades.rows.length} total={trades.total} />
             <Button onClick={() => void refetch()} aria-label="Refresh from the API" disabled={isFetching}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
@@ -129,7 +129,7 @@ export function BlotterScreen(): ReactNode {
           <TableEmptyState state={empty_state} />
         ) : is_phone ? (
           <div className="min-h-0 flex-1 overflow-auto">
-            <TradeCards rows={trades.rows} selected_id={selected_id} onSelect={on_select} onLoadMore={load_more} has_more={hasNextPage} />
+            <TradeCards rows={trades.rows} selected_id={selectedId} onSelect={on_select} onLoadMore={load_more} has_more={hasNextPage} />
           </div>
         ) : (
           <TradeGrid
@@ -137,7 +137,7 @@ export function BlotterScreen(): ReactNode {
             total={trades.total}
             sort_by={query.sort_by}
             sort_dir={query.sort_dir}
-            selected_id={selected_id}
+            selected_id={selectedId}
             onSort={sort_by}
             onSelect={on_select}
             onLoadMore={load_more}
@@ -146,7 +146,7 @@ export function BlotterScreen(): ReactNode {
         )}
       </div>
 
-      {selected !== null ? <TradePanel trade={selected} onClose={() => set_selected_id(null)} /> : null}
+      {selected !== null ? <TradePanel trade={selected} onClose={() => setSelectedId(null)} /> : null}
 
       {can_book && is_phone ? (
         <button
@@ -155,7 +155,7 @@ export function BlotterScreen(): ReactNode {
           disabled={book_reason !== null}
           aria-label="Book a new trade"
           title={book_reason ?? undefined}
-          className="absolute right-4 bottom-[72px] z-[50] grid h-[52px] w-[52px] place-items-center rounded-[26px] border border-brand-edge bg-linear-150 from-brand-btn-hi2 to-brand-btn-lo2 text-brand-lo shadow-glass backdrop-blur-[18px] disabled:opacity-40"
+          className="absolute right-4 bottom-18 z-[50] grid h-13 w-13 place-items-center rounded-[26px] border border-brand-edge bg-linear-150 from-brand-btn-hi2 to-brand-btn-lo2 text-brand-lo shadow-glass backdrop-blur-[18px] disabled:opacity-40"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
             <path d="M12 5v14M5 12h14" />
@@ -166,10 +166,10 @@ export function BlotterScreen(): ReactNode {
       {booking ? (
         <TradeTicket
           mode={{ kind: 'new' }}
-          onClose={() => set_booking(false)}
+          onClose={() => setBooking(false)}
           onBooked={(trade) => {
-            set_booking(false);
-            set_selected_id(trade.id);
+            setBooking(false);
+            setSelectedId(trade.id);
           }}
         />
       ) : null}

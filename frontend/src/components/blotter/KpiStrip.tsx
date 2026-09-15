@@ -2,9 +2,9 @@
 
 import type { ReactNode } from 'react';
 import { unrealised_pnl, type Currency, type MarkSet, type Position } from '@blotter/shared';
-import { useConnectionStatus, useLastSeq } from '@/hooks/use_connection';
-import { useMarks } from '@/hooks/use_marks';
-import { usePositions } from '@/hooks/use_positions';
+import { useConnectionStatus, useLastSeq } from '@/hooks/useConnection';
+import { useMarks } from '@/hooks/useMarks';
+import { usePositions } from '@/hooks/usePositions';
 import { format_money, to_display_notional } from '@/lib/format/money';
 
 /** Per-currency totals the strip shows. */
@@ -73,7 +73,7 @@ function signed(amount: number | null, currency: Currency): string {
 function MoneyKpi({ label, usd, gbp, sub }: { label: string; usd: number | null; gbp: number | null; sub: ReactNode }): ReactNode {
   const tone = (value: number | null): string => (value === null ? 'text-faint' : value >= 0 ? 'text-gain' : 'text-loss');
   return (
-    <div className="flex min-w-0 flex-col gap-[3px] bg-surface px-4 py-[11px]">
+    <div className="flex min-w-0 flex-col gap-0.75 bg-surface px-4 py-2.75">
       <div className="truncate font-mono text-[9.5px] uppercase tracking-[.12em] text-faint">{label}</div>
       <div className="flex items-baseline gap-3 font-mono text-[17px] leading-[1.1] font-semibold tracking-[-.015em] tabular-nums">
         <span className={tone(usd)}>{signed(usd, 'USD')}</span>
@@ -110,12 +110,12 @@ export function KpiStrip(): ReactNode {
         gbp={gbp.pnl}
         sub={`unrl ${signed(usd.unrealised, 'USD')} · rlsd ${signed(usd.realised, 'USD')}`}
       />
-      <div className="flex min-w-0 flex-col gap-[3px] bg-surface px-4 py-[11px]">
+      <div className="flex min-w-0 flex-col gap-0.75 bg-surface px-4 py-2.75">
         <div className="truncate font-mono text-[9.5px] uppercase tracking-[.12em] text-faint">Active trades</div>
         <div className="font-mono text-[19px] leading-[1.1] font-semibold tracking-[-.015em] tabular-nums">{positions.data === undefined ? '–' : active.toLocaleString('en-GB')}</div>
         <div className="truncate font-mono text-[10.5px] text-muted">{rows.filter((row) => row.currency === 'USD').length.toString()} US names, {rows.filter((row) => row.currency === 'GBX').length.toString()} London names</div>
       </div>
-      <div className="flex min-w-0 flex-col gap-[3px] bg-surface px-4 py-[11px]">
+      <div className="flex min-w-0 flex-col gap-0.75 bg-surface px-4 py-2.75">
         <div className="truncate font-mono text-[9.5px] uppercase tracking-[.12em] text-faint">Feed</div>
         <div className={`font-mono text-[19px] leading-[1.1] font-semibold tracking-[-.015em] tabular-nums ${status === 'reconnecting' ? 'text-warn' : 'text-brand'}`}>{status.toUpperCase()}</div>
         <div className="truncate font-mono text-[10.5px] text-muted">{last_seq === null ? 'waiting for the first broadcast' : `last broadcast seq ${last_seq.toString()}`}</div>

@@ -16,7 +16,7 @@ export interface NoteProps {
 export function Note({ tone = 'info', children }: NoteProps): ReactNode {
   return (
     <div
-      className={`rounded-r rounded-l-none border-l-2 bg-glass-soft px-3 py-[9px] text-[11.5px] leading-[1.55] ${
+      className={`rounded-r rounded-l-none border-l-2 bg-glass-soft px-3 py-2.25 text-[11.5px] leading-[1.55] ${
         tone === 'warn' ? 'border-l-loss-edge-hot text-text-2' : 'border-l-brand-edge text-muted'
       }`}
     >
@@ -33,7 +33,7 @@ export function Note({ tone = 'info', children }: NoteProps): ReactNode {
  */
 export function SectionLabel({ children }: { children: ReactNode }): ReactNode {
   return (
-    <div className="mb-[11px] border-b border-rule pb-[7px] font-mono text-[9.5px] uppercase tracking-[.12em] text-faint">
+    <div className="mb-2.75 border-b border-rule pb-1.75 font-mono text-[9.5px] uppercase tracking-[.12em] text-faint">
       {children}
     </div>
   );
@@ -46,5 +46,5 @@ export function SectionLabel({ children }: { children: ReactNode }): ReactNode {
  * @returns A div.
  */
 export function Skeleton({ className = '' }: { className?: string }): ReactNode {
-  return <div className={`animate-pulse rounded-[4px] bg-glass-soft ${className}`} aria-hidden="true" />;
+  return <div className={`animate-pulse rounded-sm bg-glass-soft ${className}`} aria-hidden="true" />;
 }

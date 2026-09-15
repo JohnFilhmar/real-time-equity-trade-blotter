@@ -24,7 +24,7 @@ const dwell_ms = 5_000;
  * @returns The layer, decorative and hidden from assistive tech.
  */
 export function LoginBackdrop(): ReactNode {
-  const [index, set_index] = useState(0);
+  const [index, setIndex] = useState(0);
 
   useEffect(() => {
     if (backdrops.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -34,7 +34,7 @@ export function LoginBackdrop(): ReactNode {
       if (document.visibilityState !== 'visible') {
         return;
       }
-      set_index((current) => (current + 1) % backdrops.length);
+      setIndex((current) => (current + 1) % backdrops.length);
     }, dwell_ms);
     return () => clearInterval(timer);
   }, []);

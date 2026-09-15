@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { probe_ready } from './health_api';
+import { probe_ready } from './healthApi';
 
 function answer(status: number, body: unknown): typeof fetch {
   return () => Promise.resolve(new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } }));

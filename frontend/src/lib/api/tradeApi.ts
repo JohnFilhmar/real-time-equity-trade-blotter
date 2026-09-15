@@ -10,7 +10,7 @@ import {
   type TradeEvent,
   type TradeList,
 } from '@blotter/shared';
-import { to_search_params, type TradeListQuery } from '@/lib/query/trade_query';
+import { to_search_params, type TradeListQuery } from '@/lib/query/tradeQuery';
 import { api_json } from './http';
 
 const prefix = '/api/v1/trades';
