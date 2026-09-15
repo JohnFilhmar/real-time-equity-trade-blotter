@@ -10,6 +10,12 @@ import { Sparkline } from './Sparkline';
 export const position_grid_cols =
   'grid-cols-[84px_60px_96px_92px_92px_116px_104px_104px_64px_1fr]';
 
+/**
+ * One position row on the shared tracks, 44px tall. The skeleton rows use the same classes, so the
+ * table does not move when the positions arrive.
+ */
+export const position_row_classes = `grid h-11 items-center gap-2.5 border-b border-rule-soft px-3.5 text-[12.5px] ${position_grid_cols}`;
+
 /** Props for {@link PositionRow}. */
 export interface PositionRowProps {
   position: Position;
@@ -52,7 +58,7 @@ export const PositionRow = memo(function PositionRow({ position }: PositionRowPr
   const tone = (unrealised ?? 0) >= 0 ? 'gain' : 'loss';
 
   return (
-    <tr className={`grid h-11 items-center gap-2.5 border-b border-rule-soft px-3.5 text-[12.5px] ${position_grid_cols}`}>
+    <tr className={position_row_classes}>
       <td className="font-semibold">{position.symbol}</td>
       <td className="font-mono text-[10.5px] text-muted">{position.currency}</td>
       <td className={`text-right font-mono tabular-nums ${long ? 'text-gain' : 'text-loss'}`}>

@@ -2,12 +2,58 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { TradePanel } from '@/components/trade/TradePanel';
-import { HistoryRow } from '@/components/trade/TradeHistory';
+import { HistoryRow, history_row_layout } from '@/components/trade/TradeHistory';
 import { Chip } from '@/components/ui/Badges';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Note';
 import { useEventFeed } from '@/hooks/usePositions';
 import { useTrade } from '@/hooks/useTrades';
+
+/** The screen's column: toolbar, then the list. The audit skeleton is built on the same classes. */
+export const audit_screen_classes = 'relative flex min-h-0 flex-1 flex-col';
+
+/** The toolbar row above the list. */
+export const audit_toolbar_classes = 'flex shrink-0 flex-wrap items-center gap-2.25 border-b border-rule px-3.5 py-2.5';
+
+/** The scrolling area that holds the list. */
+export const audit_list_classes = 'min-h-0 flex-1 overflow-auto px-4';
+
+/** Skeleton lines drawn while the trail loads. */
+const skeleton_line_count = 10;
+
+/**
+ * The trail while it loads: lines on the history line's own layout, each with a change line as an
+ * amendment has, and each in its own wrapper as a real line sits in its button, so the list keeps
+ * its shape when the events arrive.
+ *
+ * @returns The skeleton lines.
+ */
+export function AuditRowsSkeleton(): ReactNode {
+  return (
+    <div className="py-1" aria-hidden="true">
+      {Array.from({ length: skeleton_line_count }, (_line, index) => (
+        <div key={index}>
+          <div className={history_row_layout.row}>
+            <Skeleton shape="pill" className={history_row_layout.dot} />
+            <div className={history_row_layout.body}>
+              <div className={history_row_layout.headline}>
+                <Skeleton inline className="h-2.5 w-44" />
+              </div>
+              <div className={history_row_layout.changes}>
+                <span>
+                  <Skeleton inline className="h-2 w-32" />
+                </span>
+              </div>
+              <div className={history_row_layout.meta}>
+                <Skeleton inline className="h-2 w-36" />
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 /**
  * The global audit trail: every amendment and cancellation on the desk, newest first, paged by
@@ -41,8 +87,8 @@ export function AuditScreen(): ReactNode {
   }, [feed.query]);
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col">
-      <div className="flex shrink-0 flex-wrap items-center gap-2.25 border-b border-rule px-3.5 py-2.5">
+    <div className={audit_screen_classes}>
+      <div className={audit_toolbar_classes}>
         <div className="flex flex-wrap gap-1.5">
           <Chip label="Events" value={feed.total.toLocaleString('en-GB')} />
           <Chip label="Amendments" value={<span className="text-warn">{amendments.toString()}</span>} />
@@ -59,13 +105,9 @@ export function AuditScreen(): ReactNode {
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto px-4">
+      <div className={audit_list_classes} aria-busy={feed.query.isPending || undefined}>
         {feed.query.isPending ? (
-          <div className="flex flex-col gap-1.5 py-3.5" aria-busy="true">
-            {Array.from({ length: 10 }, (_value, index) => (
-              <Skeleton key={index} className="h-12 w-full" />
-            ))}
-          </div>
+          <AuditRowsSkeleton />
         ) : feed.query.isError ? (
           <div className="flex flex-col items-center gap-3 py-16 text-center" role="status">
             <p className="m-0 text-[14px] font-semibold">The audit trail could not be loaded</p>

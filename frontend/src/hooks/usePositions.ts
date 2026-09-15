@@ -1,25 +1,29 @@
 'use client';
 
-import { useInfiniteQuery, useQuery, type UseInfiniteQueryResult, type UseQueryResult } from '@tanstack/react-query';
+import { skipToken, useInfiniteQuery, useQuery, type UseInfiniteQueryResult, type UseQueryResult } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import type { Position, TradeEvent, TradeEventList } from '@blotter/shared';
 import type { InfiniteData } from '@tanstack/react-query';
 import { list_event_feed, list_positions } from '@/lib/api/positionApi';
 import { event_feed_keys, position_keys } from '@/lib/query/keys';
-import { useAccessToken } from '@/providers/SessionProvider';
+import { useAccessToken, useSession } from '@/providers/SessionProvider';
 
 /**
  * Reads the positions. Marked stale by every broadcast, so an open positions view refetches as
  * the book moves and a closed one costs nothing.
  *
- * @returns The query.
+ * Safe to mount before anyone is signed in, which the frame's KPI strip does while the session
+ * restores: without a token the query waits and sends nothing.
+ *
+ * @returns The query, pending with no request made until the session has a token.
  */
 export function usePositions(): UseQueryResult<Position[]> {
-  const token = useAccessToken();
+  const { session } = useSession();
+  const token = session.token;
 
   return useQuery({
     queryKey: position_keys.all,
-    queryFn: () => list_positions(token),
+    queryFn: token === null ? skipToken : () => list_positions(token),
   });
 }
 
