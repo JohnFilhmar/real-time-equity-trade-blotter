@@ -6,8 +6,11 @@ import { grid_template_classes, sortable_columns } from './columns';
 /** Props for {@link GridHeader}. */
 export interface GridHeaderProps {
   table: Table<Trade>;
+  /** The sort to show, which already reflects a click whose URL write has not landed. */
   sort_by: TradeSortColumn;
   sort_dir: 'asc' | 'desc';
+  /** Rows for a new sort or filter are loading, so a thin bar runs along the bottom edge. */
+  pending: boolean;
   onSort: (column: TradeSortColumn) => void;
 }
 
@@ -15,10 +18,14 @@ export interface GridHeaderProps {
  * The sticky header row. Each sortable header is a button; the sorted one carries `aria-sort`, the
  * rest carry nothing, which is what the ARIA grid pattern asks for.
  *
- * @param props - The table, the current sort, and the sort handler.
+ * While rows for a new view load, a 2px bar slides along the header's bottom edge, and holds still
+ * when the user has turned motion off. It is hidden from assistive tech, which reads `aria-busy` on
+ * the grid instead.
+ *
+ * @param props - The table, the sort to show, whether rows are loading, and the sort handler.
  * @returns The header row.
  */
-export function GridHeader({ table, sort_by, sort_dir, onSort }: GridHeaderProps): ReactNode {
+export function GridHeader({ table, sort_by, sort_dir, pending, onSort }: GridHeaderProps): ReactNode {
   const caret = sort_dir === 'asc' ? '▲' : '▼';
 
   return (
@@ -61,6 +68,11 @@ export function GridHeader({ table, sort_by, sort_dir, onSort }: GridHeaderProps
           </div>
         );
       })}
+      {pending ? (
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 -bottom-px h-0.5 overflow-hidden">
+          <div className="h-full w-1/3 animate-progress bg-linear-to-r from-transparent via-brand to-transparent motion-reduce:w-full motion-reduce:animate-none" />
+        </div>
+      ) : null}
     </div>
   );
 }

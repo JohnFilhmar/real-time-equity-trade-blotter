@@ -20,6 +20,11 @@ export interface TradeDrawerProps {
   onClose: () => void;
   onAmend: () => void;
   onCancel: () => void;
+  /**
+   * Moves focus to the close button when the drawer opens or shows another trade. Defaults to true.
+   * The blotter grid turns it off, so focus stays on the row and the arrow keys keep scanning.
+   */
+  take_focus?: boolean;
 }
 
 /**
@@ -44,18 +49,20 @@ function Value({ label, children, wide = false, mono = false }: { label: string;
  * Amend and Cancel are hidden for a role that can never use them, and greyed with the reason when
  * the block is temporary: another trader's row, a cancelled trade, or a link that is down.
  *
- * @param props - The trade and the close, amend and cancel handlers.
+ * @param props - The trade, the close, amend and cancel handlers, and whether the drawer takes focus.
  * @returns The drawer.
  */
-export function TradeDrawer({ trade, onClose, onAmend, onCancel }: TradeDrawerProps): ReactNode {
+export function TradeDrawer({ trade, onClose, onAmend, onCancel, take_focus = true }: TradeDrawerProps): ReactNode {
   const { session } = useSession();
   const user = session.user;
   const gate = useMutationGate();
   const close_button = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    close_button.current?.focus();
-  }, [trade.id]);
+    if (take_focus) {
+      close_button.current?.focus();
+    }
+  }, [trade.id, take_focus]);
 
   const mark = useMark(trade.symbol);
   // What this trade is worth against the current mark, signed by side: a BUY gains as the mark
