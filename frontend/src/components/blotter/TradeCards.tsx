@@ -80,7 +80,7 @@ export function TradeCards({ rows, selected_id, onSelect, onLoadMore, has_more }
               <span>{format_quantity(trade.quantity)}</span>
               <span className="text-faint">@</span>
               <span>
-                {format_price(trade.price)} <span className="text-[9.5px] text-faint">{trade.currency}</span>
+                {format_price(trade.price)} <span className="text-[9.5px] text-text-2">{trade.currency}</span>
               </span>
               <span className="ml-auto text-text-2">{format_notional(trade.quantity, trade.price, trade.currency)}</span>
             </div>
