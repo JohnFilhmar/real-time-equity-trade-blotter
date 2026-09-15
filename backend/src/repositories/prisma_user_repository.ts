@@ -51,6 +51,11 @@ export function create_prisma_user_repository(prisma: PrismaClient): UserReposit
       });
     },
 
+    async update_password_hash(id: string, password_hash: string): Promise<void> {
+      // updateMany rather than update, so an id with no account changes nothing instead of throwing.
+      await prisma.user.updateMany({ where: { id }, data: { passwordHash: password_hash } });
+    },
+
     async count(): Promise<number> {
       return prisma.user.count();
     },

@@ -110,8 +110,11 @@ Refresh rotates on every use. A refresh token is spent the moment it is exchange
 token comes back, the entire session family is destroyed and both the thief and the legitimate
 holder are signed out. The compare and the write are one Lua script in Redis.
 
-Passwords are bcrypt at cost 12. A login for an account that does not exist is still compared
-against a dummy hash, so response time does not reveal which usernames are real. Failures are
+Passwords are bcrypt at `BCRYPT_ROUNDS`, 12 by default. A login for an account that does not exist
+is still compared against a dummy hash the API makes at that same cost when it starts, so response
+time does not reveal which usernames are real at any configured cost. A correct password whose
+stored hash was made at another cost is rehashed at the current one, so existing accounts follow a
+change to `BCRYPT_ROUNDS` as their owners sign in. Failures are
 counted per account in Redis. The fifth failure locks the account for `LOGIN_LOCKOUT_SECONDS`, 15
 minutes by default, and is itself answered with `429` and code `locked_out`, so the person learns
 at once rather than on a sixth attempt. Unknown usernames count and lock the same way. The

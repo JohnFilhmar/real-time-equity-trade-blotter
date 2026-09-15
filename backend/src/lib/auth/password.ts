@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcrypt';
 import { env } from '../../config/env.js';
 
@@ -38,6 +39,38 @@ export async function verify_password(password: string, hash: string): Promise<b
   }
 
   return bcrypt.compare(password, hash);
+}
+
+/**
+ * Makes a hash of a random value nobody holds, at the configured cost.
+ *
+ * The login path compares against it when a username does not exist, so a missing account costs the
+ * same bcrypt work as a real one with the wrong password at whatever `BCRYPT_ROUNDS` is set to. A
+ * fixed hash written into the source would keep its own cost and drift from real hashes the moment
+ * the setting changed.
+ *
+ * @returns A bcrypt hash no password matches in practice, salted afresh on every call.
+ */
+export async function create_dummy_hash(): Promise<string> {
+  return hash_password(randomBytes(32).toString('base64url'));
+}
+
+/**
+ * Says whether a stored hash was made at a different cost from the configured one.
+ *
+ * A hash made before `BCRYPT_ROUNDS` changed still verifies, but its bcrypt work, and so its
+ * response time, no longer matches the dummy hash that unknown usernames are checked against.
+ *
+ * @param hash - A stored bcrypt hash.
+ * @returns True when the hash's cost differs from `BCRYPT_ROUNDS`. False at the configured cost, and
+ * for a value bcrypt cannot read, which no password can have matched.
+ */
+export function needs_rehash(hash: string): boolean {
+  try {
+    return bcrypt.getRounds(hash) !== env.BCRYPT_ROUNDS;
+  } catch {
+    return false;
+  }
 }
 
 /**
