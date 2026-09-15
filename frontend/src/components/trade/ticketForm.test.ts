@@ -6,6 +6,7 @@ import {
   initial_values,
   parse_amend,
   parse_create,
+  shows_required,
   to_ticket_errors,
   type TicketErrors,
   type TicketValues,
@@ -233,5 +234,13 @@ describe('describe_conflict', () => {
       'Status ACTIVE → CANCELLED',
     ]);
     expect(describe_conflict(stored, { ...stored, version: 4 })).toEqual([]);
+  });
+});
+
+describe('shows_required', () => {
+  it('marks the counterparty on a new ticket only, so an amendment shows it locked like symbol and time', () => {
+    expect(shows_required('counterparty', null)).toBe(true);
+    expect(shows_required('counterparty', stored)).toBe(false);
+    expect(shows_required('symbol', null)).toBe(false);
   });
 });

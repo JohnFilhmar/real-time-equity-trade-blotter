@@ -28,6 +28,20 @@ export type TicketErrors = Partial<Record<keyof TicketValues | 'form', string>>;
 /** The fields an amendment may change; the rest of the ticket is read-only in that mode. */
 export const amendable_fields: ReadonlySet<keyof TicketValues> = new Set(['quantity', 'price', 'book']);
 
+/**
+ * Whether the ticket marks an input as required, with an asterisk after its label and
+ * `aria-required` on the control. Only the counterparty carries the mark, and only on a new ticket.
+ * An amendment locks the counterparty, so there it looks like the other locked inputs instead of
+ * asking for a value.
+ *
+ * @param field - The ticket input.
+ * @param trade - The trade being amended, or `null` for a new ticket.
+ * @returns True when the input shows as required.
+ */
+export function shows_required(field: keyof TicketValues, trade: Trade | null): boolean {
+  return field === 'counterparty' && trade === null;
+}
+
 /** Every input the ticket renders, and so every place a field-level message can appear. */
 const ticket_inputs: readonly (keyof TicketValues)[] = ['symbol', 'side', 'quantity', 'price', 'book', 'counterparty', 'trade_time'];
 

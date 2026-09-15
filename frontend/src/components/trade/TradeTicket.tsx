@@ -22,6 +22,7 @@ import {
   initial_values,
   parse_amend,
   parse_create,
+  shows_required,
   to_ticket_errors,
   type TicketErrors,
   type TicketValues,
@@ -204,8 +205,8 @@ export function TradeTicket({ mode, onClose, onBooked }: TradeTicketProps): Reac
           </datalist>
         </Field>
 
-        <Field id="t_counterparty" label="Counterparty" required error={errors.counterparty} hint={read_only('counterparty') ? 'Fixed on an amendment. Cancel and rebook to change it.' : undefined}>
-          <Input id="t_counterparty" list="t_counterparties" placeholder="Goldman Sachs" aria-required value={values.counterparty} disabled={read_only('counterparty')} invalid={errors.counterparty !== undefined} onChange={(event) => set('counterparty', event.target.value)} />
+        <Field id="t_counterparty" label="Counterparty" required={shows_required('counterparty', base)} error={errors.counterparty} hint={read_only('counterparty') ? 'Fixed on an amendment. Cancel and rebook to change it.' : undefined}>
+          <Input id="t_counterparty" list="t_counterparties" placeholder="Goldman Sachs" aria-required={shows_required('counterparty', base) || undefined} value={values.counterparty} disabled={read_only('counterparty')} invalid={errors.counterparty !== undefined} onChange={(event) => set('counterparty', event.target.value)} />
           <datalist id="t_counterparties">
             {counterparties.map((name) => (
               <option key={name} value={name} />
