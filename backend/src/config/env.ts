@@ -51,7 +51,7 @@ const env_schema = z.object({
    * to a throwaway local stack. It lives here rather than in the source so it can be changed
    * without a rebuild, and the startup log says plainly that demo accounts were created.
    */
-  SEED_USER_PASSWORD: z.string().min(8).default('blotter-demo-2026'),
+  SEED_USER_PASSWORD: z.string().min(8).default('FusionDemo!2026'),
   SEED_TRADE_COUNT: z.coerce.number().int().min(0).max(5000).default(500),
   LIVE_FEED_ENABLED: z.stringbool().default(true),
   LIVE_FEED_MIN_INTERVAL_MS: z.coerce.number().int().min(250).max(600_000).default(3_000),

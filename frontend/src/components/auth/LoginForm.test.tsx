@@ -141,10 +141,10 @@ describe('LoginForm', () => {
     });
     render(<LoginForm />);
 
-    type_credentials('jsmith', 'blotter-demo-2026');
+    type_credentials('jsmith', 'FusionDemo!2026');
     await press_sign_in();
 
-    expect(login).toHaveBeenCalledWith({ username: 'jsmith', password: 'blotter-demo-2026' });
+    expect(login).toHaveBeenCalledWith({ username: 'jsmith', password: 'FusionDemo!2026' });
     expect(login_locks.read('jsmith', Date.now())).toBeNull();
   });
 

@@ -15,7 +15,7 @@ import { Trend } from 'k6/metrics';
 // the path a browser takes.
 
 const base = __ENV.API_URL || 'http://localhost:3000';
-const password = __ENV.SEED_USER_PASSWORD || 'blotter-demo-2026';
+const password = __ENV.SEED_USER_PASSWORD || 'FusionDemo!2026';
 const accounts = ['jsmith', 'abrown', 'mjones', 'viewer'];
 
 export const options = {

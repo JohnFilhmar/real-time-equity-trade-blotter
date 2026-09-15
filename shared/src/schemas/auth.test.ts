@@ -26,9 +26,9 @@ function first_messages(input: Record<string, unknown>): Record<string, string> 
 
 describe('login_request_schema', () => {
   it('accepts desk credentials and trims the username', () => {
-    expect(login_request_schema.parse({ username: '  jsmith ', password: 'blotter-demo-2026' })).toEqual({
+    expect(login_request_schema.parse({ username: '  jsmith ', password: 'FusionDemo!2026' })).toEqual({
       username: 'jsmith',
-      password: 'blotter-demo-2026',
+      password: 'FusionDemo!2026',
     });
   });
 

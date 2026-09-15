@@ -140,7 +140,7 @@ A trade's trader comes from the token, not the payload. You book as yourself.
 ### Demo accounts
 
 Seeded into an empty database. They share a password, which is configuration
-(`SEED_USER_PASSWORD`, default `blotter-demo-2026`) rather than source.
+(`SEED_USER_PASSWORD`, default `FusionDemo!2026`) rather than source.
 
 | Username | Role | Desk |
 |---|---|---|
@@ -244,7 +244,7 @@ docker compose exec backend node -e "fetch('http://127.0.0.1:5000/metrics').then
 | `REFRESH_TOKEN_TTL_SECONDS` | `604800` | Refresh token lifetime |
 | `SEED_ON_STARTUP` | `true` | Seed accounts and trades into an empty database |
 | `SEED_TRADE_COUNT` | `500` | Trades generated on first start |
-| `SEED_USER_PASSWORD` | `blotter-demo-2026` | Password given to the demo accounts |
+| `SEED_USER_PASSWORD` | `FusionDemo!2026` | Password given to the demo accounts |
 | `LIVE_FEED_ENABLED` | `true` | Set false to silence the simulated desk while demonstrating manually |
 | `LIVE_FEED_MIN_INTERVAL_MS` | `3000` | Shortest gap between simulated actions |
 | `LIVE_FEED_MAX_INTERVAL_MS` | `8000` | Longest gap between simulated actions |

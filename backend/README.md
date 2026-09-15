@@ -107,7 +107,7 @@ with a list of every problem, and the message never echoes a value.
 | `LOGIN_MAX_ATTEMPTS` | `5` | Failed logins that lock an account, the last of them answered with the lock, at most 100 |
 | `LOGIN_LOCKOUT_SECONDS` | `900` | Lockout window; every further failure re-arms it |
 | `SEED_ON_STARTUP` | `true` | Seed demo accounts and trades into empty tables |
-| `SEED_USER_PASSWORD` | `blotter-demo-2026` | Password for the demo accounts, at least 8 characters |
+| `SEED_USER_PASSWORD` | `FusionDemo!2026` | Password for the demo accounts, at least 8 characters |
 | `SEED_TRADE_COUNT` | `500` | Trades generated into an empty table, from 0 to 5000 |
 | `LIVE_FEED_ENABLED` | `true` | Runs the simulated desk and the mark feed |
 | `LIVE_FEED_MIN_INTERVAL_MS` | `3000` | Shortest gap between simulated actions, from 250 to 600000 |

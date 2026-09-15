@@ -61,7 +61,7 @@ services:
       # what stops a placeholder from quietly becoming the production key.
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-access-secret-change-me-0123456789abcdef}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret-change-me-0123456789abcdef}
-      SEED_USER_PASSWORD: ${SEED_USER_PASSWORD:-blotter-demo-2026}
+      SEED_USER_PASSWORD: ${SEED_USER_PASSWORD:-FusionDemo!2026}
       SEED_ON_STARTUP: "true"
       SEED_TRADE_COUNT: "500"
       LIVE_FEED_ENABLED: ${LIVE_FEED_ENABLED:-true}

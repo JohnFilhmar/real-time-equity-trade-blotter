@@ -121,7 +121,7 @@ are cached. Without Docker, see [Running without Docker](#running-without-docker
 |---|---|
 | Web app | <http://localhost:3000> |
 | API | Through the web app only: <http://localhost:3000/ready>, <http://localhost:3000/health>. No published port; `/metrics` answers inside the compose network, see [the API reference](docs/api_reference.md) |
-| Sign in | `jsmith` or `abrown` (traders), `mjones` (desk head), `viewer` (read only); password `blotter-demo-2026` |
+| Sign in | `jsmith` or `abrown` (traders), `mjones` (desk head), `viewer` (read only); password `FusionDemo!2026` |
 
 An empty database is seeded with 500 realistic trades, dated across the five trading days before
 the stack first starts, and the four accounts. A simulated desk then books, amends and cancels

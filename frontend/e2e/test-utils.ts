@@ -1,7 +1,7 @@
 import { expect, test as base, type APIRequestContext, type Browser, type BrowserContext, type Page } from '@playwright/test';
 
 /** The demo password every seeded account shares. Configuration on the API side, so overridable. */
-export const demo_password = process.env.SEED_USER_PASSWORD ?? 'blotter-demo-2026';
+export const demo_password = process.env.SEED_USER_PASSWORD ?? 'FusionDemo!2026';
 
 /** Seeded accounts, one per role the suite needs. */
 export const accounts = {
