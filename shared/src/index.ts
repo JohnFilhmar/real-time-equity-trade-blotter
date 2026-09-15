@@ -109,6 +109,8 @@ export {
 
 export type { Instrument, Currency } from './reference/instruments.js';
 
+export { counterparties } from './reference/counterparties.js';
+
 export { trade_events } from './events/socket_events.js';
 
 export type {

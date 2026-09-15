@@ -31,21 +31,56 @@ export const future_timestamp_tolerance_ms = 60_000;
  * Field names are camelCase because the brief supplies the payload that way and a reviewer
  * comparing a response against their own sample should see identical keys. Database columns are
  * snake_case, bridged by Prisma's `@map`.
+ *
+ * Every rule a client can break carries the sentence a trader reads, so the ticket and the API's
+ * 422 say the same thing. A quantity or price that is absent or not a number asks for one rather
+ * than quoting a range, because that is what an emptied box means to the person who emptied it.
+ * Response-only fields keep the library's wording, since no client sends them.
  */
 export const trade_schema = z.object({
   id: z.uuid(),
   tradeId: z.string().regex(trade_id_pattern),
-  symbol: z.enum(instrument_symbols),
-  side: z.enum(trade_side_values),
-  quantity: z.int().positive().max(10_000_000),
-  price: z.number().positive().max(10_000_000),
+  symbol: z.enum(instrument_symbols, 'Choose a symbol from the list'),
+  side: z.enum(trade_side_values, 'Choose Buy or Sell'),
+  quantity: z
+    .int({
+      // Stops at the first failure. Without it, a number too large to be a safe integer would also
+      // fail the cap below and report the same thing twice.
+      abort: true,
+      error: (issue) => {
+        if (typeof issue.input !== 'number' || !Number.isFinite(issue.input)) {
+          return 'Enter a quantity';
+        }
+        return issue.input > 10_000_000
+          ? 'Quantity cannot be more than 10,000,000'
+          : 'Quantity must be a whole number above zero';
+      },
+    })
+    .positive('Quantity must be a whole number above zero')
+    .max(10_000_000, 'Quantity cannot be more than 10,000,000'),
+  price: z
+    .number('Enter a price')
+    .positive('Price must be above zero')
+    .max(10_000_000, 'Price cannot be more than 10,000,000'),
   currency: z.enum(currency_values),
-  trader: z.string().trim().min(1).max(32),
-  book: z.string().trim().min(1).max(64),
-  counterparty: z.string().trim().min(1).max(128),
-  tradeTimestamp: z.iso.datetime(),
+  trader: z
+    .string('Trader code must be 1 to 32 characters')
+    .trim()
+    .min(1, 'Trader code must be 1 to 32 characters')
+    .max(32, 'Trader code must be 1 to 32 characters'),
+  book: z
+    .string('Enter a book')
+    .trim()
+    .min(1, 'Enter a book')
+    .max(64, 'Book cannot be longer than 64 characters'),
+  counterparty: z
+    .string('Enter a counterparty')
+    .trim()
+    .min(1, 'Enter a counterparty')
+    .max(128, 'Counterparty cannot be longer than 128 characters'),
+  tradeTimestamp: z.iso.datetime('Enter the trade time as a valid date and time'),
   status: z.enum(trade_status_values),
-  version: z.int().positive(),
+  version: z.int('Reload the trade and try again').positive('Reload the trade and try again'),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 });
@@ -61,6 +96,9 @@ export const trade_schema = z.object({
  * It comes from the access token, so a client cannot book under another desk code, and the trade's
  * trader and its audit actor are guaranteed to agree. This is a deliberate divergence from the
  * brief's sample payload, which shows trader as a client field.
+ *
+ * The future-time rule judges only a timestamp it can read. An unreadable one has already failed
+ * the datetime rule, and reporting it as in the future too would put two messages on one box.
  */
 export const create_trade_schema = trade_schema
   .omit({
@@ -74,32 +112,40 @@ export const create_trade_schema = trade_schema
     updatedAt: true,
   })
   .refine(
-    (trade) =>
-      Date.parse(trade.tradeTimestamp) <= Date.now() + future_timestamp_tolerance_ms,
-    { message: 'tradeTimestamp cannot be in the future', path: ['tradeTimestamp'] },
+    (trade) => {
+      const executed_at = Date.parse(trade.tradeTimestamp);
+      return Number.isNaN(executed_at) || executed_at <= Date.now() + future_timestamp_tolerance_ms;
+    },
+    { error: 'Trade time cannot be in the future', path: ['tradeTimestamp'] },
   );
 
 /**
- * The fields an amendment may change.
+ * The fields an amendment may change: quantity, price and book.
  *
- * Deliberately narrower than the create payload. Re-pointing a trade at a different symbol, or
- * flipping its side, is a rebooking rather than an amendment, and changing the execution time
- * rewrites when the trade happened. Those three are refused; the economic terms and the booking
- * details a desk genuinely corrects on trade date are allowed.
+ * Deliberately narrower than the create payload. Moving a trade to a different symbol or
+ * counterparty, or flipping its side, is a rebooking rather than an amendment, and changing the
+ * execution time rewrites when the trade happened. A desk that booked against the wrong
+ * counterparty cancels the trade and books it again, so both trades stay on the record. The
+ * economic terms and the book are what a desk genuinely corrects on trade date.
  */
 export const amendable_trade_schema = trade_schema.pick({
   quantity: true,
   price: true,
-  counterparty: true,
   book: true,
 });
 
 /**
  * Inbound shape for amending a trade. Every field is optional except `version`, which the client
  * echoes back so a concurrent amendment is rejected rather than silently overwritten.
+ *
+ * `counterparty` is declared only to refuse it. Left undeclared it would be dropped like any
+ * unknown key, and the caller would get a 200 for a trade whose counterparty never moved.
  */
 export const amend_trade_schema = amendable_trade_schema.partial().extend({
-  version: z.int().positive(),
+  version: trade_schema.shape.version,
+  counterparty: z
+    .never('Counterparty cannot be changed on an amendment. Cancel the trade and book it again.')
+    .optional(),
 });
 
 /**

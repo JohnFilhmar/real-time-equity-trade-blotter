@@ -181,7 +181,8 @@ export function create_in_memory_trade_repository(initial: Trade[] = []): TradeR
 
       const amended: Trade = {
         ...current,
-        ...drop_undefined(changes),
+        // Field by field, like the Postgres write, so nothing outside the amendable set is applied.
+        ...drop_undefined({ quantity: changes.quantity, price: changes.price, book: changes.book }),
         version: current.version + 1,
         updatedAt: new Date().toISOString(),
       };

@@ -314,9 +314,25 @@ describe(`POST ${api_prefix}/trades`, () => {
       .send({ ...a_trade_body, tradeTimestamp: tomorrow });
 
     expect(response.status).toBe(422);
-    expect(response.body.errors).toContainEqual(
-      expect.objectContaining({ field: 'tradeTimestamp' }),
-    );
+    expect(response.body.errors).toContainEqual({
+      field: 'tradeTimestamp',
+      message: 'Trade time cannot be in the future',
+    });
+  });
+
+  it('explains a broken rule in the words the ticket shows', async () => {
+    const { app } = build_test_app();
+
+    const response = await request(app)
+      .post(trades_path)
+      .set('Authorization', bearer(token_for(own_desk)))
+      .send({ ...a_trade_body, quantity: 0, counterparty: '' });
+
+    expect(response.status).toBe(422);
+    expect(response.body.errors).toEqual([
+      { field: 'quantity', message: 'Quantity must be a whole number above zero' },
+      { field: 'counterparty', message: 'Enter a counterparty' },
+    ]);
   });
 
   it('rejects a ticket over the desk notional limit', async () => {
@@ -369,6 +385,35 @@ describe(`PATCH ${api_prefix}/trades/:trade_id`, () => {
     expect(response.body.symbol).toBe('AAPL');
     expect(response.body.side).toBe('BUY');
     expect(response.body.quantity).toBe(100);
+  });
+
+  it('answers 422 naming the counterparty, and changes nothing, when an amendment tries to move it', async () => {
+    const { app, sent } = build_test_app();
+    const token = token_for(own_desk);
+    const created = await create_trade(app, token);
+
+    const response = await request(app)
+      .patch(`${trades_path}/${created.tradeId}`)
+      .set('Authorization', bearer(token))
+      .send({ version: created.version, quantity: 100, counterparty: 'Nomura' });
+
+    expect(response.status).toBe(422);
+    expect(response.body.code).toBe('validation_failed');
+    expect(response.body.errors).toEqual([
+      {
+        field: 'counterparty',
+        message: 'Counterparty cannot be changed on an amendment. Cancel the trade and book it again.',
+      },
+    ]);
+    expect(sent).toEqual(['trade.created', 'position.updated']);
+
+    const stored = await request(app)
+      .get(`${trades_path}/${created.tradeId}`)
+      .set('Authorization', bearer(token));
+
+    expect(stored.body.counterparty).toBe('Goldman Sachs');
+    expect(stored.body.quantity).toBe(5000);
+    expect(stored.body.version).toBe(1);
   });
 
   it('answers 409 when the version is stale', async () => {

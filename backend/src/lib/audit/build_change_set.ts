@@ -6,10 +6,10 @@ import type { TradeChanges } from '../../interfaces/trade_repository.js';
  *
  * Listed explicitly rather than derived from the payload's keys, so the audit trail cannot start
  * recording a server-owned field if one is ever added to a schema by mistake. It mirrors
- * `amendable_trade_schema`: symbol, side and the execution timestamp are not amendable, because
- * changing any of them is a rebooking rather than a correction.
+ * `amendable_trade_schema`: symbol, side, counterparty and the execution timestamp are not
+ * amendable, because changing any of them is a rebooking rather than a correction.
  */
-const auditable_fields = ['quantity', 'price', 'counterparty', 'book'] as const;
+const auditable_fields = ['quantity', 'price', 'book'] as const;
 
 /**
  * Works out what an amendment actually changed.

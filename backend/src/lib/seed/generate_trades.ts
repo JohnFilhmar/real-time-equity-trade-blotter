@@ -1,5 +1,6 @@
 import { faker } from '@faker-js/faker';
 import {
+  counterparties,
   instruments,
   trade_side_values,
   type AmendableTrade,
@@ -25,20 +26,6 @@ export const traders: readonly string[] = [
   'DWRIGHT',
   'LCHEN',
   'FMORENO',
-];
-
-/** Counterparties a broker would actually face. */
-const counterparties: readonly string[] = [
-  'Goldman Sachs',
-  'JP Morgan',
-  'Morgan Stanley',
-  'Barclays',
-  'Citigroup',
-  'UBS',
-  'Deutsche Bank',
-  'BNP Paribas',
-  'Nomura',
-  'Jefferies',
 ];
 
 /** A trade the live feed wants booked, with the desk code to book it under. */
@@ -214,8 +201,9 @@ export function generate_live_trade(instrument: Instrument, side: TradeSide): Ge
  * Produces the change an amendment should apply to an existing trade.
  *
  * Only quantity and price move, because those are the fields a desk actually corrects after
- * booking. Re-pointing a trade at a different symbol or counterparty would be a rebooking, not an
- * amendment, and the amendment schema refuses the first of those outright.
+ * booking. Moving a trade to a different symbol or counterparty is a rebooking, not an amendment,
+ * so neither is ever proposed. The amendment schema drops a symbol and answers a counterparty with
+ * a 422.
  *
  * @param current_price - The trade's present price, so the new one drifts from it rather than
  * jumping to an unrelated level.
