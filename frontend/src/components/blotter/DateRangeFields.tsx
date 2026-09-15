@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Field, Input } from '@/components/ui/Field';
 import {
   check_date_range,
   date_range_bounds,
   date_range_draft,
+  date_range_message_delay_ms,
   type DateRange,
   type DateRangeDraft,
   type DateRangeEnd,
@@ -30,10 +31,12 @@ interface RangeError {
 /**
  * The trade date From and To inputs.
  *
- * Each input keeps a draft. A From later than To stays in the input that was just edited, marked
- * invalid with the reason under it, and never reaches the URL, so the grid keeps the last valid
- * range. The picker greys out dates on the wrong side of the other end. When the range in the URL
- * changes from elsewhere, such as a removed chip, Clear or the back button, the drafts follow it.
+ * Each input keeps a draft. A From later than To never reaches the URL, so the grid keeps the last
+ * valid range. The reason shows under the input that was just edited, which is marked invalid, once
+ * the value has stood unchanged for `date_range_message_delay_ms` or focus leaves the input, so
+ * retyping a year digit by digit does not flash it. A valid pair clears it at once. The picker greys
+ * out dates on the wrong side of the other end. When the range in the URL changes from elsewhere,
+ * such as a removed chip, Clear or the back button, the drafts follow it.
  *
  * @param props - The id prefix, the range from the URL, and the writer for a valid range.
  * @returns The two fields.
@@ -41,26 +44,45 @@ interface RangeError {
 export function DateRangeFields({ id_prefix, range, onChange }: DateRangeFieldsProps): ReactNode {
   const [shown, setShown] = useState<DateRange>(range);
   const [draft, setDraft] = useState<DateRangeDraft>(() => date_range_draft(range));
-  const [error, setError] = useState<RangeError | null>(null);
+  const [problem, setProblem] = useState<RangeError | null>(null);
+  const [problemShown, setProblemShown] = useState(false);
 
   if (shown.date_from !== range.date_from || shown.date_to !== range.date_to) {
     setShown(range);
     setDraft(date_range_draft(range, draft));
-    setError(null);
+    setProblem(null);
+    setProblemShown(false);
   }
+
+  // Every edit makes a new draft, so this cleanup cancels the wait the previous value started.
+  useEffect(() => {
+    if (problem === null || problemShown) {
+      return;
+    }
+    const timer = setTimeout(() => setProblemShown(true), date_range_message_delay_ms);
+    return () => clearTimeout(timer);
+  }, [draft, problem, problemShown]);
 
   const edit = (field: DateRangeEnd, value: string): void => {
     const next = { ...draft, [field]: value };
     const checked = check_date_range(next, field);
     setDraft(next);
+    setProblemShown(false);
     if (checked.valid) {
-      setError(null);
+      setProblem(null);
       onChange(checked.range);
     } else {
-      setError({ field: checked.field, message: checked.message });
+      setProblem({ field: checked.field, message: checked.message });
     }
   };
 
+  const show_problem = (): void => {
+    if (problem !== null) {
+      setProblemShown(true);
+    }
+  };
+
+  const error = problemShown ? problem : null;
   const { from_max, to_min } = date_range_bounds(draft);
   const from_id = `${id_prefix}date_from`;
   const to_id = `${id_prefix}date_to`;
@@ -77,6 +99,7 @@ export function DateRangeFields({ id_prefix, range, onChange }: DateRangeFieldsP
           invalid={error?.field === 'date_from'}
           aria-describedby={`${from_id}_message`}
           onChange={(event) => edit('date_from', event.target.value)}
+          onBlur={show_problem}
         />
       </Field>
 
@@ -90,6 +113,7 @@ export function DateRangeFields({ id_prefix, range, onChange }: DateRangeFieldsP
           invalid={error?.field === 'date_to'}
           aria-describedby={`${to_id}_message`}
           onChange={(event) => edit('date_to', event.target.value)}
+          onBlur={show_problem}
         />
       </Field>
     </>

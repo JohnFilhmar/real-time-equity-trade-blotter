@@ -22,6 +22,13 @@ export type DateRangeCheck =
 const to_before_from_message = 'To must be on or after From';
 
 /**
+ * How long a reversed range must stand unchanged before its message shows, in milliseconds. Long
+ * enough that retyping a year digit by digit says nothing, short enough that a real mistake is
+ * explained moments after typing stops. Focus leaving the input shows the message at once.
+ */
+export const date_range_message_delay_ms = 1_000;
+
+/**
  * Checks the range after one of its ends was edited, with the schema the API parses it with.
  *
  * @param draft - Both inputs' values after the edit.
