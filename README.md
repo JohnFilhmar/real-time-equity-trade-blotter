@@ -128,13 +128,15 @@ the stack first starts, and the four accounts. A simulated desk then books, amen
 trades every three to eight seconds, so the blotter moves on its own. It keeps its active book near
 2,000 trades, cancelling more than it books as the book nears that size, and leans each new ticket
 against its symbol's net position, so the book stays near flat the way a desk working flow from
-both sides does. Trades people book count toward the 2,000, and cancelled trades and the audit
-trail still accumulate. Open it in two windows and watch the same rows change in both. Book a trade as `jsmith` in
-one window and it appears in the other. Sign in as `viewer` to see the booking controls disappear,
-and as `jsmith` to see another trader's trade greyed with "desk head only".
+both sides does. Half of its amendments pick one of the 30 newest active trades, so an amended cell
+flashes on the first screen about once a minute instead of on a row nobody is looking at. Trades
+people book count toward the 2,000, and cancelled trades and the audit trail still accumulate.
+Open it in two windows and watch the same rows change in both. Book a trade as `jsmith` in one
+window and it appears in the other. Sign in as `viewer` to see the booking controls disappear, and
+as `jsmith` to see another trader's trade greyed with "desk head only".
 
 The feed's pace is a compose variable. To watch the client coalesce a burst into one render per
-frame and hold each row to one flash every 333ms, which the shipped three-to-eight-second pace never
+frame and hold each cell to one flash every 333ms, which the shipped three-to-eight-second pace never
 exercises, set `LIVE_FEED_MIN_INTERVAL_MS=250` and `LIVE_FEED_MAX_INTERVAL_MS=250` in a root `.env`
 (compose reads it for substitution) or export them before `npm run start`. 250ms is the floor the
 API accepts.
