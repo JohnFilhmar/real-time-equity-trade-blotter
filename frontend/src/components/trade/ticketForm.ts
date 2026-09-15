@@ -194,7 +194,7 @@ export function parse_amend(values: TicketValues, trade: Trade): { ok: true; inp
 }
 
 /** A trade field the conflict note compares. */
-type ConflictField = keyof Pick<Trade, 'quantity' | 'price' | 'book' | 'counterparty' | 'status'>;
+type ConflictField = keyof Pick<Trade, 'quantity' | 'price' | 'book' | 'counterparty'>;
 
 /** The fields the conflict note compares, in the order it lists them, under the ticket's labels. */
 const conflict_fields: readonly { field: ConflictField; label: string }[] = [
@@ -202,8 +202,10 @@ const conflict_fields: readonly { field: ConflictField; label: string }[] = [
   { field: 'price', label: 'Price' },
   { field: 'book', label: 'Book' },
   { field: 'counterparty', label: 'Counterparty' },
-  { field: 'status', label: 'Status' },
 ];
+
+/** What the conflict note says when the other desk's change was a cancellation. */
+const cancelled_conflict_line = 'Another desk cancelled this trade, so it can no longer be amended.';
 
 /**
  * Shows one field's value the way the ticket shows it.
@@ -225,13 +227,18 @@ function show_field(trade: Trade, field: ConflictField): string {
 /**
  * Lists what changed between the trade the form was opened on and the trade as the server now
  * holds it, for the conflict note. Each line names the field as the ticket labels it and shows
- * both values as the ticket shows them, such as `Quantity 1,300 → 1,400`.
+ * both values as the ticket shows them, such as `Quantity 1,300 → 1,400`. A trade another desk
+ * has cancelled gets one plain sentence instead, since none of its values can be amended any more.
  *
  * @param base - The trade the form started from.
  * @param current - The trade now.
- * @returns One line per differing field, in ticket order. Empty when only the version moved.
+ * @returns The cancellation sentence when the trade is now cancelled, otherwise one line per
+ * differing field in ticket order, which is empty when only the version moved.
  */
 export function describe_conflict(base: Trade, current: Trade): string[] {
+  if (current.status === 'CANCELLED') {
+    return [cancelled_conflict_line];
+  }
   return conflict_fields
     .filter(({ field }) => base[field] !== current[field])
     .map(({ field, label }) => `${label} ${show_field(base, field)} → ${show_field(current, field)}`);

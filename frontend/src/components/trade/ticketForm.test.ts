@@ -245,15 +245,20 @@ describe('describe_conflict', () => {
     ]);
   });
 
-  it('covers the book, the counterparty and a cancellation, and lists nothing when only the version moved', () => {
-    const moved: Trade = { ...stored, book: 'EQUITIES_UK', counterparty: 'Nomura', status: 'CANCELLED', version: 4 };
+  it('covers the book and the counterparty, and lists nothing when only the version moved', () => {
+    const moved: Trade = { ...stored, book: 'EQUITIES_UK', counterparty: 'Nomura', version: 4 };
 
     expect(describe_conflict(stored, moved)).toEqual([
       'Book EQUITIES_US → EQUITIES_UK',
       'Counterparty Goldman Sachs → Nomura',
-      'Status ACTIVE → CANCELLED',
     ]);
     expect(describe_conflict(stored, { ...stored, version: 4 })).toEqual([]);
+  });
+
+  it('says in one sentence that another desk cancelled the trade, instead of listing what moved', () => {
+    expect(describe_conflict(stored, { ...stored, quantity: 1_400, status: 'CANCELLED', version: 5 })).toEqual([
+      'Another desk cancelled this trade, so it can no longer be amended.',
+    ]);
   });
 });
 
