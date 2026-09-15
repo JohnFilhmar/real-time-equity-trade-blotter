@@ -953,3 +953,22 @@ full corner glow recorded in the stylesheet, and kept the date message under whi
 edited.
 
 **Commits:** `70a1775`
+
+---
+
+### 2026-09-15T14:46Z - dummy_hash_follows_bcrypt_rounds
+
+**Prompt:** "make the dummy hash follow BCRYPT_ROUNDS"
+
+> Selections at 14:49Z:
+>
+> - Dummy hash: "Hash once at startup (Recommended)"
+> - Old hashes: "Rehash on sign-in (Recommended)"
+
+**Outcome:** The fixed cost-12 dummy hash gave way to one the auth service makes at `BCRYPT_ROUNDS`
+when it starts, and a correct password stored at another cost is now rehashed on sign-in, so a
+missing username costs the same bcrypt work as a real one at any setting. The unknown-username
+lockout test lost its raised timeout, and 241 backend unit tests and 42 integration tests,
+including a new user repository test, passed.
+
+**Commits:** `c3d63db`
