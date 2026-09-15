@@ -113,8 +113,9 @@ export const test = base.extend<Record<never, never>, { desk: Desk }>({
 export { expect };
 
 /**
- * Returns a page to the default blotter view without a reload: closes any dialog or drawer,
- * clears filters, and navigates back to the blotter client-side so no session restore is spent.
+ * Returns a page to the default blotter view without a reload: closes any dialog or drawer, and
+ * navigates client-side to the bare blotter address, which clears every filter because filters
+ * live only in the URL. No session restore is spent.
  *
  * @param page - A signed-in page.
  */
@@ -132,12 +133,13 @@ export async function reset(page: Page): Promise<void> {
   }
   if (!page.url().endsWith('/') || page.url().includes('?')) {
     await page.getByRole('link', { name: 'Blotter' }).first().click();
-    await page.waitForURL((url) => url.pathname === '/');
+    // A filtered blotter is already on pathname `/`, so waiting on the pathname alone returns
+    // before the click has navigated.
+    await page.waitForURL((url) => url.pathname === '/' && url.search === '');
   }
-  const clear = page.getByRole('button', { name: /^Clear \d+$/ });
-  if ((await clear.count()) > 0) {
-    await clear.click();
-  }
+  // Waits for the rail to catch up with the bare URL rather than clicking Clear, which can chase a
+  // button the re-render is about to remove.
+  await expect(page.getByRole('button', { name: /^Clear \d+$/ })).toHaveCount(0);
   await expect(page.locator('[role="grid"]')).toBeVisible();
 }
 
