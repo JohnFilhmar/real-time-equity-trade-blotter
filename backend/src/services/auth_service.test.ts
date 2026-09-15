@@ -136,7 +136,9 @@ describe('auth service', () => {
       });
     });
 
-    it('locks a username with no account on the same failure, so a lock reveals nothing', async () => {
+    // An unknown username is checked against the service's dummy hash, which keeps production cost
+    // on purpose, so the test environment's cheaper BCRYPT_ROUNDS does not speed these five up.
+    it('locks a username with no account on the same failure, so a lock reveals nothing', { timeout: 20_000 }, async () => {
       await given_user('jsmith');
 
       expect(await five_wrong_passwords('nobody')).toEqual(locked_on_the_fifth);

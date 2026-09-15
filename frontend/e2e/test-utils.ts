@@ -124,7 +124,8 @@ export async function reset(page: Page): Promise<void> {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const dialog = page.getByRole('dialog');
     if ((await dialog.count()) > 0) {
-      await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+      // The header's close button comes first; a cancelled trade's conflict note adds a second "Close".
+      await dialog.getByRole('button', { name: 'Close', exact: true }).first().click();
       await expect(dialog).toHaveCount(0);
     }
   }

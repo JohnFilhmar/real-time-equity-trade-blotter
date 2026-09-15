@@ -86,7 +86,9 @@
   --rule_soft: rgba(157, 176, 202, .07);
 
   /* flash tints (U-M4, U-M13). The up and down tints are as strong as they can be while primary text
-     keeps 4.5:1 and the direction arrows keep 3:1 over the tint on a plain, hovered or selected row.
+     keeps 4.5:1 and the direction arrows keep 3:1 over the tint on a plain, hovered or selected row,
+     measured on the row ground. Under the page's corner glow at full strength a selected row's arrow
+     can dip to about 2.6:1, which is accepted because the glow barely reaches the grid.
      The neutral tint matches their strength, measured as the tinted cell's contrast with its row.
      While any cell flashes, all its text takes the primary colour, the currency code included, which
      keeps 4.5:1 over all three tints. The arrows keep their own colours. The insert tint is unchanged. */
