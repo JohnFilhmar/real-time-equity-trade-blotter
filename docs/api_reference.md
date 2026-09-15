@@ -58,10 +58,16 @@ if the trade has moved on, the answer is `409` naming the current version rather
 overwrite. Cancel is a named action rather than a `DELETE`, because the row is not deleted: it
 moves to `CANCELLED`.
 
-An amendment may change quantity, price, counterparty and book, and nothing else. Re-pointing a
-trade at another symbol, flipping its side, or rewriting when it executed are rebookings rather
-than corrections, so the amend schema omits them. The simulated feed restricts itself to the same
-set.
+An amendment may change quantity, price and book, and nothing else. Moving a trade to another
+symbol or counterparty, flipping its side, or rewriting when it executed is a rebooking rather than
+a correction. The desk cancels the trade and books it again, so both stay on the record. Symbol,
+side and execution time are dropped from an amend payload. A counterparty is refused with a `422`
+telling the trader to cancel and rebook, because dropping it would answer `200` for a counterparty
+that never moved. The simulated feed restricts itself to the same set.
+
+A payload that breaks a rule answers `422` with an `errors` array of `{ field, message }`. Each
+message is the sentence the ticket shows beside the input, such as "Enter a counterparty", written
+once on the rule in the shared schema.
 
 Three pre-trade rules run server-side:
 
