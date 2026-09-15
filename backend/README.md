@@ -99,7 +99,7 @@ with a list of every problem, and the message never echoes a value.
 | `JWT_REFRESH_SECRET` | required | Refresh token signing key, at least 32 characters |
 | `ACCESS_TOKEN_TTL_SECONDS` | `900` | Access token lifetime, at most 3600 |
 | `REFRESH_TOKEN_TTL_SECONDS` | `604800` | Refresh token and cookie lifetime |
-| `BCRYPT_ROUNDS` | `12` | bcrypt cost, from 10 to 15 |
+| `BCRYPT_ROUNDS` | `12` | bcrypt cost, from 10 to 15. The dummy hash for unknown usernames is made at it on startup, and a sign-in rehashes a stored hash made at any other cost |
 | `COOKIE_SECURE` | `false` | Adds `Secure` to the refresh cookie; always on under `NODE_ENV=production` |
 | `AUTH_RATE_LIMIT` | `10` | Requests a minute on login and refresh, per address |
 | `READ_RATE_LIMIT` | `300` | Requests a minute behind the auth guard, per user |

@@ -1,5 +1,7 @@
+import bcrypt from 'bcrypt';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { auth_session_schema, type Role } from '@blotter/shared';
+import { env } from '../config/env.js';
 import { AppError } from '../lib/errors/app_error.js';
 import { hash_password } from '../lib/auth/password.js';
 import {
@@ -136,9 +138,7 @@ describe('auth service', () => {
       });
     });
 
-    // An unknown username is checked against the service's dummy hash, which keeps production cost
-    // on purpose, so the test environment's cheaper BCRYPT_ROUNDS does not speed these five up.
-    it('locks a username with no account on the same failure, so a lock reveals nothing', { timeout: 20_000 }, async () => {
+    it('locks a username with no account on the same failure, so a lock reveals nothing', async () => {
       await given_user('jsmith');
 
       expect(await five_wrong_passwords('nobody')).toEqual(locked_on_the_fifth);
@@ -155,6 +155,64 @@ describe('auth service', () => {
       }
 
       await expect(service.login({ username: 'jsmith', password })).resolves.toBeDefined();
+    });
+  });
+
+  describe('hash cost', () => {
+    /**
+     * Creates an account whose stored hash was made at a cost other than the configured one, as an
+     * account seeded before BCRYPT_ROUNDS changed would be.
+     *
+     * @param username - The login name.
+     * @returns The stored user.
+     */
+    async function given_user_hashed_at_another_cost(username: string) {
+      return users.create({
+        username,
+        passwordHash: await bcrypt.hash(password, 4),
+        displayName: username,
+        traderCode: 'JSMITH',
+        role: 'TRADER',
+      });
+    }
+
+    it('rehashes a stored hash made at another cost when the password is correct', async () => {
+      const user = await given_user_hashed_at_another_cost('jsmith');
+
+      await service.login({ username: 'jsmith', password });
+
+      const stored = await users.find_by_id(user.id);
+      expect(stored === null ? null : bcrypt.getRounds(stored.passwordHash)).toBe(env.BCRYPT_ROUNDS);
+      await expect(service.login({ username: 'jsmith', password })).resolves.toBeDefined();
+    });
+
+    it('leaves a hash already at the configured cost untouched', async () => {
+      const user = await given_user('jsmith');
+
+      await service.login({ username: 'jsmith', password });
+
+      expect((await users.find_by_id(user.id))?.passwordHash).toBe(user.passwordHash);
+    });
+
+    it('never rehashes on a wrong password', async () => {
+      const user = await given_user_hashed_at_another_cost('jsmith');
+
+      await service.login({ username: 'jsmith', password: 'wrong' }).catch(() => undefined);
+
+      expect((await users.find_by_id(user.id))?.passwordHash).toBe(user.passwordHash);
+    });
+
+    it('still signs the person in when storing the new hash fails', async () => {
+      await given_user_hashed_at_another_cost('jsmith');
+      const failing: UserRepository = {
+        ...users,
+        update_password_hash: async () => {
+          throw new Error('the database went away');
+        },
+      };
+      const unlucky = create_auth_service(failing, refresh_store, create_in_memory_login_attempts());
+
+      await expect(unlucky.login({ username: 'jsmith', password })).resolves.toBeDefined();
     });
   });
 

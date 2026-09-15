@@ -46,6 +46,15 @@ export interface UserRepository {
   create(user: NewUser): Promise<StoredUser>;
 
   /**
+   * Replaces a user's stored password hash, used when a sign-in finds the hash was made at a cost
+   * other than the configured one.
+   *
+   * @param id - The user whose hash to replace. An id with no account changes nothing.
+   * @param password_hash - The new hash, already computed.
+   */
+  update_password_hash(id: string, password_hash: string): Promise<void>;
+
+  /**
    * Counts the accounts that exist, so seeding can tell an empty system from a populated one.
    *
    * @returns The number of users.

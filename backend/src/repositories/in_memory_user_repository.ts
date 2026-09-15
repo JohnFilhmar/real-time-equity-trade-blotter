@@ -28,6 +28,13 @@ export function create_in_memory_user_repository(initial: StoredUser[] = []): Us
       return stored;
     },
 
+    async update_password_hash(id: string, password_hash: string): Promise<void> {
+      const user = by_id.get(id);
+      if (user !== undefined) {
+        by_id.set(id, { ...user, passwordHash: password_hash });
+      }
+    },
+
     async count(): Promise<number> {
       return by_id.size;
     },

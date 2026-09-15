@@ -5,22 +5,13 @@ import type { StoredUser, UserRepository } from '../interfaces/user_repository.j
 import { AppError } from '../lib/errors/app_error.js';
 import type { LoginAttempts } from '../lib/auth/login_attempts.js';
 import type { RefreshStore } from '../lib/auth/refresh_store.js';
-import { verify_password } from '../lib/auth/password.js';
+import { create_dummy_hash, hash_password, needs_rehash, verify_password } from '../lib/auth/password.js';
 import {
   sign_access_token,
   sign_refresh_token,
   verify_refresh_token,
 } from '../lib/auth/tokens.js';
 import { logger } from '../lib/logging/logger.js';
-
-/**
- * A bcrypt hash of a value nobody knows.
- *
- * Compared against when the username does not exist, so a login for a missing account costs the
- * same as one for a real account with the wrong password. Without it, response time tells an
- * attacker which usernames are real.
- */
-const dummy_hash = '$2b$12$C6UzMDM.H6dfI/f/IKcEe.xEjKjHkCE1BQYY0OlcQJHFLBRR7dM3O';
 
 /** What a successful login or refresh produces. */
 export interface AuthResult {
@@ -35,6 +26,9 @@ export interface AuthResult {
 export interface AuthService {
   /**
    * Exchanges credentials for a session.
+   *
+   * A correct password whose stored hash was made at a cost other than `BCRYPT_ROUNDS` is rehashed
+   * at the current cost before the session is issued.
    *
    * @param credentials - Username and password.
    * @returns The session and its refresh token.
@@ -95,6 +89,9 @@ export function to_auth_user(user: StoredUser): AuthUser {
 /**
  * Builds the authentication service.
  *
+ * The dummy hash that unknown usernames are checked against starts hashing as soon as the service
+ * is built, so it is ready well before the first login for an account that does not exist.
+ *
  * @param users - Persistence port for accounts.
  * @param refresh_store - Where session families are tracked.
  * @param attempts - Per-account failure counter.
@@ -105,6 +102,13 @@ export function create_auth_service(
   refresh_store: RefreshStore,
   attempts: LoginAttempts,
 ): AuthService {
+  // Compared against when the username does not exist, so a login for a missing account costs the
+  // same bcrypt work as a real account with the wrong password. Made here at BCRYPT_ROUNDS rather
+  // than written into the source, so it keeps pace with the setting. The catch only stops a failed
+  // hash from becoming an unhandled rejection; a login that awaits it still sees the error.
+  const dummy_hash = create_dummy_hash();
+  dummy_hash.catch(() => undefined);
+
   /**
    * Mints an access token and a fresh refresh token for a user.
    *
@@ -135,6 +139,28 @@ export function create_auth_service(
     };
   }
 
+  /**
+   * Stores a fresh hash when the stored one was made at a cost other than `BCRYPT_ROUNDS`.
+   *
+   * Only called once the password has been proven, so it never runs on a failed login and adds
+   * nothing to the time a wrong guess takes. Best effort: a failure is logged and the sign-in
+   * carries on, because the old hash still verifies.
+   *
+   * @param user - The user who has just signed in.
+   * @param password - The password they signed in with.
+   */
+  async function rehash_if_outdated(user: StoredUser, password: string): Promise<void> {
+    if (!needs_rehash(user.passwordHash)) {
+      return;
+    }
+
+    try {
+      await users.update_password_hash(user.id, await hash_password(password));
+    } catch (error) {
+      logger.warn({ user_id: user.id, err: error }, 'password_rehash_failed');
+    }
+  }
+
   return {
     async login(credentials: LoginRequest): Promise<AuthResult> {
       const locked_for = await attempts.seconds_locked(credentials.username);
@@ -144,7 +170,7 @@ export function create_auth_service(
       }
 
       const user = await users.find_by_username(credentials.username);
-      const matched = await verify_password(credentials.password, user?.passwordHash ?? dummy_hash);
+      const matched = await verify_password(credentials.password, user?.passwordHash ?? (await dummy_hash));
 
       if (user === null || !matched) {
         await attempts.record_failure(credentials.username);
@@ -160,6 +186,7 @@ export function create_auth_service(
       }
 
       await attempts.clear(credentials.username);
+      await rehash_if_outdated(user, credentials.password);
 
       const family = randomUUID();
       const { result, jti } = issue(user, family);
