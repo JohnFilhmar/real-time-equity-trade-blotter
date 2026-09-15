@@ -9,7 +9,8 @@ export type ClientErrorCode = ProblemCode | 'network' | 'contract';
  * A failed API call, carrying what the server said in the shape the interface branches on.
  *
  * `code` is the stable value to switch on; `detail` is the sentence to show; `errors` holds
- * field-level validation messages for a form to place beside its inputs.
+ * field-level validation messages for a form to place beside its inputs; `retry_after_seconds` is
+ * the wait the server asked for, such as what is left of an account lockout.
  */
 export class ApiError extends Error {
   readonly status: number;
@@ -17,6 +18,7 @@ export class ApiError extends Error {
   readonly detail: string;
   readonly errors: readonly ProblemFieldError[];
   readonly request_id: string | undefined;
+  readonly retry_after_seconds: number | null;
 
   /**
    * @param status - HTTP status, or 0 when the request never completed.
@@ -24,6 +26,7 @@ export class ApiError extends Error {
    * @param detail - What went wrong, in words a user can act on.
    * @param errors - Field-level detail, when the server supplied any.
    * @param request_id - The server's correlation id, when supplied.
+   * @param retry_after_seconds - Whole seconds from a `Retry-After` header, or `null` without one.
    */
   constructor(
     status: number,
@@ -31,6 +34,7 @@ export class ApiError extends Error {
     detail: string,
     errors: readonly ProblemFieldError[] = [],
     request_id?: string,
+    retry_after_seconds: number | null = null,
   ) {
     super(detail);
     this.name = 'ApiError';
@@ -39,6 +43,7 @@ export class ApiError extends Error {
     this.detail = detail;
     this.errors = errors;
     this.request_id = request_id;
+    this.retry_after_seconds = retry_after_seconds;
   }
 }
 
@@ -52,6 +57,20 @@ export interface RequestOptions {
 }
 
 /**
+ * Reads a `Retry-After` header given as whole seconds.
+ *
+ * The header may carry an HTTP date instead. This API only sends seconds, so a date counts as no
+ * wait rather than being converted against a client clock that may disagree with the server's.
+ *
+ * @param response - The failed response.
+ * @returns Whole seconds, or `null` when the header is absent or is not a plain count.
+ */
+function retry_after_seconds_of(response: Response): number | null {
+  const value = response.headers.get('retry-after')?.trim();
+  return value !== undefined && /^\d+$/.test(value) ? Number(value) : null;
+}
+
+/**
  * Turns a non-2xx response into an {@link ApiError}, reading the problem document when there is one.
  *
  * @param response - The failed response.
@@ -59,6 +78,7 @@ export interface RequestOptions {
  */
 async function error_from(response: Response): Promise<ApiError> {
   const text = await response.text();
+  const retry_after_seconds = retry_after_seconds_of(response);
 
   try {
     const problem = problem_schema.parse(JSON.parse(text));
@@ -68,9 +88,17 @@ async function error_from(response: Response): Promise<ApiError> {
       problem.detail ?? problem.title,
       problem.errors ?? [],
       problem.request_id,
+      retry_after_seconds,
     );
   } catch {
-    return new ApiError(response.status, 'internal', `The API answered ${response.status.toString()}`);
+    return new ApiError(
+      response.status,
+      'internal',
+      `The API answered ${response.status.toString()}`,
+      [],
+      undefined,
+      retry_after_seconds,
+    );
   }
 }
 
