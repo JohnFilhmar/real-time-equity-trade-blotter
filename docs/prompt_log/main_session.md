@@ -750,3 +750,28 @@ Followed by:
 **Outcome:** The web server now forwards the API's paths over the internal network, the API has no published port and `/metrics` is not forwarded, and requests became same-origin, which fixed the ngrok link without a vendor-specific header. Probing the fallback transport found that one unauthenticated long-polling request crashed the API, because Socket.IO attached before Express, and that was fixed test-first; 306 unit tests, 10 browser journeys, k6 (244 requests, 0 failed, p95 209ms through the forwarding) and Lighthouse pass on the rebuilt stack, and sign-in with live rows works through the tunnel.
 
 **Commits:** `19eff41`, `e7ae153`, `c005dcd`
+
+---
+
+### 2026-09-15T01:10Z - frontend_react_naming_and_tailwind_scale
+
+**Prompt**
+
+> can you do these changes on my behalf so i can easily navigate through the IDE ? 
+> somethings needs to be changed, i saw that snake_case was also applied in declaring states in a react environment, it must use const [myState, setMyState] = useState(); because this is my practice in a react environment. and the same for the file name convention, the agent used snake_case instead of the same approach as my state. from my_hook.ts to myHook.ts and tailwindcss must never be explicitly declaring hard pixels whereas tailwind can provide accurate values (for example; px-[14px] py-[10px] can be px-3.5 py-2.5.
+>
+> meanwhile another agent is handling that user memory in modifying skill & memory tailored to my best-practices.
+
+**Outcome:** In `frontend/`, 33 state bindings became camelCase and 36 files were renamed, camelCase or PascalCase for component and provider files, through TypeScript's rename service so every import moved with them; 202 arbitrary pixel classes became theme-scale classes, each pair compiled by Tailwind and resolved to the same value, leaving the 105 font sizes and 17 values with no identical step. Typecheck, lint, 78 unit tests, the production image build and 10 browser journeys pass, and the repo `CLAUDE.md` and both READMEs now state the frontend rule.
+
+**Commits:** `b6feb43`
+
+---
+
+### 2026-09-15T01:13Z - backend_readme
+
+**Prompt:** "and along with those changes, you have forgot to create the root README inside the ./backend"
+
+**Outcome:** `backend/README.md` now covers how the API runs under compose and alone, its scripts, source layout, every environment variable from `env.ts` with its default, the HTTP and socket surface, roles and rate limits, the simulated desk and seed, and both test tiers, linking to the API reference and database README for detail.
+
+**Commits:** `0f16f43`
