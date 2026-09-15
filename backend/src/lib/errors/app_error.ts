@@ -28,17 +28,31 @@ export class AppError extends Error {
   readonly details: unknown;
 
   /**
+   * Whole seconds the client should wait before trying again, for a refusal that ends on its own.
+   * The error handler sends it as the `Retry-After` header.
+   */
+  readonly retry_after_seconds: number | undefined;
+
+  /**
    * @param status - HTTP status code.
    * @param code - Stable machine-readable code.
    * @param message - Human-readable message. Safe to show a client.
    * @param details - Optional structured detail, such as field-level validation problems.
+   * @param retry_after_seconds - Optional wait before a retry can succeed, in whole seconds.
    */
-  constructor(status: number, code: ErrorCode, message: string, details?: unknown) {
+  constructor(
+    status: number,
+    code: ErrorCode,
+    message: string,
+    details?: unknown,
+    retry_after_seconds?: number,
+  ) {
     super(message);
     this.name = 'AppError';
     this.status = status;
     this.code = code;
     this.details = details;
+    this.retry_after_seconds = retry_after_seconds;
   }
 
   /**
@@ -99,7 +113,10 @@ export class AppError extends Error {
   /**
    * Builds a 429 for an account-level lockout, as distinct from the request rate limiter.
    *
-   * @param seconds - How long until the account unlocks.
+   * The wait goes out twice: in the detail for a person to read, and as `Retry-After` so a client
+   * can count down without parsing the sentence.
+   *
+   * @param seconds - How long until the account unlocks, in whole seconds.
    * @returns An `AppError` with status 429.
    */
   static locked_out(seconds: number): AppError {
@@ -107,6 +124,8 @@ export class AppError extends Error {
       429,
       error_codes.rate_limited,
       `Too many failed attempts. Try again in ${seconds.toString()} seconds.`,
+      undefined,
+      seconds,
     );
   }
 }

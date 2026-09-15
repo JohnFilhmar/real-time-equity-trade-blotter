@@ -69,8 +69,9 @@ export const not_found_handler: RequestHandler = (req, _res, next) => {
  * on a stable string instead of parsing a URI and a user can quote one id back.
  *
  * Express 5 forwards rejected promises here on its own, so route handlers need no try/catch. Zod
- * failures become 422 with field-level detail; `AppError` carries its own status; everything else
- * is an unexpected 500 whose message is never echoed to the client in production.
+ * failures become 422 with field-level detail; `AppError` carries its own status, and a
+ * `Retry-After` header when it knows how long the client should wait; everything else is an
+ * unexpected 500 whose message is never echoed to the client in production.
  */
 export const error_handler: ErrorRequestHandler = (error, req, res, _next) => {
   const request_id = request_id_of(req);
@@ -108,6 +109,10 @@ export const error_handler: ErrorRequestHandler = (error, req, res, _next) => {
             'message' in detail,
         )
       : undefined;
+
+    if (error.retry_after_seconds !== undefined) {
+      res.set('Retry-After', Math.ceil(error.retry_after_seconds).toString());
+    }
 
     res
       .status(error.status)
