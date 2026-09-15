@@ -7,6 +7,19 @@ import { format_clock_or_date } from '@/lib/format/clock';
 import { format_notional, format_price, format_quantity } from '@/lib/format/money';
 import { trade_cards_id } from '@/lib/grid/gridFocus';
 
+/** A card's box and spacing, without its selected or cancelled look. The loading skeleton draws its cards with it. */
+export const trade_card_classes = 'flex min-h-11 w-full flex-col gap-1.75 border-b border-rule-soft px-3.5 py-2.75';
+
+/** The layout and type size of a card's three lines, without their colours. The loading skeleton lays out its lines with them. */
+export const trade_card_line_classes = {
+  /** Symbol, side, status and version. */
+  head: 'flex items-center gap-2',
+  /** Quantity, price and notional. */
+  figures: 'flex items-baseline gap-2 text-[12.5px]',
+  /** Trade id, trader and time. */
+  meta: 'flex items-center gap-2.5 text-[11px]',
+} as const;
+
 /** Props for {@link TradeCards}. */
 export interface TradeCardsProps {
   rows: readonly Trade[];
@@ -53,11 +66,9 @@ export function TradeCards({ rows, selected_id, onSelect, onLoadMore, has_more }
             key={trade.id}
             data-trade-id={trade.tradeId}
             onClick={() => onSelect(selected ? null : trade)}
-            className={`flex min-h-11 w-full flex-col gap-1.75 border-b border-rule-soft px-3.5 py-2.75 text-left active:bg-brand-bg ${
-              selected ? 'bg-brand-bg' : ''
-            } ${cancelled ? 'opacity-45' : ''}`}
+            className={`${trade_card_classes} text-left active:bg-brand-bg ${selected ? 'bg-brand-bg' : ''} ${cancelled ? 'opacity-45' : ''}`}
           >
-            <div className="flex items-center gap-2">
+            <div className={trade_card_line_classes.head}>
               <b className="text-[14px] font-semibold">{trade.symbol}</b>
               <SideMark side={trade.side} />
               <span className="ml-auto flex items-center gap-1.25">
@@ -65,7 +76,7 @@ export function TradeCards({ rows, selected_id, onSelect, onLoadMore, has_more }
                 <VersionPill version={trade.version} />
               </span>
             </div>
-            <div className="flex items-baseline gap-2 font-mono text-[12.5px] tabular-nums">
+            <div className={`${trade_card_line_classes.figures} font-mono tabular-nums`}>
               <span>{format_quantity(trade.quantity)}</span>
               <span className="text-faint">@</span>
               <span>
@@ -73,7 +84,7 @@ export function TradeCards({ rows, selected_id, onSelect, onLoadMore, has_more }
               </span>
               <span className="ml-auto text-text-2">{format_notional(trade.quantity, trade.price, trade.currency)}</span>
             </div>
-            <div className="flex items-center gap-2.5 text-[11px] text-muted">
+            <div className={`${trade_card_line_classes.meta} text-muted`}>
               <span className="font-mono text-[10.5px] text-brand">{trade.tradeId}</span>
               <span>{trade.trader}</span>
               <span className="ml-auto font-mono text-[10.5px]">{format_clock_or_date(trade.tradeTimestamp)}</span>

@@ -2,7 +2,10 @@
 
 import type { ReactNode } from 'react';
 import { Skeleton } from '@/components/ui/Note';
-import { grid_min_width_classes, grid_template_classes, row_height, sortable_columns, trade_columns } from './columns';
+import { grid_min_width_classes, row_height, sortable_columns, trade_columns } from './columns';
+import { grid_header_label_classes, grid_header_row_classes } from './GridHeader';
+import { trade_card_classes, trade_card_line_classes } from './TradeCards';
+import { trade_row_classes } from './TradeRow';
 
 /** Rows drawn under the header: enough to fill a tall screen. */
 const row_count = 24;
@@ -47,10 +50,10 @@ function GridSkeleton(): ReactNode {
     <div className="hidden min-h-0 flex-1 flex-col md:flex">
       <div className="min-h-0 flex-1 overflow-hidden">
         <div className={grid_min_width_classes}>
-          <div className={`grid h-7.75 items-center gap-2.5 border-b border-rule bg-head px-3.5 ${grid_template_classes}`}>
+          <div className={grid_header_row_classes}>
             {trade_columns.map((column, index) => (
               <div key={column.id ?? index} className={cell_classes(column)}>
-                <span className="inline-flex items-center gap-1 whitespace-nowrap font-mono text-[9.5px] font-semibold uppercase tracking-[.11em] text-faint">
+                <span className={`inline-flex items-center gap-1 ${grid_header_label_classes} text-faint`}>
                   {typeof column.header === 'string' ? column.header : null}
                   {sortable_columns.has(column.id ?? '') ? <span className="opacity-0">▼</span> : null}
                 </span>
@@ -58,11 +61,7 @@ function GridSkeleton(): ReactNode {
             ))}
           </div>
           {Array.from({ length: row_count }, (_row, row) => (
-            <div
-              key={row}
-              className={`grid w-full items-center gap-2.5 border-b border-rule-soft px-3.5 ${grid_template_classes}`}
-              style={{ height: `${row_height.toString()}px` }}
-            >
+            <div key={row} className={trade_row_classes} style={{ height: `${row_height.toString()}px` }}>
               {trade_columns.map((column, index) => (
                 <div key={column.id ?? index} className={cell_classes(column)}>
                   <Skeleton inline className={`h-2.5 ${cell_widths[column.id ?? ''] ?? 'w-12'}`} />
@@ -84,8 +83,8 @@ function GridSkeleton(): ReactNode {
  */
 function CardSkeleton(): ReactNode {
   return (
-    <div className="flex min-h-11 w-full flex-col gap-1.75 border-b border-rule-soft px-3.5 py-2.75">
-      <div className="flex items-center gap-2">
+    <div className={trade_card_classes}>
+      <div className={trade_card_line_classes.head}>
         <span className="text-[14px]">
           <Skeleton inline className="h-3 w-12" />
         </span>
@@ -96,7 +95,7 @@ function CardSkeleton(): ReactNode {
           <Skeleton inline shape="pill" className="h-3 w-14" />
         </span>
       </div>
-      <div className="flex items-baseline gap-2 text-[12.5px]">
+      <div className={trade_card_line_classes.figures}>
         <span>
           <Skeleton inline className="h-2.5 w-24" />
         </span>
@@ -104,7 +103,7 @@ function CardSkeleton(): ReactNode {
           <Skeleton inline className="h-2.5 w-16" />
         </span>
       </div>
-      <div className="flex items-center gap-2.5 text-[11px]">
+      <div className={trade_card_line_classes.meta}>
         <span className="text-[10.5px]">
           <Skeleton inline className="h-2 w-18" />
         </span>
@@ -122,7 +121,8 @@ function CardSkeleton(): ReactNode {
 /**
  * The rows while the trades load, in the grid's place: the grid from `md` and cards below it.
  * Breakpoints come from Tailwind classes rather than a media query hook, so the first paint is
- * right at every width.
+ * right at every width. The header, row and card boxes use the classes the real grid and cards
+ * export, so a change to either reaches the skeleton too.
  *
  * @returns The skeleton rows.
  */

@@ -4,6 +4,9 @@ import type { Trade } from '@blotter/shared';
 import type { CellFlashKind, RowCellFlashes } from '@/lib/grid/flash';
 import { grid_template_classes, row_height } from './columns';
 
+/** A row's box on the grid's tracks, without its position, pointer or states. The loading skeleton draws its rows with it. */
+export const trade_row_classes = `grid w-full items-center gap-2.5 border-b border-rule-soft px-3.5 ${grid_template_classes}`;
+
 /** Props for {@link TradeRow}. */
 export interface TradeRowProps {
   row: Row<Trade>;
@@ -73,7 +76,7 @@ export const TradeRow = memo(function TradeRow({
       data-flash={inserted ? 'new' : undefined}
       onClick={() => onSelect(trade.id)}
       style={{ transform: `translateY(${offset.toString()}px)`, height: `${row_height.toString()}px` }}
-      className={`absolute top-0 left-0 grid w-full cursor-pointer items-center gap-2.5 border-b border-rule-soft px-3.5 text-[12.5px] transition-colors duration-100 hover:bg-brand-hover focus-visible:rounded-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-lo ${grid_template_classes} ${
+      className={`absolute top-0 left-0 ${trade_row_classes} cursor-pointer text-[12.5px] transition-colors duration-100 hover:bg-brand-hover focus-visible:rounded-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-lo ${
         selected ? 'bg-brand-bg shadow-[inset_2px_0_0_var(--brand)]' : ''
       } ${cancelled ? 'opacity-40' : ''} ${inserted ? 'animate-flash-new' : ''}`}
     >

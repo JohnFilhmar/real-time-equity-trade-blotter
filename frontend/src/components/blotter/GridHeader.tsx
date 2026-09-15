@@ -3,6 +3,12 @@ import type { ReactNode } from 'react';
 import type { Trade, TradeSortColumn } from '@blotter/shared';
 import { grid_template_classes, sortable_columns } from './columns';
 
+/** The header row's box on the grid's tracks, without its sticky placement. The loading skeleton draws its header with it. */
+export const grid_header_row_classes = `grid h-7.75 items-center gap-2.5 border-b border-rule bg-head px-3.5 ${grid_template_classes}`;
+
+/** How a header label is set, without its colour. The loading skeleton sets its labels with it. */
+export const grid_header_label_classes = 'whitespace-nowrap font-mono text-[9.5px] font-semibold uppercase tracking-[.11em]';
+
 /** Props for {@link GridHeader}. */
 export interface GridHeaderProps {
   table: Table<Trade>;
@@ -29,11 +35,7 @@ export function GridHeader({ table, sort_by, sort_dir, pending, onSort }: GridHe
   const caret = sort_dir === 'asc' ? '▲' : '▼';
 
   return (
-    <div
-      role="row"
-      aria-rowindex={1}
-      className={`sticky top-0 z-[5] grid h-7.75 items-center gap-2.5 border-b border-rule bg-head px-3.5 backdrop-blur-[10px] ${grid_template_classes}`}
-    >
+    <div role="row" aria-rowindex={1} className={`sticky top-0 z-[5] ${grid_header_row_classes} backdrop-blur-[10px]`}>
       {table.getFlatHeaders().map((header) => {
         const meta = header.column.columnDef.meta;
         const column_id = header.column.id;
@@ -53,7 +55,7 @@ export function GridHeader({ table, sort_by, sort_dir, pending, onSort }: GridHe
                 type="button"
                 onClick={() => onSort(column_id as TradeSortColumn)}
                 data-on={is_sorted ? '1' : '0'}
-                className={`group flex items-center gap-1 whitespace-nowrap font-mono text-[9.5px] font-semibold uppercase tracking-[.11em] transition-colors hover:text-text-2 ${
+                className={`group flex items-center gap-1 ${grid_header_label_classes} transition-colors hover:text-text-2 ${
                   is_sorted ? 'text-brand-lo' : 'text-faint'
                 } ${meta?.numeric ? 'ml-auto' : ''}`}
               >
@@ -63,7 +65,7 @@ export function GridHeader({ table, sort_by, sort_dir, pending, onSort }: GridHe
                 </span>
               </button>
             ) : (
-              <span className="whitespace-nowrap font-mono text-[9.5px] font-semibold uppercase tracking-[.11em] text-faint">{label}</span>
+              <span className={`${grid_header_label_classes} text-faint`}>{label}</span>
             )}
           </div>
         );
