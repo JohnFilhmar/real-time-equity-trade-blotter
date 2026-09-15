@@ -1,0 +1,692 @@
+<title>Blotter checklist review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  /* Fusion Blotter tokens, dark first like the app itself (frontend/src/app/globals.css). */
+  :root {
+    --page: #060A12;
+    --panel: #0B111C;
+    --tile: #131C29;
+    --inset: #0E1522;
+    --text: #DCE4EE;
+    --text_2: #9DB0CA;
+    --link: #67E8F9;
+    --brand: #22D3EE;
+    --brand_bg: rgba(34, 211, 238, .10);
+    --brand_edge: rgba(34, 211, 238, .32);
+    --gain: #46D4A0;
+    --loss: #F58598;
+    --warn: #FBBF24;
+    --rule: rgba(157, 176, 202, .16);
+    --rule_soft: rgba(157, 176, 202, .08);
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --page: #F7FAFD; --panel: #FFFFFF; --tile: #FFFFFF; --inset: #EDF1F6;
+      --text: #15212E; --text_2: #4A5D73; --link: #0E7490;
+      --brand: #0E7490; --brand_bg: rgba(8, 145, 178, .10); --brand_edge: rgba(8, 145, 178, .30);
+      --gain: #047857; --loss: #BE123C; --warn: #B45309;
+      --rule: rgba(15, 27, 42, .13); --rule_soft: rgba(15, 27, 42, .06);
+      color-scheme: light;
+    }
+  }
+  :root[data-theme="light"] {
+    --page: #F7FAFD; --panel: #FFFFFF; --tile: #FFFFFF; --inset: #EDF1F6;
+    --text: #15212E; --text_2: #4A5D73; --link: #0E7490;
+    --brand: #0E7490; --brand_bg: rgba(8, 145, 178, .10); --brand_edge: rgba(8, 145, 178, .30);
+    --gain: #047857; --loss: #BE123C; --warn: #B45309;
+    --rule: rgba(15, 27, 42, .13); --rule_soft: rgba(15, 27, 42, .06);
+    color-scheme: light;
+  }
+
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 1rem;
+    line-height: 1.6;
+    padding-inline: 20px;
+    padding-block: 56px 96px;
+  }
+  .page { max-width: 66rem; margin-inline: auto; display: grid; gap: 4rem; }
+  .section { display: grid; gap: 1.1rem; }
+  .prose { max-width: 68ch; display: grid; gap: .8rem; }
+
+  h1, h2, h3 { margin: 0; text-wrap: balance; font-weight: 600; }
+  h1 { font-size: clamp(1.75rem, 4.5vw, 2.35rem); line-height: 1.15; letter-spacing: -.02em; }
+  h2 { font-size: 1.3rem; line-height: 1.25; letter-spacing: -.01em; padding-bottom: .55rem; border-bottom: 1px solid var(--rule); }
+  h3 { font-size: 1rem; line-height: 1.35; }
+  p { margin: 0; }
+  a { color: var(--link); text-underline-offset: 3px; }
+  a:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+  code { font-family: var(--mono); font-size: .82em; color: var(--text); background: var(--inset); border: 1px solid var(--rule_soft); padding: 0 .3em; border-radius: 3px; white-space: nowrap; }
+  strong { font-weight: 600; }
+
+  .eyebrow { font-family: var(--mono); font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; color: var(--brand); }
+  .masthead { display: grid; gap: .9rem; }
+  .standfirst { max-width: 64ch; font-size: 1.08rem; color: var(--text_2); }
+  .meta { display: flex; flex-wrap: wrap; gap: .4rem 1.6rem; padding-top: .9rem; border-top: 1px solid var(--rule); font-family: var(--mono); font-size: .76rem; color: var(--text_2); }
+  .meta b { color: var(--text); font-weight: 500; }
+  .lede { max-width: 68ch; color: var(--text_2); }
+
+  .chip { display: inline-block; width: max-content; font-family: var(--mono); font-size: .66rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; line-height: 1; padding: .3rem .45rem; border: 1px solid currentColor; border-radius: 3px; white-space: nowrap; }
+  .chip_loss { color: var(--loss); }
+  .chip_gain { color: var(--gain); }
+  .chip_warn { color: var(--warn); }
+  .chip_brand { color: var(--brand); }
+  .tag { font-family: var(--mono); font-size: .72rem; color: var(--text_2); white-space: nowrap; }
+  .tag::before { content: "["; }
+  .tag::after { content: "]"; }
+
+  .findings { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1.25rem; }
+  .finding { display: grid; align-content: start; gap: .6rem; padding-top: .9rem; border-top: 2px solid var(--rule); }
+  .finding_loss { border-top-color: var(--loss); }
+  .finding_gain { border-top-color: var(--gain); }
+  .finding_warn { border-top-color: var(--warn); }
+  .finding p:last-child { color: var(--text_2); font-size: .94rem; }
+
+  .table_wrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--rule); border-radius: 4px; }
+  table { width: 100%; min-width: 50rem; border-collapse: collapse; font-size: .88rem; line-height: 1.5; }
+  th, td { text-align: left; vertical-align: top; padding: .7rem .9rem; border-bottom: 1px solid var(--rule_soft); }
+  th { font-family: var(--mono); font-size: .66rem; font-weight: 600; letter-spacing: .11em; text-transform: uppercase; color: var(--text_2); background: var(--inset); white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num { font-family: var(--mono); color: var(--text_2); white-space: nowrap; }
+  td .sub { display: block; margin-top: .3rem; color: var(--text_2); font-size: .82rem; }
+  .narrow table { min-width: 36rem; }
+
+  .kpi_board { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; }
+  .kpi { display: grid; grid-template-rows: auto 1fr; background: var(--panel); min-width: 0; }
+  .kpi_tile { display: grid; gap: .2rem; padding: .75rem 1rem; background: var(--tile); border-bottom: 1px solid var(--rule); min-width: 0; }
+  .kpi_label { font-family: var(--mono); font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; color: var(--text_2); }
+  .kpi_value { display: flex; flex-wrap: wrap; align-items: baseline; gap: .15rem .7rem; font-family: var(--mono); font-size: 1.1rem; font-weight: 600; letter-spacing: -.015em; line-height: 1.15; font-variant-numeric: tabular-nums; }
+  .kpi_value small { font-size: .8rem; }
+  .kpi_sub { font-family: var(--mono); font-size: .68rem; color: var(--text_2); overflow-wrap: anywhere; }
+  .kpi_note { display: grid; align-content: start; gap: .55rem; padding: .85rem 1rem 1rem; font-size: .88rem; }
+  .kpi_note .formula { font-family: var(--mono); font-size: .76rem; color: var(--text); background: var(--inset); border-radius: 3px; padding: .45rem .55rem; }
+  .kpi_note p { color: var(--text_2); }
+  .gain { color: var(--gain); }
+  .loss { color: var(--loss); }
+  .live { color: var(--brand); }
+
+  .calc_pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1.25rem; align-items: start; }
+  .calc { display: grid; gap: .7rem; }
+  .ledger_rows { display: grid; background: var(--panel); border: 1px solid var(--rule); border-radius: 4px; }
+  .ledger_row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .2rem 1rem; align-items: baseline; padding: .6rem .9rem; border-bottom: 1px solid var(--rule_soft); }
+  .ledger_row:last-child { border-bottom: 0; }
+  .ledger_row span { color: var(--text_2); font-size: .88rem; }
+  .ledger_row b { font-family: var(--mono); font-weight: 500; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  .ledger_row_total { background: var(--inset); }
+  .ledger_row_total b { font-weight: 600; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; }
+  .stat { display: grid; align-content: start; gap: .35rem; padding: .9rem 1rem; background: var(--panel); }
+  .stat b { font-family: var(--mono); font-size: 1.45rem; font-weight: 600; letter-spacing: -.02em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: .86rem; color: var(--text_2); }
+  .stat_before b { color: var(--loss); }
+  .stat_after b { color: var(--gain); }
+
+  .note { max-width: 68ch; padding: .8rem 1rem; background: var(--brand_bg); border: 1px solid var(--brand_edge); border-radius: 4px; font-size: .92rem; }
+  .footer { padding-top: 1rem; border-top: 1px solid var(--rule); font-family: var(--mono); font-size: .74rem; color: var(--text_2); }
+
+  @media (min-width: 48rem) {
+    .kpi_board { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+  @media (max-width: 40rem) {
+    body { padding-block: 36px 64px; }
+    .page { gap: 3rem; }
+  }
+</style>
+
+<main class="page">
+  <header class="masthead">
+    <p class="eyebrow">Fusion Blotter &middot; checklist review</p>
+    <h1>The checklist, traced to its causes</h1>
+    <p class="standfirst">
+      The owner walked the field guide and flagged nine problems. Each one is traced here to the code that
+      causes it, followed by the thirty-eight decisions taken on how to fix them and plain answers to the trading
+      questions the walk raised.
+    </p>
+    <div class="meta">
+      <span>Reviewed <b>15 Sep 2026</b></span>
+      <span>Base <b>main at 186dc5f</b></span>
+      <span>Branch <b>checklist-review-fixes</b></span>
+      <span>Tags <b>Certain</b> evidence seen, <b>Likely</b> strong inference, <b>Guessing</b> a gap</span>
+    </div>
+  </header>
+
+  <section class="section" aria-labelledby="h_findings">
+    <h2 id="h_findings">Three reports that were not what they looked like</h2>
+    <div class="findings">
+      <article class="finding finding_loss">
+        <p class="chip chip_loss">Real bug</p>
+        <h3>Theme choice lost on reload</h3>
+        <p>
+          The running stack serves <code>localStorage.getItem(undefined)</code> in its pre-paint script, so a saved
+          theme is never read back and the OS preference always wins. <span class="tag">Certain</span>
+        </p>
+      </article>
+      <article class="finding finding_gain">
+        <p class="chip chip_gain">Server lock holds</p>
+        <h3>Lockout after five failures</h3>
+        <p>
+          Redis keeps the lock for 15 minutes by default and the server checks it before the password. A reload
+          forgets only the countdown; the next attempt is refused with a 429 and the countdown returns.
+          <span class="tag">Certain in code, not exercised live</span>
+        </p>
+      </article>
+      <article class="finding finding_warn">
+        <p class="chip chip_warn">Works, rarely seen</p>
+        <h3>No up or down flash</h3>
+        <p>
+          The flash rules pass their nine unit tests, but the simulated desk amends a random trade out of about
+          5,200, so an amend lands on a visible row roughly once every 80 minutes. <span class="tag">Likely</span>
+        </p>
+      </article>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="h_ledger">
+    <h2 id="h_ledger">Issue ledger</h2>
+    <div class="table_wrap">
+      <table>
+        <thead>
+          <tr><th>Reported</th><th>Cause</th><th>Evidence</th><th>Confidence</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Lockout countdown lost on reload</td>
+            <td>The countdown lives only in React state and its seconds are parsed out of the error sentence. The server lock itself is untouched by a reload.</td>
+            <td><code>LoginForm.tsx:46</code> <code>auth_service.ts:138</code> <code>login_attempts.ts:56</code></td>
+            <td class="num">Certain</td>
+          </tr>
+          <tr>
+            <td>Theme resets to the system setting</td>
+            <td>The root layout imports the storage key from a client module. On the server that import is a client reference, not the string, so the boot script reads the key <code>undefined</code>.</td>
+            <td><code>layout.tsx:4</code> <code>layout.tsx:35</code>, curl of the live page</td>
+            <td class="num">Certain</td>
+          </tr>
+          <tr>
+            <td>Sort click gives no sign it registered</td>
+            <td>Sorting runs on the server. The old rows stay in place until the reply, and the caret waits for the address bar to update.</td>
+            <td><code>useListQuery.ts:66</code> <code>useTrades.ts:37</code></td>
+            <td class="num">Certain</td>
+          </tr>
+          <tr>
+            <td>Rows do not flash up or down</td>
+            <td>Amends almost never hit a visible row. When one does, the tint covers the whole row at 14% opacity, and Windows reduced motion removes it entirely.</td>
+            <td><code>live_feed.ts:101</code> <code>active_reads.ts:21</code> <code>globals.css:89</code> <code>globals.css:405</code></td>
+            <td class="num">Likely</td>
+          </tr>
+          <tr>
+            <td>From and To can overlap</td>
+            <td>Nothing compares the two dates. From after To returns an empty grid that blames the filters.</td>
+            <td><code>FilterRail.tsx:105</code>, query schema in <code>trade.ts</code></td>
+            <td class="num">Certain</td>
+          </tr>
+          <tr>
+            <td>Keyboard navigation is messy</td>
+            <td>Focus is tracked by row position, not trade. The drawer takes focus on every selection, focus drops to the page when it closes or when a jump lands on a row not yet drawn, and there is no way in without a click.</td>
+            <td><code>useRovingRows.ts:45</code> <code>TradeDrawer.tsx:56</code></td>
+            <td class="num">Certain</td>
+          </tr>
+          <tr>
+            <td>Form errors in technical language</td>
+            <td>Raw validation messages are shown as they come. An emptied number box becomes 0, which produces "Too small: expected number to be &gt;0".</td>
+            <td><code>ticketForm.ts:72</code> <code>ticketForm.ts:106</code></td>
+            <td class="num">Certain</td>
+          </tr>
+          <tr>
+            <td>Filters vanish on tablet and phone</td>
+            <td>The rail is wrapped in <code>hidden lg:flex</code> and nothing on screen reopens it below 1024px.</td>
+            <td><code>BlotterScreen.tsx:92</code></td>
+            <td class="num">Certain</td>
+          </tr>
+          <tr>
+            <td>Skeleton does not match the page</td>
+            <td>Session restore replaces the whole shell with three generic bars, and the page skeletons leave out the header, rail and tiles.</td>
+            <td><code>RequireSession.tsx:29</code> <code>TableState.tsx:22</code></td>
+            <td class="num">Certain</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="h_decisions">
+    <h2 id="h_decisions">Decisions the owner made</h2>
+    <p class="lede">
+      Every fix that embeds a choice went to the owner as a question with the options side by side, each checked
+      against the owner's skills and the approved specs. Twelve answers took the recommendation. One did not, and
+      the table says which.
+    </p>
+    <div class="table_wrap">
+      <table>
+        <thead>
+          <tr><th>Topic</th><th>Chosen</th><th>Also on the table</th><th>Checked against</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Theme</td>
+            <td>Storage key in a module the server can read, the provider re-applies the saved choice after load, a browser test that reloads</td>
+            <td>Key move and test only; key written into the layout</td>
+            <td>project-structure-conventions, web-design-system, testing-stance</td>
+          </tr>
+          <tr>
+            <td>Login lockout</td>
+            <td>Browser remembers the lock per username, the API sends <code>Retry-After</code>, a browser test locks, reloads and checks</td>
+            <td>Browser memory only; keep behaviour and add a test</td>
+            <td>backend-security-baseline, testing-stance</td>
+          </tr>
+          <tr>
+            <td>Price flash</td>
+            <td>Only the changed cells flash, green or red with an arrow, throttled per cell, contrast rechecked, restarted on each version</td>
+            <td>Also flash on every mark tick; simulation change only</td>
+            <td>Anticipation motion spec, spec U-M4 and U-M13</td>
+          </tr>
+          <tr>
+            <td>Flash duration</td>
+            <td>300ms, the motion spec value <span class="sub"><span class="chip chip_warn">Against recommendation</span> The recommendation was to keep 1.1s. Risk accepted: a 300ms flash on one cell is easy to miss.</span></td>
+            <td>Keep 1.1s; 600ms</td>
+            <td>Anticipation motion spec</td>
+          </tr>
+          <tr>
+            <td>Simulated amends</td>
+            <td>Half of amends pick one of the 30 newest active trades</td>
+            <td>All from the newest 30; a quarter from the newest 100</td>
+            <td>Demo cadence, no convention applies</td>
+          </tr>
+          <tr>
+            <td>Sort feedback</td>
+            <td>Caret moves on click, a 2px bar runs under the header, rows dim to 55% and stay clickable, no new-row flashes on the re-sorted page</td>
+            <td>Spinner in the clicked header; progress bar only</td>
+            <td>Anticipation sections 4 and 5, web-design-system</td>
+          </tr>
+          <tr>
+            <td>Date range</td>
+            <td>Form gate with a message under the edited field, plus the API refusing From after To with a 422 in the same words</td>
+            <td>Form gate only; calendar limits only</td>
+            <td>ts-house-style, project-structure-conventions</td>
+          </tr>
+          <tr>
+            <td>Filters below 1024px</td>
+            <td>A Filters button with the active count opens the same rail in a slide-over panel</td>
+            <td>Inline rail from 768px; bottom sheet on phone and panel on tablet</td>
+            <td>web-design-system</td>
+          </tr>
+          <tr>
+            <td>Keyboard</td>
+            <td>The open detail panel follows keyboard focus, focus is held by trade, jumps wait for the row, a visible focus ring and a Skip to trades link</td>
+            <td>Spec as written, where focus moves into the panel</td>
+            <td>Spec U-M12, web-design-system</td>
+          </tr>
+          <tr>
+            <td>Error text</td>
+            <td>Plain English written on each rule in the shared schemas, so the form and the API say the same sentence</td>
+            <td>One global error map; a browser-only translation</td>
+            <td>ts-house-style, project-structure-conventions, Anticipation section 7</td>
+          </tr>
+          <tr>
+            <td>New trade ticket</td>
+            <td>Counterparty marked required, with suggestions from one bank list shared by the seed and the form</td>
+            <td>Price prefilled from the live mark, not chosen</td>
+            <td>project-structure-conventions</td>
+          </tr>
+          <tr>
+            <td>Amend scope</td>
+            <td>Counterparty locked; changing it means cancel and rebook</td>
+            <td>Keep all four amendable; lock counterparty and book</td>
+            <td>project-structure-conventions</td>
+          </tr>
+          <tr>
+            <td>Skeletons</td>
+            <td>The real top bar, nav and tabs stay on screen during restore; skeletons are built from the layout values the real components use, per page</td>
+            <td>Separate skeleton copies; real chrome plus the spec's shimmer and stagger</td>
+            <td>Anticipation sections 1, 2 and 10, project-structure-conventions</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>Raised while building</h3>
+    <p class="lede">
+      The implementation lanes and a browser probe surfaced twenty-five more choices. Each went back to the owner the
+      same way, in six rounds as the work landed, and all twenty-five answers took the recommendation. Twice that
+      recommendation was the dispatcher's, made against the implementing agent's suggestion, and the rows say so.
+    </p>
+    <div class="table_wrap">
+      <table>
+        <thead>
+          <tr><th>Topic</th><th>Chosen</th><th>Also on the table</th><th>Checked against</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Two kinds of 429</td>
+            <td>The account lock answers with a new <code>locked_out</code> code and only it saves a per-username lock; the address limit shows its own countdown and saves nothing</td>
+            <td>One neutral message for both; keep as built</td>
+            <td>backend-security-baseline</td>
+          </tr>
+          <tr>
+            <td>When the lock shows</td>
+            <td>On the fifth failure, answered with the countdown</td>
+            <td>Keep it on the sixth attempt</td>
+            <td>backend-security-baseline</td>
+          </tr>
+          <tr>
+            <td>Sign in button</td>
+            <td>Always pressable; a blank field says "Enter your username" or "Enter your password"</td>
+            <td>Keep it disabled until both fields have text</td>
+            <td>web-design-system</td>
+          </tr>
+          <tr>
+            <td>Locked counterparty marker</td>
+            <td>The required asterisk shows on a new ticket only</td>
+            <td>Keep it in amend mode too</td>
+            <td>web-design-system</td>
+          </tr>
+          <tr>
+            <td>Desk-limit wording</td>
+            <td>"This trade is over the desk limit. Lower the quantity or price." with the trade's worth and the limit in dollars or pounds</td>
+            <td>Leave the unformatted pence figures</td>
+            <td>The plain-English decision above</td>
+          </tr>
+          <tr>
+            <td>Conflict note</td>
+            <td>The ticket's labels with formatted values, such as "Quantity 1,300 → 1,400"</td>
+            <td>Leave the API field names</td>
+            <td>The plain-English decision above</td>
+          </tr>
+          <tr>
+            <td>Arrow contrast</td>
+            <td>3:1, the WCAG level for graphics, while cell text stays at 4.5:1</td>
+            <td>Darker light-theme gain and loss colours; arrows held to 4.5:1</td>
+            <td>WCAG 1.4.1 and 1.4.11, spec U-M13</td>
+          </tr>
+          <tr>
+            <td>Currency code beside the price</td>
+            <td>The secondary text colour, which clears 4.5:1 in both themes</td>
+            <td>The muted colour; leave it faint at 2.6:1</td>
+            <td>Spec U-M13</td>
+          </tr>
+          <tr>
+            <td>Cancelled rows</td>
+            <td>Fade and strike through, no flash</td>
+            <td>A neutral row flash</td>
+            <td>Anticipation motion spec</td>
+          </tr>
+          <tr>
+            <td>Rows from a page loaded by scrolling</td>
+            <td>Do not flash; only live arrivals do</td>
+            <td>Leave the cyan flash</td>
+            <td>Anticipation motion spec</td>
+          </tr>
+          <tr>
+            <td>Neutral tint in the light theme</td>
+            <td>The cell's text takes the primary colour while the tint shows, so the tint can be seen</td>
+            <td>Accept a barely visible tint; let text drop below 4.5:1</td>
+            <td>Spec U-M13</td>
+          </tr>
+          <tr>
+            <td>Skip link with no grid</td>
+            <td>Moves to the first card on a phone, or the empty state when nothing is listed</td>
+            <td>Render the link only when a grid is on screen</td>
+            <td>web-design-system</td>
+          </tr>
+          <tr>
+            <td>New trade inside the Filters panel</td>
+            <td>Left out, since the toolbar and floating buttons already book</td>
+            <td>Keep it and close the panel first; stack the ticket over the panel</td>
+            <td>web-design-system</td>
+          </tr>
+          <tr>
+            <td>Desk-limit detail on the ticket</td>
+            <td>Shown on the ticket's error line as well as under Quantity</td>
+            <td>Quantity message only</td>
+            <td>The plain-English decision above</td>
+          </tr>
+          <tr>
+            <td>Conflict after a cancellation</td>
+            <td>"Another desk cancelled this trade, so it can no longer be amended." <span class="sub">The dispatcher recommended the sentence over the implementing agent's suggestion to keep a status line.</span></td>
+            <td>Keep "Status ACTIVE → CANCELLED"</td>
+            <td>The plain-English decision above</td>
+          </tr>
+          <tr>
+            <td>Two holds on sign-in</td>
+            <td>The account lock message shows first; Sign in waits for both</td>
+            <td>The address limit message first</td>
+            <td>No convention applies</td>
+          </tr>
+          <tr>
+            <td>Lockout problem title</td>
+            <td>Keep "Too many requests", which only API clients see</td>
+            <td>"Account locked"</td>
+            <td>RFC 9457, the existing error contract</td>
+          </tr>
+          <tr>
+            <td>Date message timing</td>
+            <td>After the box holds the same value for about a second, or as soon as focus leaves it <span class="sub">A browser probe showed the message flickering on three of four keystrokes while a year was retyped.</span></td>
+            <td>Only when leaving the field; keep it immediate</td>
+            <td>web-design-system</td>
+          </tr>
+          <tr>
+            <td>Cancelled trade's conflict note</td>
+            <td>Only the cancellation sentence, with a Close button</td>
+            <td>Keep the opener and the reopen link</td>
+            <td>The plain-English decision above</td>
+          </tr>
+          <tr>
+            <td>Skip link during the first load</td>
+            <td>Moves to the grid's loading area</td>
+            <td>Leave the link without a target until rows arrive</td>
+            <td>web-design-system</td>
+          </tr>
+          <tr>
+            <td>Text in green and red flashes</td>
+            <td>The primary colour for every flashing cell, currency code included, so it clears 4.5:1</td>
+            <td>Accept the currency code below 4.5:1 for the length of a flash</td>
+            <td>Spec U-M13</td>
+          </tr>
+          <tr>
+            <td>Date message while correcting</td>
+            <td>Stays until the range is valid <span class="sub">The dispatcher recommended this over the implementing agent's suggestion to hide it on each keystroke.</span></td>
+            <td>Hide while typing and show again after the pause</td>
+            <td>web-design-system</td>
+          </tr>
+          <tr>
+            <td>Ticket form logic</td>
+            <td>Split by concern into values, amend, errors and conflict modules</td>
+            <td>Leave one file with eight exports</td>
+            <td>project-structure-conventions</td>
+          </tr>
+          <tr>
+            <td>Arrow contrast under the page glow</td>
+            <td>Accept 3:1 measured on the row ground; about 2.6:1 under the full corner glow is recorded in the stylesheet</td>
+            <td>Darker arrow colours; weaker tints</td>
+            <td>WCAG 1.4.11</td>
+          </tr>
+          <tr>
+            <td>Where the date message sits</td>
+            <td>Under the box being edited</td>
+            <td>Pinned where it first appeared</td>
+            <td>No convention applies</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="h_desk">
+    <h2 id="h_desk">Reading the desk</h2>
+    <p class="lede">
+      The four tiles under the top bar, with the figures from the owner's screenshot. All four read every
+      trader's active trades and ignore the blotter's filters.
+    </p>
+    <div class="kpi_board">
+      <div class="kpi">
+        <div class="kpi_tile">
+          <span class="kpi_label">Net position</span>
+          <span class="kpi_value"><span class="gain">+$121.04M</span><small class="loss">&minus;&pound;1.52M</small></span>
+          <span class="kpi_sub">12 symbols, marked to the simulated feed</span>
+        </div>
+        <div class="kpi_note">
+          <p class="formula">net quantity &times; latest mark, summed per currency</p>
+          <p>The desk holds $121M more US stock than it has sold and is &pound;1.5M short in London, at current prices. Dollars and pounds stay apart because adding them needs an exchange rate the app does not have.</p>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi_tile">
+          <span class="kpi_label">P&amp;L</span>
+          <span class="kpi_value"><span class="loss">&minus;$5.44M</span><small class="gain">+&pound;390,169</small></span>
+          <span class="kpi_sub">unrl &minus;$16.27M &middot; rlsd +$10.83M</span>
+        </div>
+        <div class="kpi_note">
+          <p class="formula">unrealised + realised</p>
+          <p>Profit already banked, plus the paper result on what is still held. It covers all five seeded days rather than today, the small line is dollars only, and cancelling a trade takes its P&amp;L back out.</p>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi_tile">
+          <span class="kpi_label">Active trades</span>
+          <span class="kpi_value">5,236</span>
+          <span class="kpi_sub">8 US names, 4 London names</span>
+        </div>
+        <div class="kpi_note">
+          <p class="formula">count of ACTIVE trades, every trader</p>
+          <p>A JSMITH filter chip does not change this number. The names line counts symbols with at least one open trade, so a symbol with none drops out.</p>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi_tile">
+          <span class="kpi_label">Feed</span>
+          <span class="kpi_value live">LIVE</span>
+          <span class="kpi_sub">last broadcast seq 854</span>
+        </div>
+        <div class="kpi_note">
+          <p class="formula">socket state + number of the last broadcast</p>
+          <p>LIVE with a climbing number means the stream is flowing; LIVE with a frozen number means it is stuck. Price ticks are not numbered, and the count restarts at 1 when the server does.</p>
+        </div>
+      </div>
+    </div>
+    <p class="lede">The money figures move because marks tick every 900ms and the browser recalculates on each tick, with no request to the API. <span class="tag">Certain</span></p>
+
+    <div class="calc_pair">
+      <div class="calc">
+        <h3>The P&amp;L tile, split</h3>
+        <div class="ledger_rows">
+          <div class="ledger_row"><span>Unrealised: (mark &minus; average cost) &times; open quantity</span><b class="loss">&minus;$16.27M</b></div>
+          <div class="ledger_row"><span>Realised: locked in when a trade shrinks a position, at average cost</span><b class="gain">+$10.83M</b></div>
+          <div class="ledger_row ledger_row_total"><span>Total on the tile</span><b class="loss">&minus;$5.44M</b></div>
+        </div>
+        <p class="lede">The desk has banked $10.8M, and the book it still holds is $16.3M under water at current marks.</p>
+      </div>
+
+      <div class="calc">
+        <h3>Pence and pounds</h3>
+        <div class="ledger_rows">
+          <div class="ledger_row"><span>VOD.L reference price, quoted in pence (GBX)</span><b>78.00p</b></div>
+          <div class="ledger_row"><span>1,000 shares &times; 78.00p = 78,000p</span><b>&pound;780.00</b></div>
+          <div class="ledger_row"><span>TRD-104326: 3,000 &times; 80.50p = 241,500p</span><b>&pound;2,415.00</b></div>
+          <div class="ledger_row"><span>Drift: (85.62p &minus; 80.50p) &times; 3,000 = 15,360p</span><b class="gain">+&pound;153.60</b></div>
+          <div class="ledger_row"><span>Typing 0.78 while thinking in pounds: 1,000 &times; 0.78p</span><b class="loss">&pound;7.80</b></div>
+          <div class="ledger_row ledger_row_total"><span>Desk limit per trade: 4,000,000,000p, against $50,000,000 for US names</span><b>&pound;40,000,000</b></div>
+        </div>
+        <p class="lede">100p is &pound;1. Switching the ticket to VOD.L resets the price to the stock's reference price and the book to EQUITIES_UK, and the ticket's note is there to stop the hundred-fold mistake in the fifth row.</p>
+      </div>
+    </div>
+
+    <div class="prose">
+      <h3>Why Counterparty starts empty on a required field</h3>
+      <p>
+        Every trade is a contract with someone, so the field is required. It starts empty on purpose: there is no
+        safe default, and a prefilled "Goldman Sachs" would let a trader book against the wrong bank by pressing
+        Enter. What was missing is on the form's side. The field was not marked required, and an empty submit
+        showed validation jargon. It now shows as required, says "Enter a counterparty", and suggests the known
+        banks while still accepting a new name. <span class="tag">Certain</span>
+      </p>
+    </div>
+
+    <div class="prose">
+      <h3>Amend, or cancel and rebook</h3>
+      <p>
+        The owner amended book, price, quantity and counterparty on TRD-104326, and the app recorded version 2
+        with an audit line, as built. The rule only forced a rebook for symbol, side and time. Counterparty now
+        joins them. A different counterparty is a different legal contract with its own confirmation, so desks
+        cancel and rebook rather than amend. <span class="tag">Likely</span> The repository had already
+        contradicted itself here: the seed generator called a counterparty change a rebooking while the schema
+        allowed it. No source for TP ICAP's own policy was available. <span class="tag">Guessing</span>
+      </p>
+    </div>
+    <div class="table_wrap narrow">
+      <table>
+        <thead>
+          <tr><th>Field</th><th>On an amendment</th><th>Why</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Symbol</td><td><span class="chip chip_loss">Locked</span></td><td>A different instrument is a different trade.</td></tr>
+          <tr><td>Side</td><td><span class="chip chip_loss">Locked</span></td><td>Selling instead of buying reverses the risk.</td></tr>
+          <tr><td>Trade time</td><td><span class="chip chip_loss">Locked</span></td><td>It would rewrite when the trade happened.</td></tr>
+          <tr><td>Counterparty</td><td><span class="chip chip_loss">Locked, new</span></td><td>A different contract and a new confirmation to a different bank.</td></tr>
+          <tr><td>Quantity</td><td><span class="chip chip_gain">Amendable</span></td><td>An ordinary size correction. The server rechecks the desk limit.</td></tr>
+          <tr><td>Price</td><td><span class="chip chip_gain">Amendable</span></td><td>An ordinary price correction. The server rechecks the desk limit.</td></tr>
+          <tr><td>Book</td><td><span class="chip chip_gain">Amendable</span></td><td>Moves the risk between the firm's own books, with no outside party involved.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="h_flash">
+    <h2 id="h_flash">Why the flash looked broken</h2>
+    <p class="lede">
+      The arrows that move all the time compare each 900ms mark with the execution price. They never flashed and
+      still do not. The flash belongs to amendments, and the arithmetic below is why nobody saw one.
+    </p>
+    <div class="stats">
+      <div class="stat"><b>27.5s</b><span>between simulated amends: a 5.5s average gap, 20% of actions</span></div>
+      <div class="stat"><b>0.57%</b><span>of amends land on the first screen: 30 rows out of 5,236 active trades</span></div>
+      <div class="stat stat_before"><b>&asymp; 80 min</b><span>between amends a watcher could see, before this change</span></div>
+      <div class="stat stat_after"><b>&asymp; 55s</b><span>between first-screen amends once half are drawn from the newest 30</span></div>
+    </div>
+    <p class="note">
+      The amend tint now lasts 300ms on the changed cell, the value in the motion spec, while the &#9650; or &#9660;
+      beside it holds for 1.2s. With reduced motion switched on, the cell holds a still tint for 800ms instead of
+      showing nothing.
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="h_verify">
+    <h2 id="h_verify">Verified</h2>
+    <p class="lede">
+      Run on 15 Sep 2026 against the final code on <code>checklist-review-fixes</code>, using a throwaway compose stack
+      on its own ports and a separate database for the integration tier, so the owner's running stack was never touched.
+    </p>
+    <div class="table_wrap narrow">
+      <table>
+        <thead>
+          <tr><th>Check</th><th>Result</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Typecheck and lint</td><td><span class="chip chip_gain">Pass</span></td><td>All three workspaces</td></tr>
+          <tr><td>Unit tests</td><td><span class="chip chip_gain">479 pass</span></td><td>60 shared, 231 backend, 188 frontend</td></tr>
+          <tr><td>Integration tests</td><td><span class="chip chip_gain">40 pass</span></td><td>Real Postgres and Redis. Run before the last frontend-only commits, which changed no backend code.</td></tr>
+          <tr><td>Browser journeys</td><td><span class="chip chip_gain">18 pass</span></td><td>The ten existing journeys plus theme reload, lockout reload, filters panel, date gate and keyboard</td></tr>
+          <tr><td>Date gate probe</td><td><span class="chip chip_warn">Found flicker</span></td><td>The message showed on three of four keystrokes while a year was retyped, which led to the typing-pause decision</td></tr>
+          <tr><td>Load and Lighthouse</td><td><span class="chip">Not run</span></td><td>Not repeated for this change</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">
+      Three test problems surfaced on the way and were fixed without weakening an assertion. A merged flash test
+      still expected a counterparty flash after the field was locked. A browser helper returned before a filtered
+      page had navigated. A lockout test for an unknown username sat on the five-second limit, because that name is
+      checked against a hash kept at production cost, so its timeout was raised.
+    </p>
+  </section>
+
+  <footer class="footer">
+    File and line references point at main 186dc5f, where the causes were found. Figures in the tiles come from
+    the owner's screenshot of the running stack on 15 Sep 2026.
+  </footer>
+</main>

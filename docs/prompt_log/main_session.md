@@ -775,3 +775,181 @@ Followed by:
 **Outcome:** `backend/README.md` now covers how the API runs under compose and alone, its scripts, source layout, every environment variable from `env.ts` with its default, the HTTP and socket surface, roles and rate limits, the simulated desk and seed, and both test tiers, linking to the API reference and database README for detail.
 
 **Commits:** `0f16f43`
+
+---
+
+### 2026-09-15T07:46Z - checklist_review_fixes
+
+**Prompt**
+
+> after reviewing the checklist and checking things that are done and complete, some points has some issues and some popped as attention to me.
+>
+> problems:
+> - fail five times as nobody, try again in \<N timer\> gets lost upon reload and user can retry logging in
+> - theme toggle, after setting it to dark/light opposite to system theme, upon reload the selected theme is disregarded and the system theme always wins.
+> - table headers if possible in slow internet connection, there should be a way to show anticipation or a loading that the sort is clicked.
+> - in the checklist, rows appearing and changing, in the changing of rows in whether price went up or down, there's no flashing happening on specific rows whether it went down or up, bug in handling style/animation trigger in price changes.
+> - date filter needs an explicit warning in the from-to overlap and blocks that user selected date until it is valid, basically implement a gate where from should not be after to and to should not be before from
+> - navigating via keyboard works, but the user still is needed to click on the element and one issue is that the navigation between trades is messy and no focus on specific trades, buggy interaction
+> - i need further understanding in how this fully works in a trader's perspective.
+>
+> [... truncated: the quoted field guide items on the four tiles, the New trade dialog ("this counters with the form required field counterparty") and VOD.L pricing ("explain this further to me"), then "booking a new trade form, error indicator across all forms should never include technical terms like Too small: expected number to be >0. put everything in english.", filters disappearing at tablet and mid widths with no way to reopen them, and a screenshot of an amended trade asking "why did this not trigger a rebook? desks did not cancel on the things i have change that i can change via the form."]
+
+**Outcome:** Each issue was traced to its cause, which showed the lockout already held on the server
+and the flash code worked but amendments almost never reached a visible row, the trading questions
+were answered, and every fix that embedded a choice went to the owner as a question, 38 in all.
+Four parallel lanes and three follow-up lanes built the answers, and the final branch passed
+typecheck, lint, 479 unit, 40 integration and 18 browser tests before the field guide was
+republished with its changed items unticked.
+
+**Artifact:** [Blotter checklist review](../artifacts/blotter_checklist_review.html)
+**Commits:** `5057851`, `0dd5bb9`, `81f6973`, `90aa01f`, `1bad57d`, `89babd5`, `70a1775`
+
+---
+
+### 2026-09-15T07:58Z - skeleton_matches_layout
+
+**Prompt:** "another issue that brought my attention; [Image #12] [Image #13] the skeleton loader does not match the actual layout of the page, this needs to be responsive accordingly 1:1 of the app's responsiveness layout."
+
+**Outcome:** The top bar, navigation and tabs now stay on screen while a session restores, and each
+page's skeleton is built from the layout class constants of the page it stands in for, with
+breakpoints from Tailwind classes so the first paint matches at every width. The owner chose this
+over standalone skeleton copies that would drift.
+
+**Commits:** `81f6973`, `455e141`
+
+---
+
+### 2026-09-15T08:27Z - owner_decisions_first_round
+
+**Prompt**
+
+> Selections from three question sets, 08:27Z to 08:29Z, each question header followed by the option chosen:
+>
+> - Theme fix: "Shared key, backup, test (Recommended)"
+> - Lockout: "Remember, Retry-After, test (Recommended)"
+> - Flash: "Spec cells, recent amends (Recommended)"
+> - Sort wait: "Anticipation spec pattern (Recommended)"
+> - Date gate: "Form gate plus API rule (Recommended)"
+> - Filters: "Filters button and panel (Recommended)"
+> - Keyboard: "Panel follows focus (Recommended)"
+> - Error text: "In the shared schemas (Recommended)"
+> - Ticket: "Mark Counterparty required (Recommended), Counterparty suggestions (Recommended)"
+> - Amend scope: "Lock counterparty (Recommended)"
+> - Skeleton: "Real chrome, shared layout (Recommended)"
+
+**Outcome:** Eleven design choices were settled, each put with its options checked against the
+owner's skills and approved specs, and they became the briefs for the four parallel implementation
+lanes.
+
+**Artifact:** [Blotter checklist review](../artifacts/blotter_checklist_review.html)
+**Commits:** `5057851`, `0dd5bb9`, `81f6973`, `90aa01f`
+
+---
+
+### 2026-09-15T09:08Z - flash_duration_and_amend_bias
+
+**Prompt**
+
+> - Flash time: "Spec 300ms"
+> - Amend bias: "Half from the newest 30 (Recommended)"
+
+**Outcome:** The owner chose the motion spec's 300ms amend flash over the recommendation to keep the
+1.1s fade, accepting that a short single-cell flash is easy to miss. Half of the simulated
+amendments now draw from the newest 30 trades, so an amendment reaches the first screen about once
+a minute.
+
+**Commits:** `90aa01f`
+
+---
+
+### 2026-09-15T09:36Z - lockout_and_copy_followups
+
+**Prompt**
+
+> - 429 causes: "New locked_out code (Recommended)"
+> - Lock timing: "Lock on the fifth (Recommended)"
+> - Sign in: "Enable and explain (Recommended)"
+> - Locked mark: "Hide when locked (Recommended)"
+> - Limit copy: "Rewrite in trader terms (Recommended)"
+> - Conflict note: "Labels and formatted values (Recommended)"
+
+**Outcome:** The account lock got its own `locked_out` code shown on the fifth failure, Sign in
+stayed pressable with a message under a blank field, and the desk-limit and conflict copy moved to
+trader terms. On the Sign in button the owner took the dispatcher's recommendation over the lane's
+advice to keep it disabled.
+
+**Commits:** `a8aa0b0`, `ba7e09c`, `b880941`, `238d039`, `c32cb27`, `533055f`, `8d60e68`, `fba5451`
+
+---
+
+### 2026-09-15T10:32Z - grid_contrast_and_copy_followups
+
+**Prompt**
+
+> - Arrow bar: "Keep 3:1 for arrows (Recommended)"
+> - Ccy code: "Secondary text colour (Recommended)"
+> - Cancel flash: "Fade and strike only (Recommended)"
+> - Page flash: "Loaded pages do not flash (Recommended)"
+> - Light tint: "Darker text during flash (Recommended)"
+> - Skip link: "Target what is shown (Recommended)"
+> - Panel book: "Leave it out (Recommended)"
+> - Limit detail: "Show it on the error line (Recommended)"
+> - Status line: "A plain sentence (Recommended)"
+> - Two holds: "Account lock first (Recommended)"
+> - Lock title: "Keep 'Too many requests' (Recommended)"
+
+**Outcome:** Eleven choices from the grid, filters and follow-up lanes were settled, covering
+contrast floors, which changes flash, where the skip link lands and the cancellation wording. The
+owner took the dispatcher's plain sentence over an agent's status line, and the secondary text
+colour over the lane's muted one, which fell short of 4.5:1.
+
+**Commits:** `7177941`, `72837ca`, `5ceaa95`, `283544f`, `22871e0`, `46c9a97`, `3956928`, `8681a05`, `afb94c5`, `455e141`
+
+---
+
+### 2026-09-15T10:56Z - date_gate_timing
+
+**Prompt**
+
+> - Gate timing: "After typing pauses (Recommended)"
+
+**Outcome:** A browser probe had shown the date message flickering on three of four keystrokes while
+a year was retyped, so the owner chose to show it once the value settles for about a second or the
+box loses focus, with the invalid pair kept out of the URL either way.
+
+**Commits:** `80e32d9`
+
+---
+
+### 2026-09-15T12:52Z - last_polish_decisions
+
+**Prompt**
+
+> - Cancel note: "Drop opener, button says Close (Recommended)"
+> - Skip on load: "The loading placeholder (Recommended)"
+> - Flash text: "Primary text on every flash (Recommended)"
+> - Date message: "Stay until the range is valid (Recommended)"
+> - File split: "Split by concern (Recommended)"
+
+**Outcome:** Five choices from the polish lane were settled, including primary text on every
+flashing cell so the currency code clears 4.5:1, and splitting the ticket form logic under the
+owner's structure rule. On the date message the owner took the dispatcher's recommendation to keep
+it showing until the range is valid over the lane's suggestion to hide it while typing.
+
+**Commits:** `6d4132b`, `7fa6e18`, `52de593`, `cf00260`, `8b82e18`, `11c94bb`
+
+---
+
+### 2026-09-15T13:37Z - arrow_floor_and_message_spot
+
+**Prompt**
+
+> - Arrow floor: "Accept, note the method (Recommended)"
+> - Message spot: "Move with the edit (Recommended)"
+
+**Outcome:** The owner accepted arrows at 3:1 measured on the row ground, with about 2.6:1 under the
+full corner glow recorded in the stylesheet, and kept the date message under whichever box is being
+edited.
+
+**Commits:** `70a1775`
