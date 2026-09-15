@@ -307,3 +307,42 @@ caret at once over a dimmed, busy grid, and half of the simulated amends drew fr
 active trades.
 
 **Commits:** `358fef4`, `19c7210`, `2d1340a`
+
+### 2026-09-15T12:31Z - polish_final_decisions (logged by dispatcher)
+
+**Prompt**
+
+> POLISH LANE (second attempt; the first stopped on an API limit before changing anything, and the worktree was verified clean): apply the owner's final decisions on top of the fully merged branch.
+>
+> WHERE YOU WORK
+> The git worktree D:\My Folder\tp-icap-take-home-assessment\.claude\worktrees\login-revamp on branch `checklist-review-fixes` (node_modules installed). Run every command from that directory. Commit there, staging only the files you changed by explicit path (never `git add -A` or `git add .`; the dispatcher keeps an untracked file under docs/). Do not push, merge, rebase or switch branches. Docker containers built from an earlier commit are running for later tests: do not start, stop or rebuild Docker, dev servers or Playwright.
+>
+> [... truncated: the rules, then eleven items, each quoting the owner's selection ("Secondary text colour", "Loaded pages do not flash", "Darker text during flash", "Target what is shown", "Show it on the error line", "A plain sentence", "Account lock first", "After typing pauses") or naming the earlier decision a mechanical fix implements (skeleton classes by construction, the cancel schema's copy, a stale lockout fixture), with what to build and the files the lane could touch.]
+
+**Outcome:** The currency code took the secondary text colour, pages loaded by scrolling stopped
+flashing, the neutral flash grew stronger with primary text, Skip to trades learned to reach the
+cards and empty states, and the ticket began showing the desk-limit detail and a plain sentence
+for a cancelled trade. The skeleton started importing the grid's own classes, the cancel schema's
+version rule and a stale fixture were tidied, and the date message began waiting for typing to
+pause.
+
+**Commits:** `7177941`, `72837ca`, `5ceaa95`, `283544f`, `22871e0`, `46c9a97`, `3956928`, `8681a05`, `afb94c5`, `80e32d9`, `455e141`
+
+### 2026-09-15T13:10Z - final_followup_decisions (logged by dispatcher)
+
+**Prompt**
+
+> FINAL FOLLOW-UP LANE: apply the owner's last decisions on top of the merged and polished branch.
+>
+> WHERE YOU WORK
+> The git worktree D:\My Folder\tp-icap-take-home-assessment\.claude\worktrees\login-revamp on branch `checklist-review-fixes` (node_modules installed). Run every command from that directory. Commit there, staging only the files you changed by explicit path (never `git add -A` or `git add .`; the dispatcher keeps an untracked file under docs/). Use `git mv` for moves. Do not push, merge, rebase or switch branches. A Playwright run is testing Docker containers built from an earlier commit right now: do not start, stop or rebuild Docker, dev servers or Playwright.
+>
+> [... truncated: the rules, then six items quoting the owner's selections ("Drop opener, button says Close", "The loading placeholder", "Primary text on every flash", "Stay until the range is valid", "Split by concern") and the already-decided phone card colour, each with what to build and the files the lane could touch.]
+
+**Outcome:** A cancelled trade's conflict note shrank to its sentence and a Close button, Skip to
+trades began landing on the loading area during the first load, every flashing cell's text switched
+to the primary colour, and the date message stayed up until the range was valid. The ticket form
+logic split into values, amend, errors and conflict modules with its shared types in
+`types/ticket.ts`, and the phone cards' currency code took the secondary text colour.
+
+**Commits:** `6d4132b`, `7fa6e18`, `52de593`, `cf00260`, `8b82e18`, `11c94bb`
