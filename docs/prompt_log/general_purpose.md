@@ -191,3 +191,119 @@ repository `CLAUDE.md` fallback puts the entry on the dispatcher in that case.
 **Outcome:** Moved the Prisma schema, migrations and config into a new `@blotter/database` workspace with its own Postgres image, migration-runner image and included compose file, repointed the backend, the root scripts, CI and the Dockerfiles at it, and rewrote `database/README.md` around the entity diagram, the trigger, the migrations and the seed. Verified typecheck clean, the unit tier at shared 30, backend 170 and frontend 38, the integration tier at 35, `db:status` reporting no pending migrations, and a clean compose project on alternate ports in which `migrate` exited 0 after applying all four migrations and the API answered 200 on `/ready`.
 
 **Commits:** `d56b118`, `e38295b`
+
+### 2026-09-15T09:22Z - lane_trade_copy_and_amend_lock (logged by dispatcher)
+
+The four lanes below ran in parallel worktrees and were told not to write this file, so four
+branches appending one file would not conflict. The dispatcher wrote their entries after merging.
+
+**Prompt**
+
+> LANE 2 of 4: trade validation copy, the counterparty field, counterparty locked on amend.
+>
+> [... cut: the common rules every lane received (own worktree, setup commands, never touch env or key files, no Docker or Playwright runs, no docs, no dependencies, only the listed files, the owner decides everything, the skills to load, naming and Tailwind conventions, tests first, the verification commands, commit and report format, the copy style), then the lane's verified diagnosis of the trade schema, the ticket form and the amend path ...]
+>
+> OWNER DECISIONS (verbatim from the owner's selections)
+> 1. Error text, "In the shared schemas": each rule in shared/src/schemas carries its own sentence ('Enter a quantity', 'Quantity must be a whole number above zero', 'Enter a counterparty'), so the form and the API's 422 say the same thing. An emptied number box reads as missing, not 0.
+> 2. Ticket, both of: "Mark Counterparty required" (required marker and an 'Enter a counterparty' message; still starts empty) and "Counterparty suggestions" (type-ahead over the known banks that still accepts a new name, the same pattern the Book field already uses; the bank list moves into shared so the seed and the form read one list).
+> 3. Amend scope, "Lock counterparty": Counterparty joins symbol, side and time as locked. The form says to cancel and rebook to change it; the API rejects it with a plain 422. Book, price and quantity stay amendable. Amend schema stays a .pick() of the canonical schema.
+>
+> [... truncated: the exact sentence for every trade rule, how the amend schema refuses a counterparty, the locked field's hint, the empty number box and required marker, the shared counterparty list, form-level server errors, the e2e specs to update, and the files the lane could touch.]
+
+**Outcome:** Every trade rule in the shared schema gained the sentence the ticket and the API's 422
+both show, an emptied quantity or price began reading as missing, and Counterparty became required
+with suggestions from one shared bank list. Amendments stopped accepting a counterparty, which the
+API refused with a 422 telling the trader to cancel and rebook while the ticket locked the field.
+
+**Commits:** `84820c0`, `e62c55c`, `6123b60`
+
+### 2026-09-15T09:25Z - lane_theme_and_lockout (logged by dispatcher)
+
+**Prompt**
+
+> LANE 1 of 4: theme persistence and login lockout.
+>
+> [... cut: the common rules in the entry above, then the lane's verified diagnosis: the root layout importing the theme key from a client module so its pre-paint script read `undefined`, and a server-enforced lockout whose countdown lived only in React state ...]
+>
+> OWNER DECISIONS (verbatim from the owner's selections)
+> 1. Theme, "Shared key, backup, test": Move theme_storage_key to frontend/src/lib/theme/themeStorage.ts (no 'use client'). ThemeProvider re-applies the stored choice after hydration. Playwright reload test written red first.
+> 2. Lockout, "Remember, Retry-After, test": Browser stores the lock expiry per lowercased username; typing that name again resumes the countdown and disables Sign in. API adds a Retry-After header on the locked-out 429 so the form stops parsing the sentence. Playwright test: five failures, reload, countdown back.
+> 3. Error text, shared across lanes, "In the shared schemas": each rule in shared/src/schemas carries its own sentence, so the form and the API's 422 say the same thing. Login shows per-field messages.
+>
+> [... truncated: what to build for the theme module and hydration backup, the Retry-After header and where the browser reads it, the per-username lock store, the login messages, the Playwright specs and the per-address rate limit they must respect, and the files the lane could touch.]
+
+**Outcome:** The theme key moved out of the client provider so the pre-paint script could read it,
+the provider began re-applying the saved theme after hydration, and the account lockout started
+sending `Retry-After`, which the sign-in form stored per username so the countdown survived a
+reload. Login fields gained the shared schema's plain-English messages, and the lane surfaced that
+the per-address limit also answered 429, which the owner then settled with a separate code.
+
+**Commits:** `197bcdd`, `c2fefbd`, `2c58c1d`, `9fcad87`, `ff597f0`, `1f4dacc`
+
+### 2026-09-15T09:47Z - lane_filters_dates_skeletons (logged by dispatcher)
+
+**Prompt**
+
+> LANE 4 of 4: filters on narrow screens, the date range gate, skeletons that match the layout.
+>
+> [... cut: the common rules in the lane 2 entry, then the lane's verified diagnosis: the rail hidden below lg with nothing to reopen it, date inputs writing every keystroke to the URL with nothing comparing them, and a restore state that replaced the whole shell with three bars ...]
+>
+> OWNER DECISIONS (verbatim from the owner's selections)
+> 1. Filters, "Filters button and panel": A 'Filters' button showing the active count sits in the toolbar below lg and opens the same FilterRail in a slide-over panel on tablet and phone, focus trapped like the dialogs, Escape closes. One component, one behaviour.
+> 2. Date gate, "Form gate plus API rule": Each date input keeps a draft. An invalid pair shows 'From must be on or before To' (or the To wording) under the field you changed, marks it invalid, and the grid keeps the last valid range. The calendar greys out impossible dates. The shared query schema also rejects from after to with a 422 in the same words.
+> 3. Skeleton, "Real chrome, shared layout": Top bar, nav and phone tabs render during session restore (pill shows CONNECTING); only data areas pulse, built from the same constants the real components use: grid tracks per breakpoint, 32px rows, tile grid, 216px rail, card shape. Per route. Matches by construction.
+> 4. Error text, shared across lanes: plain-English messages live in the shared schemas.
+>
+> [... truncated: what to build for the panel, the draft-based gate and its zod 4 refinement limits, the query messages, the restore frame and token guard, the per-route skeletons, and the files the lane could touch.]
+
+**Outcome:** Below 1024px a Filters button began opening the same rail in a slide-over panel, the
+date inputs started holding back a From later than To under the edited field while the shared query
+schema refused the pair with a 422, and the frame stayed on screen during session restore with
+per-page skeletons. The lane found that zod 4.6 throws on `.omit()` of a refined object and derived
+the frontend query shape from the schema's `.shape` instead.
+
+**Commits:** `f05b16f`, `fb9c772`, `45d48bf`
+
+### 2026-09-15T10:03Z - followup_lockout_copy_and_conflict (logged by dispatcher)
+
+**Prompt**
+
+> FOLLOW-UP LANE: apply six owner decisions on top of merged work.
+>
+> WHERE YOU WORK
+> The git worktree D:\My Folder\tp-icap-take-home-assessment\.claude\worktrees\login-revamp on branch `checklist-review-fixes` (node_modules already installed). Run every command from that directory. Commit there. Do not push, merge, rebase or switch branches. The dispatcher will not edit files while you work. Two other lanes are still running in separate worktrees and will be merged later, so stay strictly inside YOUR FILES below.
+>
+> [... truncated: the rules, the verified current state of the lockout, sign-in form, counterparty marker, desk-limit copy and conflict note, the owner's six selections quoted verbatim ("New locked_out code", "Lock on the fifth", "Enable and explain", "Hide when locked", "Rewrite in trader terms", "Labels and formatted values") each with what to build, and the files the lane could touch.]
+
+**Outcome:** The account lockout gained its own `locked_out` code answered on the fifth failure,
+Sign in stayed pressable with a message under a blank field, and the sign-in form learned to tell an
+account lock from the address limit and to forget a lock after a successful login. The desk-limit
+refusal began naming the trade's worth and the limit in dollars or pounds, the counterparty marker
+showed on new tickets only, and conflict notes used the ticket's labels and formatted values.
+
+**Commits:** `a8aa0b0`, `ba7e09c`, `b880941`, `238d039`, `c32cb27`, `533055f`, `8d60e68`, `fba5451`
+
+### 2026-09-15T10:08Z - lane_flash_sort_keyboard (logged by dispatcher)
+
+**Prompt**
+
+> LANE 3 of 4: grid flashes, sort feedback, keyboard navigation, simulated amends.
+>
+> [... cut: the common rules in the lane 2 entry, then the lane's verified diagnosis: row flashes that fired only on amendments to a random trade out of about 5,000, a sort with no pending cue, and keyboard focus tracked by row index, pulled out by the drawer and lost on jumps ...]
+>
+> OWNER DECISIONS (verbatim from the owner's selections)
+> 1. Flash, "Spec cells, recent amends": On an amend, flash only the changed cells: green or red with the arrow on price, 333ms per-cell throttle, contrast re-checked in both themes, restarted on every version. The simulated desk amends recent trades more often. Matches Anticipation.html motion spec and spec U-M4/U-M13.
+> 2. Flash duration, "Spec 300ms": the amend cell flash lasts 300ms, ease-out to neutral. (The owner accepted that a 300ms single-cell flash is easy to miss.)
+> 3. Amend bias, "Half from the newest 30": Half of simulated amends pick one of the 30 newest active trades; the other half stay spread over the whole book.
+> 4. Sort, "Anticipation spec pattern": Caret moves the instant you click, a 2px bar runs under the header while loading, current rows dim to 55% but stay clickable, grid gets aria-busy, and the re-sorted page does not fire cyan 'new' flashes.
+> 5. Keyboard, "Panel follows focus": Arrow keys keep moving through trades while the open panel shows the focused trade, so a trader scans without leaving the grid. Tab moves into the panel; Escape closes it and focus stays on the row. Also: focus tracked by trade id so live inserts do not shift it, jumps wait for the row to render, a focus ring separate from selection, a 'Skip to trades' link, and clicking a row sets keyboard focus there.
+>
+> [... truncated: what to build for per-cell flashes, reduced motion and the contrast table, the sort pending state, the keyboard model and skip link, the repository read for recent trades, and the files the lane could touch.]
+
+**Outcome:** Amend flashes moved from the row to the changed cells with a 300ms tint, a direction
+arrow and an 800ms still tint under reduced motion, and keyboard focus began following the trade id
+with a detail panel that tracked the arrow keys and a Skip to trades link. A clicked sort moved its
+caret at once over a dimmed, busy grid, and half of the simulated amends drew from the newest 30
+active trades.
+
+**Commits:** `358fef4`, `19c7210`, `2d1340a`
