@@ -85,12 +85,14 @@
   --rule:      rgba(157, 176, 202, .12);
   --rule_soft: rgba(157, 176, 202, .07);
 
-  /* flash tints (U-M4, U-M13). The amend tints are as strong as they can be while the text in the
-     cell keeps 4.5:1 and the direction arrows keep 3:1 over the tint on a plain, hovered or
-     selected row. The insert tint is unchanged. */
+  /* flash tints (U-M4, U-M13). The up and down tints are as strong as they can be while primary text
+     keeps 4.5:1 and the direction arrows keep 3:1 over the tint on a plain, hovered or selected row.
+     The neutral tint matches their strength, measured as the tinted cell's contrast with its row, and
+     its cell shows all its text in the primary colour while it flashes, which keeps 4.5:1. The insert
+     tint is unchanged. */
   --flash_up:      rgba(70, 212, 160, .35);
   --flash_down:    rgba(245, 133, 152, .43);
-  --flash_changed: rgba(157, 176, 202, .25);
+  --flash_changed: rgba(157, 176, 202, .38);
   --flash_new:     rgba(34, 211, 238, .14);
 
   /* large empty grounds and the door: an engineering grid at the row rhythm, an edge light for a
@@ -175,7 +177,7 @@
 
     --flash_up:      rgba(4, 120, 87, .24);
     --flash_down:    rgba(190, 18, 60, .18);
-    --flash_changed: rgba(15, 27, 42, .06);
+    --flash_changed: rgba(15, 27, 42, .15);
     --flash_new:     rgba(8, 145, 178, .10);
 
     --grid_line:    rgba(15, 27, 42, .05);
@@ -257,7 +259,7 @@
 
   --flash_up:      rgba(4, 120, 87, .24);
   --flash_down:    rgba(190, 18, 60, .18);
-  --flash_changed: rgba(15, 27, 42, .06);
+  --flash_changed: rgba(15, 27, 42, .15);
   --flash_new:     rgba(8, 145, 178, .10);
 
   --grid_line:    rgba(15, 27, 42, .05);

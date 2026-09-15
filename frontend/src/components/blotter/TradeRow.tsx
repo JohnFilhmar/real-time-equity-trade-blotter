@@ -27,12 +27,13 @@ export interface TradeRowProps {
 /**
  * Tint animation per movement, with a still tint in its place when the user has turned motion off.
  * The negative margins and matching padding grow the tint to nearly the row's height without moving
- * the cell's content.
+ * the cell's content. For as long as a neutral flash is attached, everything in the cell takes the
+ * primary text colour, which keeps 4.5:1 over a tint as strong as the up and down ones.
  */
 const cell_flash_classes: Record<CellFlashKind, string> = {
   up: 'animate-flash-up motion-reduce:animate-flash-hold-up',
   down: 'animate-flash-down motion-reduce:animate-flash-hold-down',
-  changed: 'animate-flash-changed motion-reduce:animate-flash-hold-changed',
+  changed: 'animate-flash-changed motion-reduce:animate-flash-hold-changed text-text **:text-text',
 };
 
 /**
