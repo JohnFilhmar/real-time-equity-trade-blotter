@@ -1,6 +1,6 @@
 'use client';
 
-import { keepPreviousData, useInfiniteQuery, useQuery, type UseInfiniteQueryResult, type UseQueryResult } from '@tanstack/react-query';
+import { hashKey, keepPreviousData, useInfiniteQuery, useQuery, type UseInfiniteQueryResult, type UseQueryResult } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import type { Trade, TradeEvent } from '@blotter/shared';
 import { get_trade, list_trade_events, list_trades } from '@/lib/api/tradeApi';
@@ -19,6 +19,12 @@ export interface TradesResult {
   rows: readonly Trade[];
   /** How many trades match the filters, from the server. */
   total: number;
+  /**
+   * Names the list the rows belong to, or `null` while rows from the previous filters stand in as a
+   * placeholder. It changes exactly when rows for a new sort or filter land, which is how the grid
+   * tells a re-sorted page from trades that just arrived.
+   */
+  view_key: string | null;
 }
 
 /**
@@ -49,8 +55,9 @@ export function useTrades(list_query: TradeListQuery): TradesResult {
 
   const rows = useMemo(() => query.data?.pages.flatMap((page) => page.data) ?? [], [query.data]);
   const total = query.data?.pages[0]?.total ?? 0;
+  const view_key = query.isPlaceholderData ? null : hashKey(trade_keys.list(list_query));
 
-  return { query, rows, total };
+  return { query, rows, total, view_key };
 }
 
 /**
