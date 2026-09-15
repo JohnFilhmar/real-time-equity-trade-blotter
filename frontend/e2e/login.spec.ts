@@ -1,13 +1,20 @@
 import { ensure_auth_budget, expect, test } from './test-utils';
 
 // The door, as a person arriving at it sees it: the desk panel and the heading are on screen
-// before the session check answers, the clock runs, the readiness line reports the API, a wrong
-// password lands in the reserved line without moving the button, and the theme can be changed
-// before signing in. Signing in itself is covered by every other journey through the shared desk.
+// before the session check answers, the clock runs, the readiness line reports the API, Sign in
+// with blank boxes says what is missing under each box and sends nothing, a wrong password lands in
+// the reserved line without moving the button, and the theme can be changed before signing in.
+// Signing in itself is covered by every other journey through the shared desk.
 test.describe('the login page @critical', () => {
   test('shows the desk, keeps the form still on an error, and offers the theme switch', async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
+    const login_requests: string[] = [];
+    page.on('request', (request) => {
+      if (request.url().endsWith('/api/v1/auth/login')) {
+        login_requests.push(request.url());
+      }
+    });
     await page.goto('/login');
 
     await expect(page.getByRole('complementary', { name: 'Desk' })).toBeVisible();
@@ -23,10 +30,15 @@ test.describe('the login page @critical', () => {
     await expect(page.getByRole('status').filter({ hasText: /ready/ }).first()).toBeVisible();
 
     const submit = page.getByRole('button', { name: 'Sign in to the desk' });
-    await expect(submit).toBeDisabled();
-    await page.fill('#login_username', 'nobody');
-    await page.fill('#login_password', 'not-the-password');
     await expect(submit).toBeEnabled();
+    await submit.click();
+    await expect(page.locator('#login_username_message')).toHaveText('Enter your username');
+    await expect(page.locator('#login_password_message')).toHaveText('Enter your password');
+    expect(login_requests).toHaveLength(0);
+
+    // A name no account has, so repeated runs never build up failures against a shared one.
+    await page.fill('#login_username', `nobody_e2e_${Math.random().toString(36).slice(2, 10)}`);
+    await page.fill('#login_password', 'not-the-password');
 
     const before = await submit.boundingBox();
     await submit.click();
@@ -38,14 +50,14 @@ test.describe('the login page @critical', () => {
     await context.close();
   });
 
-  // Five failures lock an account, and the API says so on the next attempt with a Retry-After
-  // header. The browser remembers the lock against the username, so a reload does not hand back a
-  // sign-in button the API would refuse. The name belongs to no account, so the run never locks a
-  // demo login; an unknown name locks exactly like a real one.
-  test('a locked account counts down, and the countdown is back after a reload', async ({ browser, request }) => {
+  // Five failures lock an account, and the fifth answer is the lock itself: a 429 with the
+  // locked_out code and a Retry-After header. The browser remembers the lock against the username,
+  // so a reload does not hand back a sign-in button the API would refuse. The name belongs to no
+  // account, so the run never locks a demo login; an unknown name locks exactly like a real one.
+  test('a locked account counts down from the fifth failure, and the countdown is back after a reload', async ({ browser, request }) => {
     test.slow();
-    // One session restore on arrival, six attempts, and one restore after the reload.
-    await ensure_auth_budget(request, 8);
+    // One session restore on arrival, five attempts, and one restore after the reload.
+    await ensure_auth_budget(request, 7);
 
     const username = `lockout_e2e_${Math.random().toString(36).slice(2, 10)}`;
     const context = await browser.newContext();
@@ -59,7 +71,7 @@ test.describe('the login page @critical', () => {
     await page.fill('#login_username', username);
     await page.fill('#login_password', 'not-the-password');
 
-    for (let attempt = 1; attempt <= 5; attempt += 1) {
+    for (let attempt = 1; attempt <= 4; attempt += 1) {
       const answer = login_answer();
       await submit.click();
       expect((await answer).status()).toBe(401);
@@ -72,7 +84,7 @@ test.describe('the login page @critical', () => {
     const locked = await locked_answer;
     expect(locked.status()).toBe(429);
     expect(Number(locked.headers()['retry-after'])).toBeGreaterThan(0);
-    expect(await locked.json()).toMatchObject({ detail: expect.stringContaining('Too many failed attempts') });
+    expect(await locked.json()).toMatchObject({ code: 'locked_out', detail: expect.stringContaining('Too many failed attempts') });
     await expect(alert).toContainText(countdown);
     await expect(submit).toBeDisabled();
 
