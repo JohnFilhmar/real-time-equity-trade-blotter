@@ -121,4 +121,30 @@ describe('LoginForm', () => {
     expect(sign_in_button()).toBeEnabled();
     expect(login_locks.read('jsmith', Date.now())).toBeNull();
   });
+
+  it('keeps Sign in pressable with blank boxes, says what is missing under each, and sends nothing', async () => {
+    render(<LoginForm />);
+
+    expect(sign_in_button()).toBeEnabled();
+    await press_sign_in();
+
+    expect(document.getElementById('login_username_message')).toHaveTextContent('Enter your username');
+    expect(document.getElementById('login_password_message')).toHaveTextContent('Enter your password');
+    expect(login).not.toHaveBeenCalled();
+  });
+
+  it('forgets a lock saved for the username once signing in succeeds', async () => {
+    login.mockImplementation((credentials) => {
+      // Another tab records a lock for this name while the request is out.
+      login_locks.remember(credentials.username, Date.now() + 900_000, Date.now());
+      return Promise.resolve();
+    });
+    render(<LoginForm />);
+
+    type_credentials('jsmith', 'blotter-demo-2026');
+    await press_sign_in();
+
+    expect(login).toHaveBeenCalledWith({ username: 'jsmith', password: 'blotter-demo-2026' });
+    expect(login_locks.read('jsmith', Date.now())).toBeNull();
+  });
 });

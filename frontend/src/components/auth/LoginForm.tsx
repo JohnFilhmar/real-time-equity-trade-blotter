@@ -52,14 +52,15 @@ function to_field_messages(errors: readonly ProblemFieldError[]): FieldMessages 
  *
  * Validation runs the shared login schema before anything is sent, and a 422 from the API lands in
  * the same place, so the message under a field reads the same whichever side caught the mistake.
- * Caps Lock is reported in the password field's own message line, because five failures lock the
- * account and a stuck Caps Lock is the commonest cause. An account lock becomes a countdown in the
- * reserved error line and holds the button until it ends; the lock is remembered against the
- * username in this browser, so a reload, or typing that name again later, brings the countdown
- * back. The per-address limit gets a countdown of its own, which holds the button whatever name is
- * typed and is not remembered, because it says nothing about any one account. And the button and
- * the line beneath it say what is happening after submit, each state tied to a real event rather
- * than a timer.
+ * Sign in stays pressable with a blank box, so pressing it says what is missing instead of doing
+ * nothing. Caps Lock is reported in the password field's own message line, because five failures
+ * lock the account and a stuck Caps Lock is the commonest cause. An account lock becomes a
+ * countdown in the reserved error line and holds the button until it ends; the lock is remembered
+ * against the username in this browser, so a reload, or typing that name again later, brings the
+ * countdown back, and a successful sign-in forgets it. The per-address limit gets a countdown of
+ * its own, which holds the button whatever name is typed and is not remembered, because it says
+ * nothing about any one account. And the button and the line beneath it say what is happening
+ * after submit, each state tied to a real event rather than a timer.
  *
  * @returns The form.
  */
@@ -145,6 +146,7 @@ export function LoginForm(): ReactNode {
     setPhase('sending');
     try {
       await login(parsed.data);
+      login_locks.forget(parsed.data.username, Date.now());
       setPhase('opening');
     } catch (error) {
       setPhase('idle');
@@ -210,7 +212,7 @@ export function LoginForm(): ReactNode {
 
       <FieldError message={message} lines={2} />
 
-      <Button type="submit" variant="primary" block className="h-9.5" disabled={phase !== 'idle' || locked || network_held || username.length === 0 || password.length === 0}>
+      <Button type="submit" variant="primary" block className="h-9.5" disabled={phase !== 'idle' || locked || network_held}>
         {button_copy[phase]}
       </Button>
 
