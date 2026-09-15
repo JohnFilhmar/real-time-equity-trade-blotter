@@ -49,9 +49,13 @@ describe('changed_cells', () => {
   });
 
   it('marks a changed text column as changed, keyed by that column', () => {
-    const cells = changed_cells(a_trade(), a_trade({ version: 2, counterparty: 'Nomura', book: 'TECH_GROWTH' }));
+    const cells = changed_cells(a_trade(), a_trade({ version: 2, book: 'TECH_GROWTH' }));
 
-    expect(Object.fromEntries(cells)).toEqual({ counterparty: 'changed', book: 'changed' });
+    expect(Object.fromEntries(cells)).toEqual({ book: 'changed' });
+  });
+
+  it('lights nothing for a field an amendment cannot change, such as the counterparty', () => {
+    expect(changed_cells(a_trade(), a_trade({ version: 2, counterparty: 'Nomura' })).size).toBe(0);
   });
 
   it('lights nothing when a new version changed no cell, such as an amendment back to the same price', () => {
