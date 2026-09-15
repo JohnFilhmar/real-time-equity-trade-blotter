@@ -2,6 +2,7 @@ import {
   amend_trade_schema,
   create_trade_schema,
   find_instrument,
+  validation_failed_detail,
   type AmendTrade,
   type CreateTrade,
   type Trade,
@@ -118,6 +119,20 @@ export function to_ticket_errors(errors: readonly ProblemFieldError[]): TicketEr
     mapped[key] ??= error.message;
   }
   return mapped;
+}
+
+/**
+ * Maps the API's validation refusal onto the ticket: each field message beside its input, and the
+ * problem's detail on the form line too unless it is the generic sentence every schema failure
+ * carries. A rule with a detail of its own, such as the desk limit, is then explained in full.
+ *
+ * @param detail - The problem's detail.
+ * @param errors - The problem's field errors, in the API's shape.
+ * @returns Messages keyed by input, plus the detail on the form line unless it is the generic sentence.
+ */
+export function to_refusal_errors(detail: string, errors: readonly ProblemFieldError[]): TicketErrors {
+  const mapped = to_ticket_errors(errors);
+  return detail === validation_failed_detail ? mapped : { ...mapped, form: detail };
 }
 
 /**

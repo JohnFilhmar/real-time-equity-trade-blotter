@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Trade } from '@blotter/shared';
+import { validation_failed_detail, type Trade } from '@blotter/shared';
 import { to_datetime_local_value } from '@/lib/format/clock';
 import {
   describe_conflict,
@@ -7,6 +7,7 @@ import {
   parse_amend,
   parse_create,
   shows_required,
+  to_refusal_errors,
   to_ticket_errors,
   type TicketErrors,
   type TicketValues,
@@ -211,6 +212,25 @@ describe('to_ticket_errors', () => {
         { field: '', message: 'One or more fields failed validation.' },
       ]),
     ).toEqual({ book: 'Enter a book', form: 'Reload the trade and try again' });
+  });
+});
+
+describe('to_refusal_errors', () => {
+  it('puts a desk-limit refusal on the form line as well as beside the quantity', () => {
+    expect(
+      to_refusal_errors('This trade is worth £41,000,000, over the £40,000,000 limit for London names.', [
+        { field: 'quantity', message: 'This trade is over the desk limit. Lower the quantity or price.' },
+      ]),
+    ).toEqual({
+      quantity: 'This trade is over the desk limit. Lower the quantity or price.',
+      form: 'This trade is worth £41,000,000, over the £40,000,000 limit for London names.',
+    });
+  });
+
+  it("leaves the API's generic sentence for a plain validation failure off the form line", () => {
+    expect(to_refusal_errors(validation_failed_detail, [{ field: 'price', message: 'Price must be above zero' }])).toEqual({
+      price: 'Price must be above zero',
+    });
   });
 });
 

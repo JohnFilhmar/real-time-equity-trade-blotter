@@ -3,6 +3,7 @@ import { ZodError } from 'zod';
 import {
   problem_content_type,
   problem_type_for,
+  validation_failed_detail,
   type Problem,
   type ProblemCode,
   type ProblemFieldError,
@@ -91,7 +92,7 @@ export const error_handler: ErrorRequestHandler = (error, req, res, _next) => {
         build_problem(
           error_codes.validation_failed,
           422,
-          'One or more fields failed validation.',
+          validation_failed_detail,
           instance,
           request_id,
           errors,

@@ -74,6 +74,7 @@ export {
   problem_codes,
   problem_content_type,
   problem_type_for,
+  validation_failed_detail,
 } from './schemas/problem.js';
 
 export type { Problem, ProblemCode, ProblemFieldError } from './schemas/problem.js';

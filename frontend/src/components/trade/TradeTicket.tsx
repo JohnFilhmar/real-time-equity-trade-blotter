@@ -23,7 +23,7 @@ import {
   parse_amend,
   parse_create,
   shows_required,
-  to_ticket_errors,
+  to_refusal_errors,
   type TicketErrors,
   type TicketValues,
 } from './ticketForm';
@@ -43,9 +43,11 @@ const known_books = Array.from(new Set(instruments.map((instrument) => instrumen
 
 /**
  * The trade ticket, for booking and for amending. Validation runs the shared schema the server
- * runs, so the ticket cannot accept what the API would refuse. An amendment sends only the fields
- * that changed, with the version last seen; a 409 shows what moved and offers the current values
- * rather than retrying over the other desk's change.
+ * runs, so the ticket cannot accept what the API would refuse. A rule only the server checks, such
+ * as the desk limit, comes back as a 422 whose field messages sit beside their inputs and whose
+ * detail sits on the form line. An amendment sends only the fields that changed, with the version
+ * last seen; a 409 shows what moved and offers the current values rather than retrying over the
+ * other desk's change.
  *
  * @param props - Mode, close handler, and the success handler.
  * @returns The dialog.
@@ -89,7 +91,7 @@ export function TradeTicket({ mode, onClose, onBooked }: TradeTicketProps): Reac
 
   const on_error = (error: { code: string; detail: string; errors: readonly { field: string; message: string }[] }): void => {
     if (error.code === 'validation_failed' && error.errors.length > 0) {
-      setErrors(to_ticket_errors(error.errors));
+      setErrors(to_refusal_errors(error.detail, error.errors));
       return;
     }
     if (error.code === 'conflict' && base !== null) {

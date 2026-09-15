@@ -8,6 +8,7 @@ import {
   trade_list_schema,
   trade_schema,
   trade_sort_columns,
+  validation_failed_detail,
   type Trade,
   type TradeEvent,
 } from '@blotter/shared';
@@ -249,6 +250,7 @@ describe(`GET ${api_prefix}/trades`, () => {
 
     expect(response.status).toBe(422);
     expect(response.body.code).toBe('validation_failed');
+    expect(response.body.detail).toBe(validation_failed_detail);
   });
 
   it('refuses a trade-date range whose From falls after its To, naming the From field', async () => {

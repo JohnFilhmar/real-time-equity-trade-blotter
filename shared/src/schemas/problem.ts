@@ -19,6 +19,13 @@ export type ProblemCode = (typeof problem_codes)[keyof typeof problem_codes];
 export const problem_content_type = 'application/problem+json';
 
 /**
+ * The detail of a validation failure with nothing to add to its field errors, which is every request
+ * the schemas refuse. A client that shows the field messages can leave this sentence out, while a
+ * rule with a detail of its own, such as the desk limit, still reaches the person.
+ */
+export const validation_failed_detail = 'One or more fields failed validation.';
+
+/**
  * Builds the `type` URI for a code.
  *
  * RFC 9457 permits a relative reference, and a relative one is the honest choice here: there is no
