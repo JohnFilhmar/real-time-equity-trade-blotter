@@ -196,6 +196,23 @@ export function parse_amend(values: TicketValues, trade: Trade): { ok: true; inp
 /** A trade field the conflict note compares. */
 type ConflictField = keyof Pick<Trade, 'quantity' | 'price' | 'book' | 'counterparty'>;
 
+/**
+ * What the ticket's conflict note says. An amendment by another desk lists the fields that moved,
+ * under the note's opener and beside the offer to reopen on the current values. A cancellation is
+ * one sentence and nothing else, since nothing is left to reopen and amend.
+ */
+export type ConflictNote =
+  | {
+      kind: 'amended';
+      /** One line per field that differs, in ticket order. Empty when only the version moved. */
+      lines: string[];
+    }
+  | {
+      kind: 'cancelled';
+      /** The whole note. */
+      sentence: string;
+    };
+
 /** The fields the conflict note compares, in the order it lists them, under the ticket's labels. */
 const conflict_fields: readonly { field: ConflictField; label: string }[] = [
   { field: 'quantity', label: 'Quantity' },
@@ -204,7 +221,7 @@ const conflict_fields: readonly { field: ConflictField; label: string }[] = [
   { field: 'counterparty', label: 'Counterparty' },
 ];
 
-/** What the conflict note says when the other desk's change was a cancellation. */
+/** The whole conflict note when the other desk's change was a cancellation. */
 const cancelled_conflict_line = 'Another desk cancelled this trade, so it can no longer be amended.';
 
 /**
@@ -225,21 +242,25 @@ function show_field(trade: Trade, field: ConflictField): string {
 }
 
 /**
- * Lists what changed between the trade the form was opened on and the trade as the server now
- * holds it, for the conflict note. Each line names the field as the ticket labels it and shows
- * both values as the ticket shows them, such as `Quantity 1,300 → 1,400`. A trade another desk
- * has cancelled gets one plain sentence instead, since none of its values can be amended any more.
+ * Describes the other desk's change for the conflict note. After an amendment it lists what differs
+ * between the trade the form was opened on and the trade as the server now holds it: each line
+ * names the field as the ticket labels it and shows both values as the ticket shows them, such as
+ * `Quantity 1,300 → 1,400`. After a cancellation it gives only the sentence saying the trade can no
+ * longer be amended.
  *
  * @param base - The trade the form started from.
  * @param current - The trade now.
- * @returns The cancellation sentence when the trade is now cancelled, otherwise one line per
- * differing field in ticket order, which is empty when only the version moved.
+ * @returns `cancelled` with its sentence when the trade is now cancelled, otherwise `amended` with
+ * one line per differing field in ticket order, which is empty when only the version moved.
  */
-export function describe_conflict(base: Trade, current: Trade): string[] {
+export function describe_conflict(base: Trade, current: Trade): ConflictNote {
   if (current.status === 'CANCELLED') {
-    return [cancelled_conflict_line];
+    return { kind: 'cancelled', sentence: cancelled_conflict_line };
   }
-  return conflict_fields
-    .filter(({ field }) => base[field] !== current[field])
-    .map(({ field, label }) => `${label} ${show_field(base, field)} → ${show_field(current, field)}`);
+  return {
+    kind: 'amended',
+    lines: conflict_fields
+      .filter(({ field }) => base[field] !== current[field])
+      .map(({ field, label }) => `${label} ${show_field(base, field)} → ${show_field(current, field)}`),
+  };
 }

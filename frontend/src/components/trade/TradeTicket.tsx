@@ -24,6 +24,7 @@ import {
   parse_create,
   shows_required,
   to_refusal_errors,
+  type ConflictNote,
   type TicketErrors,
   type TicketValues,
 } from './ticketForm';
@@ -41,13 +42,17 @@ export interface TradeTicketProps {
 
 const known_books = Array.from(new Set(instruments.map((instrument) => instrument.book)));
 
+/** The look of the button at the end of the conflict note. */
+const conflict_action_classes = 'font-semibold text-brand-lo underline';
+
 /**
  * The trade ticket, for booking and for amending. Validation runs the shared schema the server
  * runs, so the ticket cannot accept what the API would refuse. A rule only the server checks, such
  * as the desk limit, comes back as a 422 whose field messages sit beside their inputs and whose
  * detail sits on the form line. An amendment sends only the fields that changed, with the version
  * last seen; a 409 shows what moved and offers the current values rather than retrying over the
- * other desk's change.
+ * other desk's change. When that change was a cancellation, the note says only that, and its button
+ * closes the ticket.
  *
  * @param props - Mode, close handler, and the success handler.
  * @returns The dialog.
@@ -58,7 +63,7 @@ export function TradeTicket({ mode, onClose, onBooked }: TradeTicketProps): Reac
   const [base] = useState<Trade | null>(() => (mode.kind === 'amend' ? mode.trade : null));
   const [values, setValues] = useState<TicketValues>(() => initial_values(base));
   const [errors, setErrors] = useState<TicketErrors>({});
-  const [conflict, setConflict] = useState<{ current: Trade; lines: string[] } | null>(null);
+  const [conflict, setConflict] = useState<{ current: Trade; note: ConflictNote } | null>(null);
   const create = useCreateTrade();
   const amend = useAmendTrade();
   const gate = useMutationGate();
@@ -97,7 +102,7 @@ export function TradeTicket({ mode, onClose, onBooked }: TradeTicketProps): Reac
     if (error.code === 'conflict' && base !== null) {
       void get_trade(token, base.tradeId).then((current) => {
         settle_trade(query_client, current);
-        setConflict({ current, lines: describe_conflict(base, current) });
+        setConflict({ current, note: describe_conflict(base, current) });
       });
       setErrors({ form: error.detail });
       return;
@@ -233,19 +238,30 @@ export function TradeTicket({ mode, onClose, onBooked }: TradeTicketProps): Reac
 
       {conflict !== null ? (
         <Note tone="warn">
-          <b>Another desk changed this trade first.</b> {conflict.lines.length > 0 ? conflict.lines.join('; ') : 'The version moved.'}{' '}
-          <button
-            type="button"
-            className="font-semibold text-brand-lo underline"
-            onClick={() => {
-              setValues(initial_values(conflict.current));
-              setConflict(null);
-              setErrors({});
-              onClose();
-            }}
-          >
-            Close and reopen with the current values
-          </button>
+          {conflict.note.kind === 'cancelled' ? (
+            <>
+              {conflict.note.sentence}{' '}
+              <button type="button" className={conflict_action_classes} onClick={onClose}>
+                Close
+              </button>
+            </>
+          ) : (
+            <>
+              <b>Another desk changed this trade first.</b> {conflict.note.lines.length > 0 ? conflict.note.lines.join('; ') : 'The version moved.'}{' '}
+              <button
+                type="button"
+                className={conflict_action_classes}
+                onClick={() => {
+                  setValues(initial_values(conflict.current));
+                  setConflict(null);
+                  setErrors({});
+                  onClose();
+                }}
+              >
+                Close and reopen with the current values
+              </button>
+            </>
+          )}
         </Note>
       ) : null}
     </Dialog>
