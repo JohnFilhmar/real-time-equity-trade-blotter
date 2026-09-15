@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ZodType } from 'zod';
 import {
   amend_trade_schema,
+  cancel_trade_schema,
   create_trade_schema,
   trade_list_schema,
   trade_query_schema,
@@ -251,6 +252,19 @@ describe('amend_trade_schema', () => {
     expect(amended).not.toHaveProperty('symbol');
     expect(amended).not.toHaveProperty('side');
     expect(amended).not.toHaveProperty('tradeTimestamp');
+  });
+});
+
+describe('cancel_trade_schema', () => {
+  it('lets a client cancel without a version, and asks for a reload when the version it echoes is unusable', () => {
+    expect(cancel_trade_schema.safeParse({}).success).toBe(true);
+    expect(cancel_trade_schema.safeParse({ version: 3 }).success).toBe(true);
+
+    for (const version of [0, -1, 1.5, '3']) {
+      expect(messages_for(cancel_trade_schema, { version }, 'version')).toEqual([
+        'Reload the trade and try again',
+      ]);
+    }
   });
 });
 

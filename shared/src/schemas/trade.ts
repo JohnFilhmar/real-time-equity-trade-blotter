@@ -254,10 +254,11 @@ export const trade_list_schema = z.object({
  * Inbound shape for cancelling a trade.
  *
  * `version` is optional: a client holding the row echoes it back and gets a conflict rather than
- * cancelling something it has not seen, while a client cancelling blind is still allowed to.
+ * cancelling something it has not seen, while a client cancelling blind is still allowed to. The
+ * rule is the canonical one, so an unusable version asks for a reload here as it does on an amendment.
  */
 export const cancel_trade_schema = z.object({
-  version: z.int().positive().optional(),
+  version: trade_schema.shape.version.optional(),
 });
 
 /** A trade as it appears over the wire and in the client. */
