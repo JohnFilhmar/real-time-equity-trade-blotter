@@ -20,9 +20,10 @@ export interface TradesResult {
   /** How many trades match the filters, from the server. */
   total: number;
   /**
-   * Names the list the rows belong to, or `null` while rows from the previous filters stand in as a
-   * placeholder. It changes exactly when rows for a new sort or filter land, which is how the grid
-   * tells a re-sorted page from trades that just arrived.
+   * Names the list the rows belong to and how many of its pages are loaded, or `null` while rows
+   * from the previous filters stand in as a placeholder. It changes exactly when rows for a new sort
+   * or filter land and when the next page lands, which is how the grid tells rows it fetched from
+   * trades that just arrived.
    */
   view_key: string | null;
 }
@@ -55,7 +56,8 @@ export function useTrades(list_query: TradeListQuery): TradesResult {
 
   const rows = useMemo(() => query.data?.pages.flatMap((page) => page.data) ?? [], [query.data]);
   const total = query.data?.pages[0]?.total ?? 0;
-  const view_key = query.isPlaceholderData ? null : hashKey(trade_keys.list(list_query));
+  const page_count = query.data?.pages.length ?? 0;
+  const view_key = query.isPlaceholderData ? null : hashKey([...trade_keys.list(list_query), page_count]);
 
   return { query, rows, total, view_key };
 }
