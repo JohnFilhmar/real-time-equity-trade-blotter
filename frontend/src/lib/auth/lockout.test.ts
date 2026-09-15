@@ -1,18 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { format_lockout, lockout_seconds_from_detail } from './lockout';
+import { format_lockout, seconds_until } from './lockout';
 
-describe('lockout_seconds_from_detail', () => {
-  it('reads the seconds out of the lockout sentence the API sends', () => {
-    expect(lockout_seconds_from_detail('Too many failed attempts. Try again in 900 seconds.')).toBe(900);
+describe('seconds_until', () => {
+  it('counts whole seconds to the expiry, rounding a part second up', () => {
+    expect(seconds_until(10_000, 8_500)).toBe(2);
+    expect(seconds_until(900_000, 0)).toBe(900);
   });
 
-  it('returns null for any other problem detail', () => {
-    expect(lockout_seconds_from_detail('Invalid username or password.')).toBeNull();
-    expect(lockout_seconds_from_detail('Too many requests from this address.')).toBeNull();
-  });
-
-  it('returns null when the number is not a whole positive count', () => {
-    expect(lockout_seconds_from_detail('Try again in 0 seconds.')).toBeNull();
+  it('is zero at the expiry and after it', () => {
+    expect(seconds_until(10_000, 10_000)).toBe(0);
+    expect(seconds_until(10_000, 12_000)).toBe(0);
   });
 });
 
