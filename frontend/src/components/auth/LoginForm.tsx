@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Field';
 import { FieldError } from '@/components/ui/FieldError';
 import { PasswordInput } from '@/components/ui/PasswordInput';
-import { as_api_error } from '@/lib/api/http';
+import { as_api_error, type ApiError } from '@/lib/api/http';
 import { format_lockout, seconds_until } from '@/lib/auth/lockout';
 import { login_locks } from '@/lib/auth/loginLocks';
 import { useSession } from '@/providers/SessionProvider';
@@ -53,11 +53,13 @@ function to_field_messages(errors: readonly ProblemFieldError[]): FieldMessages 
  * Validation runs the shared login schema before anything is sent, and a 422 from the API lands in
  * the same place, so the message under a field reads the same whichever side caught the mistake.
  * Caps Lock is reported in the password field's own message line, because five failures lock the
- * account and a stuck Caps Lock is the commonest cause. A lockout answer becomes a countdown in the
+ * account and a stuck Caps Lock is the commonest cause. An account lock becomes a countdown in the
  * reserved error line and holds the button until it ends; the lock is remembered against the
  * username in this browser, so a reload, or typing that name again later, brings the countdown
- * back. And the button and the line beneath it say what is happening after submit, each state tied
- * to a real event rather than a timer.
+ * back. The per-address limit gets a countdown of its own, which holds the button whatever name is
+ * typed and is not remembered, because it says nothing about any one account. And the button and
+ * the line beneath it say what is happening after submit, each state tied to a real event rather
+ * than a timer.
  *
  * @returns The form.
  */
@@ -70,31 +72,67 @@ export function LoginForm(): ReactNode {
   const [fieldMessages, setFieldMessages] = useState<FieldMessages>({});
   const [phase, setPhase] = useState<Phase>('idle');
   const [now, setNow] = useState(() => Date.now());
+  const [networkUntil, setNetworkUntil] = useState<number | null>(null);
   const locked_until = useSyncExternalStore(
     login_locks.subscribe,
     () => login_locks.read(username, now),
     () => null,
   );
 
+  // Ticks both countdowns once a second, dropping the lock or the address hold once it runs out.
   useEffect(() => {
-    if (locked_until === null) {
+    if (locked_until === null && networkUntil === null) {
       return;
     }
     const timer = setInterval(() => {
       const current = Date.now();
-      if (current >= locked_until) {
+      if (locked_until !== null && current >= locked_until) {
         login_locks.forget(username, current);
+      }
+      if (networkUntil !== null && current >= networkUntil) {
+        setNetworkUntil(null);
       }
       setNow(current);
     }, 1000);
     return () => clearInterval(timer);
-  }, [locked_until, username]);
+  }, [locked_until, networkUntil, username]);
 
   const seconds_left = locked_until === null ? 0 : seconds_until(locked_until, now);
   const locked = seconds_left > 0;
+  const network_seconds_left = networkUntil === null ? 0 : seconds_until(networkUntil, now);
+  const network_held = network_seconds_left > 0;
 
-  // Validates, then sends; a refusal becomes a remembered countdown, messages under the fields, or
-  // the reserved error line, depending on what the API said.
+  // Turns a refusal into what the form shows: a lock remembered against the username, a countdown
+  // for the address limit that remembers nothing, messages under the fields, or the error line.
+  const show_refusal = (api_error: ApiError, username_sent: string): void => {
+    const started = Date.now();
+    const wait_ms = (api_error.retry_after_seconds ?? 0) * 1000;
+
+    if (api_error.code === 'locked_out' && wait_ms > 0) {
+      login_locks.remember(username_sent, started + wait_ms, started);
+      setNow(started);
+      return;
+    }
+
+    if (api_error.code === 'rate_limited') {
+      if (wait_ms > 0) {
+        setNetworkUntil(started + wait_ms);
+        setNow(started);
+      } else {
+        setProblem('Too many sign-in attempts from this network. Try again shortly.');
+      }
+      return;
+    }
+
+    const messages = api_error.code === 'validation_failed' ? to_field_messages(api_error.errors) : {};
+    if (Object.keys(messages).length > 0) {
+      setFieldMessages(messages);
+      return;
+    }
+    setProblem(api_error.detail);
+  };
+
+  // Validates, then sends. The API's refusals go to show_refusal, and anything else gets a generic line.
   const submit = async (): Promise<void> => {
     setProblem(null);
     const parsed = login_request_schema.safeParse({ username, password });
@@ -115,21 +153,7 @@ export function LoginForm(): ReactNode {
         setProblem('Something went wrong. Try again.');
         return;
       }
-
-      const wait_seconds = api_error.status === 429 ? api_error.retry_after_seconds : null;
-      if (wait_seconds !== null && wait_seconds > 0) {
-        const started = Date.now();
-        login_locks.remember(parsed.data.username, started + wait_seconds * 1000, started);
-        setNow(started);
-        return;
-      }
-
-      const messages = api_error.code === 'validation_failed' ? to_field_messages(api_error.errors) : {};
-      if (Object.keys(messages).length > 0) {
-        setFieldMessages(messages);
-        return;
-      }
-      setProblem(api_error.detail);
+      show_refusal(api_error, parsed.data.username);
     }
   };
 
@@ -137,7 +161,11 @@ export function LoginForm(): ReactNode {
     setCapsLock(event.getModifierState('CapsLock'));
   };
 
-  const message = locked ? `Too many failed attempts. Try again in ${format_lockout(seconds_left)}.` : problem;
+  const message = locked
+    ? `Too many failed attempts. Try again in ${format_lockout(seconds_left)}.`
+    : network_held
+      ? `Too many sign-in attempts from this network. Try again in ${format_lockout(network_seconds_left)}.`
+      : problem;
 
   return (
     <form
@@ -182,7 +210,7 @@ export function LoginForm(): ReactNode {
 
       <FieldError message={message} lines={2} />
 
-      <Button type="submit" variant="primary" block className="h-9.5" disabled={phase !== 'idle' || locked || username.length === 0 || password.length === 0}>
+      <Button type="submit" variant="primary" block className="h-9.5" disabled={phase !== 'idle' || locked || network_held || username.length === 0 || password.length === 0}>
         {button_copy[phase]}
       </Button>
 
