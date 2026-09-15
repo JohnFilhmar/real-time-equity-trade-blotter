@@ -203,6 +203,55 @@ describe('trade_query_schema', () => {
   it('rejects a date that is not a timestamp', () => {
     expect(trade_query_schema.safeParse({ date_from: 'yesterday' }).success).toBe(false);
   });
+
+  it('accepts a range whose ends are the same instant', () => {
+    const instant = '2026-08-18T09:15:00Z';
+
+    expect(trade_query_schema.safeParse({ date_from: instant, date_to: instant }).success).toBe(true);
+  });
+
+  it('accepts a range left open at either end', () => {
+    expect(trade_query_schema.safeParse({ date_from: '2026-08-18T12:00:00Z' }).success).toBe(true);
+    expect(trade_query_schema.safeParse({ date_to: '2026-08-18T09:00:00Z' }).success).toBe(true);
+  });
+
+  it('refuses a From later than To on the From field, in words a trader can act on', () => {
+    const result = trade_query_schema.safeParse({
+      date_from: '2026-08-18T12:00:00Z',
+      date_to: '2026-08-18T09:00:00Z',
+    });
+
+    expect(result.error?.issues).toEqual([
+      expect.objectContaining({ path: ['date_from'], message: 'From must be on or before To' }),
+    ]);
+  });
+
+  it('does not compare a range when one end is not a timestamp', () => {
+    const result = trade_query_schema.safeParse({
+      date_from: 'yesterday',
+      date_to: '2026-08-18T09:00:00Z',
+    });
+
+    expect(result.error?.issues.map((issue) => issue.message)).toEqual([
+      'Enter a valid date and time',
+    ]);
+  });
+
+  it('words every refused parameter in plain English', () => {
+    const message_for = (query: Record<string, string>): string | undefined =>
+      trade_query_schema.safeParse(query).error?.issues[0]?.message;
+
+    expect(message_for({ side: 'LONG' })).toBe('Side must be BUY or SELL');
+    expect(message_for({ status: 'AMENDED' })).toBe('Status must be ACTIVE or CANCELLED');
+    expect(message_for({ date_from: 'yesterday' })).toBe('Enter a valid date and time');
+    expect(message_for({ date_to: 'tomorrow' })).toBe('Enter a valid date and time');
+    expect(message_for({ sort_by: 'notional' })).toBe("Sort by one of the blotter's columns");
+    expect(message_for({ sort_dir: 'up' })).toBe('Sort direction must be asc or desc');
+
+    for (const limit of ['0', '1001', '2.5', 'ten']) {
+      expect(message_for({ limit })).toBe('Page size must be a whole number from 1 to 1,000');
+    }
+  });
 });
 
 describe('trade_list_schema', () => {
