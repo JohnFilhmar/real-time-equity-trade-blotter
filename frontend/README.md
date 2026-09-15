@@ -22,3 +22,9 @@ The design tokens in `src/app/globals.css` are ported verbatim from
 with `@theme inline`, so `bg-glass` and `text-gain` follow the active theme at runtime. The
 behaviour is specified in
 [the interface behaviour design](../docs/superpowers/specs/2026-09-12-interface-behaviour-design.md).
+
+The theme choice is saved under the key in `src/lib/theme/themeStorage.ts`. It lives outside the
+theme provider on purpose. The root layout is a Server Component that inlines a script to apply the
+saved theme before first paint, and a value imported from a `'use client'` module reaches a Server
+Component as a client reference rather than the string, so the script would read the key
+`undefined`.

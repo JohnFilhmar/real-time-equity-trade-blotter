@@ -104,7 +104,7 @@ with a list of every problem, and the message never echoes a value.
 | `AUTH_RATE_LIMIT` | `10` | Requests a minute on login and refresh, per address |
 | `READ_RATE_LIMIT` | `300` | Requests a minute behind the auth guard, per user |
 | `WRITE_RATE_LIMIT` | `60` | Requests a minute on create, amend and cancel, per user |
-| `LOGIN_MAX_ATTEMPTS` | `5` | Failed logins before an account locks, at most 100 |
+| `LOGIN_MAX_ATTEMPTS` | `5` | Failed logins that lock an account, the last of them answered with the lock, at most 100 |
 | `LOGIN_LOCKOUT_SECONDS` | `900` | Lockout window; every further failure re-arms it |
 | `SEED_ON_STARTUP` | `true` | Seed demo accounts and trades into empty tables |
 | `SEED_USER_PASSWORD` | `blotter-demo-2026` | Password for the demo accounts, at least 8 characters |
@@ -158,7 +158,10 @@ body.
 
 Three limiters in `src/middleware/rate_limit.ts` count in Redis over a one-minute window. The auth
 limiter keys by address. The read and write limiters key by user once the token is verified.
-Failed logins are also counted per account in `src/lib/auth/login_attempts.ts`. Under
+Failed logins are also counted per account in `src/lib/auth/login_attempts.ts`. The failure that
+reaches `LOGIN_MAX_ATTEMPTS` is itself answered with `429`, code `locked_out` and a `Retry-After`
+header, and so is every attempt until the lock runs out. The auth limiter's own `429` carries code
+`rate_limited`, which is how the sign-in form tells a locked account from a busy address. Under
 `NODE_ENV=test` the limiters use the library's in-process store.
 
 ## The simulated desk and the seed
@@ -172,7 +175,9 @@ With `SEED_ON_STARTUP` on, `src/lib/seed/` creates four demo accounts if `app_us
 `LIVE_FEED_*_INTERVAL_MS` bounds. It writes through the trade service, so a simulated trade gets
 the same validation, audit row and broadcast as a user's, recorded with source `LIVE_FEED`. As the
 active book nears `LIVE_FEED_MAX_ACTIVE_TRADES` it cancels more often than it books, and each new
-ticket leans against its symbol's net position. A conflict with a user's edit is swallowed. Any
+ticket leans against its symbol's net position. Half of its amendments pick one of the 30 newest
+active trades, so a change lands where someone watching the blotter is looking; the other half,
+and every cancellation, pick from the whole active book. A conflict with a user's edit is swallowed. Any
 other error is logged and the loop carries on. `src/lib/marks/` walks each symbol's mark from its
 reference price and broadcasts the set.
 

@@ -184,3 +184,31 @@ writing another trader's row with 404 whether or not the button was rendered.
   they disagree.
 - `AMENDED` is not a status. An amended trade is `ACTIVE` with a version pill.
 - There is no cancellation reason.
+
+## Revisions, 2026-09-15
+
+Decided by the owner after walking the field guide against the running stack. Where this section
+and the text above disagree, this section holds. Each question, its options and the answer are in
+[the checklist review](../../artifacts/blotter_checklist_review.html).
+
+- **Flash (U-M4, U-M13).** An amendment flashes only the cells it changed: price, quantity and
+  notional in green or red with a direction arrow, and other amendable columns in a neutral tint.
+  The tint lasts 300ms, the motion spec's value, and restarts on every version. New rows keep the
+  row flash, a cancellation only fades and strikes through, and rows that arrive with a scrolled-in
+  page or a new sort do not flash. Under reduced motion the cell holds a still tint for 800ms. Cell
+  text clears 4.5:1 over every tint and the arrows clear 3:1, the WCAG level for graphics. While a
+  neutral tint shows, the cell's text takes the primary colour so the tint can be seen in both
+  themes.
+- **Keyboard (U-M12).** Enter opens the detail panel for the focused row, not the ticket. While the
+  panel is open it follows the arrow keys, Tab moves into it, and Escape closes it with focus left
+  on the row. Focus is held by trade id. A "Skip to trades" link is the first stop in the top bar
+  and moves focus to the grid's current row, the first card on a phone, or the empty state when
+  nothing is listed. Clicking a row also moves keyboard focus to it.
+- **Sorting.** The caret moves the moment a header is clicked, a 2px bar runs under the header
+  while the new order loads, and the rows dim to 55% but stay usable.
+- **Filters (C4, C5).** Below 1024px a Filters button opens the same rail in a panel. A From later
+  than To is held back in the form with a message under the field that was changed, and the API
+  refuses the pair with a 422.
+- **Loading.** The top bar, navigation and tabs stay on screen while a session is restored, and
+  each page's skeleton is built from the same layout values as the page, so nothing moves when the
+  data lands.

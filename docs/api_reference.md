@@ -51,6 +51,11 @@ cursor that does not decode is treated as absent and returns the first page.
 `sort_by` accepts every column the blotter displays. `trade_sort_columns` in the shared package is
 the single list both sides read, so a header that looks sortable is never rejected by the API.
 
+`date_from` and `date_to` are ISO datetimes and either may be left out. A `date_from` later than
+`date_to` answers `422` with "From must be on or before To" on `date_from`; equal values are
+allowed. The blotter's date inputs hold back the same pair before any request is sent, so the grid
+keeps showing the last range that made sense.
+
 ## Writing
 
 Amend and cancel are optimistically concurrent. The client echoes back the `version` it last saw;
@@ -75,7 +80,7 @@ Three pre-trade rules run server-side:
 |---|---|
 | Symbol allowlist | Only the twelve names in the shared instrument universe book |
 | Future trade date | Refused, with a minute of tolerance for a client clock running fast |
-| Notional ceiling | `quantity x price` above the desk limit for that currency is refused |
+| Notional ceiling | Refused with a `422` when quantity times price is over the desk limit for that currency. The quantity message asks for a lower quantity or price, and the detail gives the trade's worth and the limit in dollars or pounds, such as "This trade is worth £41,000,000, over the £40,000,000 limit for London names." |
 
 ## Positions
 
@@ -107,7 +112,12 @@ holder are signed out. The compare and the write are one Lua script in Redis.
 
 Passwords are bcrypt at cost 12. A login for an account that does not exist is still compared
 against a dummy hash, so response time does not reveal which usernames are real. Failures are
-counted per account in Redis and lock it out after five, alongside the per-address rate limit.
+counted per account in Redis. The fifth failure locks the account for `LOGIN_LOCKOUT_SECONDS`, 15
+minutes by default, and is itself answered with `429` and code `locked_out`, so the person learns
+at once rather than on a sixth attempt. Unknown usernames count and lock the same way. The
+per-address rate limit answers `429` with code `rate_limited`. Both carry a `Retry-After` header in
+seconds; the sign-in form counts down from it and remembers an account lock per username across a
+reload.
 
 The socket handshake verifies the same access token, passed as `auth: { token }`, and refuses
 anyone without `trade.read` or from an origin outside `CORS_ORIGINS`.
@@ -163,7 +173,8 @@ Every failure is an RFC 9457 problem document on `application/problem+json`:
 
 `code` is the stable value clients branch on. `errors` carries field-level detail on a validation
 failure. `request_id` matches the log line. `validation_failed` is 422, `unauthenticated` 401,
-`forbidden` 403, `not_found` 404, `conflict` 409, `rate_limited` 429.
+`forbidden` 403, `not_found` 404, `conflict` 409, `rate_limited` 429 for a request limit, and
+`locked_out` 429 for an account locked by failed logins. Both 429s send `Retry-After`.
 
 ## Real-time
 
