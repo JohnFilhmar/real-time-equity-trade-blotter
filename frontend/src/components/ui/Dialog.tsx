@@ -2,33 +2,58 @@
 
 import { useEffect, useRef, type ReactNode } from 'react';
 
+/** Where a {@link Dialog} sits. */
+export type DialogPlacement = 'center' | 'left';
+
 /** Props for {@link Dialog}. */
 export interface DialogProps {
   /** The heading, also the accessible name. */
   title: string;
   /** One line under the heading. */
   description?: ReactNode;
-  /** Narrow width for a confirmation; the default suits a form. */
+  /** Width of a centred dialog: narrow for a confirmation; the default suits a form. A left panel takes its content's width. */
   size?: 'sm' | 'md';
+  /**
+   * `center`, the default, floats the dialog over the section that opened it. `left` is a
+   * full-height panel that slides in from the left edge of the frame, over the top bar, the tabs and
+   * any open drawer, for controls that apply as they change, such as the filters.
+   */
+  placement?: DialogPlacement;
   /** Called on Escape, scrim click, or the close button. */
   onClose: () => void;
-  /** Footer buttons. */
-  footer: ReactNode;
+  /** Footer buttons. Omit when the body's controls act on their own. */
+  footer?: ReactNode;
   children: ReactNode;
 }
 
 const focusable = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+/** Per placement: the scrim, the panel, and the body between the header and the footer. */
+const placement_classes: Record<DialogPlacement, { scrim: string; panel: string; body: string }> = {
+  center: {
+    scrim: 'absolute inset-0 items-center justify-center p-4',
+    panel: 'max-h-full w-full animate-rise rounded-xl border',
+    body: 'flex flex-col gap-3.75 overflow-y-auto p-4.5',
+  },
+  left: {
+    scrim: 'fixed inset-0',
+    panel: 'h-full max-w-full translate-x-0 border-r transition-transform duration-200 ease-out starting:-translate-x-full',
+    body: 'flex min-h-0 flex-1',
+  },
+};
+
 /**
  * A modal over a blurred scrim. Focus moves inside on open, stays inside while open, and the
  * caller returns it to where it came from on close.
  *
- * @param props - Title, description, size, close handler, footer and body.
+ * @param props - Title, description, size, placement, close handler, footer and body.
  * @returns The scrim and the panel.
  */
-export function Dialog({ title, description, size = 'md', onClose, footer, children }: DialogProps): ReactNode {
+export function Dialog({ title, description, size = 'md', placement = 'center', onClose, footer, children }: DialogProps): ReactNode {
   const panel = useRef<HTMLDivElement>(null);
   const title_id = `dialog_${title.replace(/\W+/g, '_').toLowerCase()}`;
+  const classes = placement_classes[placement];
+  const width = placement === 'center' ? (size === 'sm' ? 'max-w-107' : 'max-w-138') : '';
 
   useEffect(() => {
     const first = panel.current?.querySelector<HTMLElement>(focusable);
@@ -71,7 +96,7 @@ export function Dialog({ title, description, size = 'md', onClose, footer, child
 
   return (
     <div
-      className="absolute inset-0 z-[60] flex animate-fade items-center justify-center bg-scrim p-4 backdrop-blur-xs"
+      className={`z-[60] flex animate-fade bg-scrim backdrop-blur-xs ${classes.scrim}`}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) {
           onClose();
@@ -84,7 +109,7 @@ export function Dialog({ title, description, size = 'md', onClose, footer, child
         aria-modal="true"
         aria-labelledby={title_id}
         onKeyDown={on_key_down}
-        className={`flex max-h-full w-full animate-rise flex-col overflow-hidden rounded-xl border border-glass-edge bg-glass shadow-glass backdrop-blur-[22px] backdrop-saturate-150 ${size === 'sm' ? 'max-w-107' : 'max-w-138'}`}
+        className={`flex flex-col overflow-hidden border-glass-edge bg-glass shadow-glass backdrop-blur-[22px] backdrop-saturate-150 ${classes.panel} ${width}`}
       >
         <div className="flex shrink-0 items-start gap-3 border-b border-rule px-4.5 py-3.75">
           <div className="flex-1">
@@ -104,8 +129,10 @@ export function Dialog({ title, description, size = 'md', onClose, footer, child
             </svg>
           </button>
         </div>
-        <div className="flex flex-col gap-3.75 overflow-y-auto p-4.5">{children}</div>
-        <div className="flex shrink-0 justify-end gap-2.25 border-t border-rule bg-foot px-4.5 py-3.25">{footer}</div>
+        <div className={classes.body}>{children}</div>
+        {footer !== undefined ? (
+          <div className="flex shrink-0 justify-end gap-2.25 border-t border-rule bg-foot px-4.5 py-3.25">{footer}</div>
+        ) : null}
       </div>
     </div>
   );
