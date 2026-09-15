@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
-import { focus_grid, register_grid_focus } from './gridFocus';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { focus_grid, focus_trades, register_grid_focus, trade_cards_id, trade_state_message_id } from './gridFocus';
 
 describe('grid focus target', () => {
   it('reports that nothing took focus when no grid is mounted', () => {
@@ -30,5 +30,43 @@ describe('grid focus target', () => {
     expect(newer).toHaveBeenCalledTimes(1);
     expect(older).not.toHaveBeenCalled();
     unregister_newer();
+  });
+});
+
+describe('skip link target', () => {
+  afterEach(() => {
+    document.body.replaceChildren();
+  });
+
+  it("focuses the grid's current row while the grid is mounted", () => {
+    const target = vi.fn<() => void>();
+    const unregister = register_grid_focus(target);
+
+    expect(focus_trades()).toBe(true);
+    expect(target).toHaveBeenCalledTimes(1);
+
+    unregister();
+  });
+
+  it('focuses the first trade card when cards stand in for the grid on a phone', () => {
+    document.body.innerHTML = `
+      <div id="${trade_cards_id}" role="list">
+        <button type="button" role="listitem" data-trade-id="TRD-100002">NVDA</button>
+        <button type="button" role="listitem" data-trade-id="TRD-100001">AAPL</button>
+      </div>`;
+
+    expect(focus_trades()).toBe(true);
+    expect(document.activeElement).toHaveAttribute('data-trade-id', 'TRD-100002');
+  });
+
+  it('focuses the message shown in place of the trades when none are listed', () => {
+    document.body.innerHTML = `<div id="${trade_state_message_id}" tabindex="-1">No trades match these filters</div>`;
+
+    expect(focus_trades()).toBe(true);
+    expect(document.activeElement).toHaveAttribute('id', trade_state_message_id);
+  });
+
+  it('reports that nothing took focus while none of them is on the page', () => {
+    expect(focus_trades()).toBe(false);
   });
 });

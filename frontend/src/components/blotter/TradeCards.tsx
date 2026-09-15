@@ -5,6 +5,7 @@ import type { Trade } from '@blotter/shared';
 import { SideMark, StatusBadge, VersionPill } from '@/components/ui/Badges';
 import { format_clock_or_date } from '@/lib/format/clock';
 import { format_notional, format_price, format_quantity } from '@/lib/format/money';
+import { trade_cards_id } from '@/lib/grid/gridFocus';
 
 /** Props for {@link TradeCards}. */
 export interface TradeCardsProps {
@@ -17,7 +18,8 @@ export interface TradeCardsProps {
 
 /**
  * The phone layout: one card per trade instead of a grid that would need sideways scrolling.
- * Loads the next page when the sentinel at the bottom scrolls into view.
+ * Loads the next page when the sentinel at the bottom scrolls into view. The list carries the id
+ * the top bar's skip link looks for, so skipping to the trades focuses the first card.
  *
  * @param props - Rows, selection and the load-more hook.
  * @returns The card list.
@@ -40,7 +42,7 @@ export function TradeCards({ rows, selected_id, onSelect, onLoadMore, has_more }
   }, [has_more, onLoadMore]);
 
   return (
-    <div className="flex flex-col pb-19.5" role="list" aria-label="Trade blotter">
+    <div id={trade_cards_id} className="flex flex-col pb-19.5" role="list" aria-label="Trade blotter">
       {rows.map((trade) => {
         const selected = trade.id === selected_id;
         const cancelled = trade.status === 'CANCELLED';

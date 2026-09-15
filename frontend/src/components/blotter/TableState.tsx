@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
+import { trade_state_message_id } from '@/lib/grid/gridFocus';
 import type { ConnectionStatus } from '@/types/connection';
 import { BlotterRowsSkeleton } from './BlotterRowsSkeleton';
 
@@ -15,6 +16,9 @@ export type EmptyState =
  * Renders one of the states in which the grid has nothing to show, each with copy that says what
  * happened and what to do next. An empty surface with no message is a bug. While the first page
  * loads, the grid's own skeleton rows stand in its place.
+ *
+ * The title and body sit in one focusable block under a fixed id, so the top bar's skip link lands
+ * on the reason there are no trades to show.
  *
  * @param props - Which state, and the action it offers.
  * @returns The state panel, or the skeleton rows while loading.
@@ -47,8 +51,10 @@ export function TableEmptyState({ state }: { state: EmptyState }): ReactNode {
 
   return (
     <div className="flex flex-col items-center gap-3 px-6 py-16 text-center" role="status">
-      <p className="m-0 text-[14px] font-semibold text-text">{title}</p>
-      <p className="m-0 max-w-[46ch] text-[12.5px] leading-[1.6] text-muted">{body}</p>
+      <div id={trade_state_message_id} tabIndex={-1} className="flex flex-col items-center gap-3">
+        <p className="m-0 text-[14px] font-semibold text-text">{title}</p>
+        <p className="m-0 max-w-[46ch] text-[12.5px] leading-[1.6] text-muted">{body}</p>
+      </div>
       {state.kind === 'error' ? (
         <Button variant="primary" onClick={state.onRetry}>
           Retry

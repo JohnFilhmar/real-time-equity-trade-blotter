@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 import { BrandMark } from '@/components/ui/BrandMark';
 import { IconButton } from '@/components/ui/IconButton';
 import { Skeleton } from '@/components/ui/Note';
-import { focus_grid, trade_grid_id } from '@/lib/grid/gridFocus';
+import { focus_trades, trade_grid_id } from '@/lib/grid/gridFocus';
 import { useSession } from '@/providers/SessionProvider';
 import { ConnectionPill } from './ConnectionPill';
 import { ThemeToggle } from './ThemeToggle';
@@ -22,7 +22,8 @@ export const nav_items: ReadonlyArray<{ href: string; label: string; short: stri
  * The top bar: wordmark, section navigation, the connection pill, the theme switch and the user.
  *
  * On the blotter, the first thing Tab reaches is a "Skip to trades" link, shown only while it has
- * focus, which puts focus on the grid's current row past the navigation and the header buttons.
+ * focus, which moves focus past the navigation and the header buttons to the trades: the grid's
+ * current row, the first card on a phone, or the message shown when no trades are listed.
  *
  * @returns The bar.
  */
@@ -37,7 +38,7 @@ export function TopBar(): ReactNode {
         <a
           href={`#${trade_grid_id}`}
           onClick={(event) => {
-            if (focus_grid()) {
+            if (focus_trades()) {
               event.preventDefault();
             }
           }}

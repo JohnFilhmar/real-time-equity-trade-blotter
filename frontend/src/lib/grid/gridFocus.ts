@@ -1,6 +1,12 @@
 /** The blotter grid's element id, which the top bar's skip link points at. */
 export const trade_grid_id = 'trade-grid';
 
+/** The element id of the phone card list, where the skip link finds the first card. */
+export const trade_cards_id = 'trade-cards';
+
+/** The element id of the message shown in the trades' place when none are listed. */
+export const trade_state_message_id = 'trade-state-message';
+
 /** Moves keyboard focus to the grid's tab-stop row. */
 type FocusTarget = () => void;
 
@@ -35,5 +41,26 @@ export function focus_grid(): boolean {
     return false;
   }
   registered();
+  return true;
+}
+
+/**
+ * Moves keyboard focus to the trades in whatever form the blotter shows them: the grid's tab-stop
+ * row, the first card on a phone, or the message shown in their place when none are listed.
+ *
+ * @returns True when one of them took focus, false when none is on the page, as while the first
+ * page loads.
+ */
+export function focus_trades(): boolean {
+  if (focus_grid()) {
+    return true;
+  }
+  const target =
+    document.getElementById(trade_cards_id)?.querySelector<HTMLElement>('[data-trade-id]') ??
+    document.getElementById(trade_state_message_id);
+  if (target === null) {
+    return false;
+  }
+  target.focus();
   return true;
 }
