@@ -8,6 +8,7 @@ import {
 } from '@blotter/shared';
 import type { ProblemFieldError } from '@blotter/shared';
 import { from_datetime_local_value, to_datetime_local_value } from '@/lib/format/clock';
+import { format_price, format_quantity } from '@/lib/format/money';
 
 /** What the ticket's inputs hold, as strings, before validation. */
 export interface TicketValues {
@@ -163,21 +164,46 @@ export function parse_amend(values: TicketValues, trade: Trade): { ok: true; inp
   };
 }
 
+/** A trade field the conflict note compares. */
+type ConflictField = keyof Pick<Trade, 'quantity' | 'price' | 'book' | 'counterparty' | 'status'>;
+
+/** The fields the conflict note compares, in the order it lists them, under the ticket's labels. */
+const conflict_fields: readonly { field: ConflictField; label: string }[] = [
+  { field: 'quantity', label: 'Quantity' },
+  { field: 'price', label: 'Price' },
+  { field: 'book', label: 'Book' },
+  { field: 'counterparty', label: 'Counterparty' },
+  { field: 'status', label: 'Status' },
+];
+
+/**
+ * Shows one field's value the way the ticket shows it.
+ *
+ * @param trade - The trade to read.
+ * @param field - The field to show.
+ * @returns Quantities with thousands separators, prices to two decimals, anything else as stored.
+ */
+function show_field(trade: Trade, field: ConflictField): string {
+  if (field === 'quantity') {
+    return format_quantity(trade.quantity);
+  }
+  if (field === 'price') {
+    return format_price(trade.price);
+  }
+  return trade[field];
+}
+
 /**
  * Lists what changed between the trade the form was opened on and the trade as the server now
- * holds it, for the conflict note.
+ * holds it, for the conflict note. Each line names the field as the ticket labels it and shows
+ * both values as the ticket shows them, such as `Quantity 1,300 → 1,400`.
  *
  * @param base - The trade the form started from.
  * @param current - The trade now.
- * @returns One line per differing field.
+ * @returns One line per differing field, in ticket order. Empty when only the version moved.
  */
 export function describe_conflict(base: Trade, current: Trade): string[] {
-  const lines: string[] = [];
-  const fields: Array<keyof Pick<Trade, 'quantity' | 'price' | 'book' | 'counterparty' | 'status'>> = ['quantity', 'price', 'book', 'counterparty', 'status'];
-  for (const field of fields) {
-    if (base[field] !== current[field]) {
-      lines.push(`${field}: ${String(base[field])} → ${String(current[field])}`);
-    }
-  }
-  return lines;
+  return conflict_fields
+    .filter(({ field }) => base[field] !== current[field])
+    .map(({ field, label }) => `${label} ${show_field(base, field)} → ${show_field(current, field)}`);
 }

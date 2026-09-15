@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Trade } from '@blotter/shared';
 import { to_datetime_local_value } from '@/lib/format/clock';
 import {
+  describe_conflict,
   initial_values,
   parse_amend,
   parse_create,
@@ -209,5 +210,28 @@ describe('to_ticket_errors', () => {
         { field: '', message: 'One or more fields failed validation.' },
       ]),
     ).toEqual({ book: 'Enter a book', form: 'Reload the trade and try again' });
+  });
+});
+
+describe('describe_conflict', () => {
+  it('names each change by its ticket label and shows both values the way the ticket does', () => {
+    expect(
+      describe_conflict({ ...stored, quantity: 1_300 }, { ...stored, quantity: 1_400, price: 229.1, version: 4 }),
+    ).toEqual(['Quantity 1,300 → 1,400', 'Price 227.45 → 229.10']);
+
+    expect(describe_conflict({ ...stored, price: 2814 }, { ...stored, price: 2830.5, version: 4 })).toEqual([
+      'Price 2,814.00 → 2,830.50',
+    ]);
+  });
+
+  it('covers the book, the counterparty and a cancellation, and lists nothing when only the version moved', () => {
+    const moved: Trade = { ...stored, book: 'EQUITIES_UK', counterparty: 'Nomura', status: 'CANCELLED', version: 4 };
+
+    expect(describe_conflict(stored, moved)).toEqual([
+      'Book EQUITIES_US → EQUITIES_UK',
+      'Counterparty Goldman Sachs → Nomura',
+      'Status ACTIVE → CANCELLED',
+    ]);
+    expect(describe_conflict(stored, { ...stored, version: 4 })).toEqual([]);
   });
 });

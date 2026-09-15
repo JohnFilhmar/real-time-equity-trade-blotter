@@ -28,7 +28,7 @@ test.describe('concurrent amendment @critical', () => {
     await second_ticket.locator('#t_quantity').fill('1500');
     await second_ticket.getByRole('button', { name: 'Save amendment' }).click();
     await expect(second_ticket.getByText('Another desk changed this trade first.')).toBeVisible();
-    await expect(second_ticket.getByText(/quantity: 1300 .* 1400/)).toBeVisible();
+    await expect(second_ticket.getByText('Quantity 1,300 → 1,400')).toBeVisible();
 
     // The row on the trader's own screen already shows the desk head's value.
     await expect(second.locator(`[data-trade-id="${trade_id}"]`).first()).toContainText('1,400');
