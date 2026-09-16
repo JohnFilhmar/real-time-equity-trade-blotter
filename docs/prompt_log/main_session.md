@@ -990,3 +990,27 @@ query schema. Rebuilding the contract there made all 489 pass, and a root `prete
 rebuilds it before every test run so a pull cannot leave the suites reading stale output.
 
 **Commits:** `d7cb1a8`
+
+---
+
+### 2026-09-16T02:25Z - e2e_sign_in_refused_by_a_stale_seed_password
+
+**Prompt:** "continue blotter_checklist_fixes; and address this issue on my test results :"
+
+> Followed by the full `npm run test:all` output, truncated here: 188 frontend unit and 42
+> integration tests passed, then 14 of 18 browser tests failed over 33.1 minutes, every one of them
+> at `test-utils.ts:48` waiting on `waitForURL('**/')` after submitting the login form.
+
+> Selections at 02:05Z:
+>
+> - Login fix: "Discard the volume and reseed (Recommended)"
+> - Prisma guard: "pretest:integration runs db:generate (Recommended)"
+> - Discoverability: "Log the skip at startup (Recommended)"
+
+**Outcome:** The four demo accounts held a hash of an older `SEED_USER_PASSWORD`, and
+`seed_users_if_empty` creates accounts only in an empty database, so every boot since had skipped
+them without a word and the API met the documented password with a 401. Discarding the database
+volume and reseeding put all 18 browser tests green in 2.3 minutes, and the seed now logs the skip
+while a new `pretest:integration` hook regenerates the Prisma client before that tier runs.
+
+**Commits:** `62af1c0`, `67d519c`
