@@ -26,6 +26,7 @@
     "build:shared": "npm run build --workspace @blotter/shared",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
+    "pretest": "npm run build:shared",
     "test": "npm run test --workspaces --if-present",
     "test:integration": "node scripts/test_integration.mjs",
     "test:e2e": "npm run test:e2e --workspace frontend",
