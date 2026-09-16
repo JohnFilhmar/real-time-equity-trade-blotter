@@ -28,6 +28,7 @@
     "lint": "npm run lint --workspaces --if-present",
     "pretest": "npm run build:shared",
     "test": "npm run test --workspaces --if-present",
+    "pretest:integration": "npm run db:generate && npm run build:shared",
     "test:integration": "node scripts/test_integration.mjs",
     "test:e2e": "npm run test:e2e --workspace frontend",
     "test:load": "k6 run load-testing/api_load.js",
