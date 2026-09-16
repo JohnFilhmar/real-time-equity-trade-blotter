@@ -1014,3 +1014,17 @@ volume and reseeding put all 18 browser tests green in 2.3 minutes, and the seed
 while a new `pretest:integration` hook regenerates the Prisma client before that tier runs.
 
 **Commits:** `62af1c0`, `67d519c`
+
+---
+
+### 2026-09-16T02:43Z - readme_unit_count_after_the_seed_tests
+
+**Prompt:** Answer to the README count question, at 02:43Z:
+
+> - README count: "Update the count in this PR (Recommended)"
+
+**Outcome:** The four seed tests move the unit tier from 489 to 493, so `README.md` now records 493
+pass at 60 shared, 245 backend and 188 frontend, taken from a full `npm test` run rather than from
+arithmetic. Earlier entries in this log keep the counts that were true when they were written.
+
+**Commits:** `d7c16ff`
