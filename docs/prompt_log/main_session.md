@@ -1048,3 +1048,36 @@ gained the README it was the only workspace missing, and the unit tier was confi
 alone.
 
 **Commits:** `3eea8fe`
+
+---
+
+### 2026-09-16T05:10Z - readme_rewrite_for_reviewers
+
+**Prompt:**
+
+> "so using unslop, ponytail, no em dashes, etc. i want you to create a revision of the README to be
+> less hassle to read and more easier to read and undesrtand. because currently the documents are way
+> too complex to read, sentences should be simplified and still retain their point. remove unnecessary
+> comments or irrelevant pointers. the readers are reviewers of the system on how it works and
+> checking criteria of @take-home-assessment.md" followed by the seeded-desk and LIVE_FEED paragraphs
+> quoted as the example to simplify, and: "this sentence could be simplified even more and removing
+> unnecessary comments about how are the previous problems solve, it is already documented in
+> prompt_logs so what's happening here is repetition." [truncated]
+
+> Selections:
+>
+> - Decisions section: "All 15, one or two sentences each (Recommended)"
+> - Not built: "Fold the strongest few into Trade-offs (Recommended)"
+> - Scope: "all five and widen the context of others, like for the frontend, having too small of a
+>   documents are way too lazy to read, no point, no encoutner of problems, or documentation of the
+>   actual system's architecture (in frontend only)"
+
+**Outcome:** The three dense READMEs lost roughly a quarter of their words, the root from 3089 to
+2138, keeping all 14 architecture decisions but dropping their "Would change if" clauses, the
+simulated desk's internal mechanics and the `LIVE_FEED_*` tuning section, folding "Not built, on
+purpose" into Trade-offs and adding a table that maps each thing the brief asks for onto where it
+is. `frontend/README.md` went the other way, from 237 words to 1281, because it documented no
+architecture at all, and now covers how a broadcast reaches the screen, the provider layers, the
+rendering boundaries and where each kind of state lives.
+
+**Commits:** `3e550df`
