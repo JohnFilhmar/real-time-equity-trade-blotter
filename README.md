@@ -101,7 +101,7 @@ configuration are in [`docs/api_reference.md`](docs/api_reference.md).
 
 ## Installation
 
-Requires Docker with Compose v2. Nothing else, and no `.env` file: compose carries development
+Running the stack requires Docker with Compose v2 and no `.env` file: compose carries development
 values and the API refuses a signing secret under 32 characters, so a placeholder cannot quietly
 become a production key.
 
@@ -110,6 +110,10 @@ git clone <this repository>
 cd tp-icap-take-home-assessment
 npm run start
 ```
+
+Everything past `npm run start`, which means every test tier and the local scripts below, also needs
+Node 22 or newer and `npm install` at the repository root. The suites run on the host rather than
+inside the containers.
 
 `npm run start` builds the images and waits until all five services report healthy: Postgres,
 Redis, a one-shot migration, the API and the web app. First build takes a few minutes; later ones
@@ -180,7 +184,7 @@ the Prisma client is generated rather than committed.
 
 | Script | Tier | Needs | Observed |
 |---|---|---|---|
-| `npm test` | Unit and route tests in all three workspaces: contract, service and route suites against an in-memory repository, and on the client the cache patching, formatting, flash, keyboard focus, date range and ticket form logic. Rebuilds the shared contract first, so a pull cannot leave the suites reading stale output | nothing | 493 pass: 60 shared, 245 backend, 188 frontend |
+| `npm test` | Unit and route tests in all three workspaces: contract, service and route suites against an in-memory repository, and on the client the cache patching, formatting, flash, keyboard focus, date range and ticket form logic. Rebuilds the shared contract first, so a pull cannot leave the suites reading stale output | Node 22 and `npm install` | 493 pass: 60 shared, 245 backend, 188 frontend |
 | `npm run test:integration` | Repository, refresh-token and positions tests against real Postgres and Redis, including the append-only trigger | the compose stack | 42 pass |
 | `npm run test:e2e` | Playwright, two browser contexts: a trade booked in one appears in the other, follows its amend and cancel, a concurrent amend is refused with a 409, the role rules hold, a dropped link blocks booking then resyncs on recovery, the sign-in door shows the desk before the session check answers and keeps its form still on a bad password, and the API answers only through the web origin with its own port closed and `/metrics` not forwarded. Also: a pinned theme survives a reload, a locked account counts down from the fifth failure and again after a reload, the filters open in a panel on tablet and phone and hold back a reversed date range, and the grid works from the keyboard through the skip link | the compose stack | 18 pass |
 | `npm run test:load` | k6, four virtual users for sixty seconds inside the API's own rate limits, p95 under 300ms | the compose stack and [k6](https://k6.io) | 244 requests, 0 failed, p95 209ms; list p95 149ms, create p95 133ms, through the web server's forwarding |
