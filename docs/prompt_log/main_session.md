@@ -972,3 +972,21 @@ lockout test lost its raised timeout, and 241 backend unit tests and 42 integrat
 including a new user repository test, passed.
 
 **Commits:** `c3d63db`
+
+---
+
+### 2026-09-16T00:25Z - test_all_failures_from_a_stale_contract_build
+
+**Prompt:** "from the main, run npm run test:all and list and resolve in parallel all showing errors."
+
+> Selection at 00:40Z:
+>
+> - Stale build: "Rebuild before tests (Recommended)"
+
+**Outcome:** Main itself was green, at 489 unit, 42 integration and 18 browser tests against a
+throwaway stack, and the 27 failures reported from the owner's checkout came from a `shared/dist`
+built on 11 September, which is why `find_instrument` was missing and `cursor` was not a key of the
+query schema. Rebuilding the contract there made all 489 pass, and a root `pretest` hook now
+rebuilds it before every test run so a pull cannot leave the suites reading stale output.
+
+**Commits:** `d7cb1a8`
