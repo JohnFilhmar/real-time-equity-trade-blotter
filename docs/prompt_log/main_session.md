@@ -1028,3 +1028,23 @@ pass at 60 shared, 245 backend and 188 frontend, taken from a full `npm test` ru
 arithmetic. Earlier entries in this log keep the counts that were true when they were written.
 
 **Commits:** `d7c16ff`
+
+---
+
+### 2026-09-16T03:08Z - readme_setup_steps_audit
+
+**Prompt:** "does the root README and other README files contains all the steps in the setup before running tests etc. ?"
+
+> Selections at 03:05Z:
+>
+> - Setup gap: "Fix Installation and the Needs column (Recommended)"
+> - shared README: "Add a short shared/README.md"
+
+**Outcome:** Node 22 and `npm install` turned out to be documented only inside "Running without
+Docker", while Installation said Docker and nothing else and the unit tier's Needs cell said
+nothing, so Installation now carries the host prerequisites and that cell names them. `shared/`
+gained the README it was the only workspace missing, and the unit tier was confirmed not to need
+`db:generate`, because the sole runtime import of the generated client is reached from `index.ts`
+alone.
+
+**Commits:** `3eea8fe`
