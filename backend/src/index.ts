@@ -120,6 +120,11 @@ async function main(): Promise<void> {
     const accounts = await seed_users_if_empty(user_repository);
     if (accounts > 0) {
       logger.info({ accounts }, 'seeded_users');
+    } else {
+      // Logged because the symptom is otherwise a documented password being refused: a populated
+      // table keeps the hashes it already has, so a changed SEED_USER_PASSWORD reaches new
+      // databases only.
+      logger.info('seed_skipped_existing_passwords_kept');
     }
 
     const inserted = await seed_trades_if_empty(prisma, env.SEED_TRADE_COUNT);
