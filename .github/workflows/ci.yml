@@ -120,8 +120,9 @@ jobs:
           load: true
           push: false
 
+      # Third-party actions are pinned to a commit, since a tag can be moved to other code.
       - name: Scan for known vulnerabilities
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: blotter/${{ matrix.image }}:ci
           severity: CRITICAL,HIGH
@@ -136,7 +137,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: gitleaks/gitleaks-action@v3
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
