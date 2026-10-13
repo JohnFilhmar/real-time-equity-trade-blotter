@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 // Runs against an already running stack: `npm run start` at the repository root, then
 // `npm run test:e2e`. No webServer block on purpose, so the suite tests the compose build a grader
-// runs rather than a dev server it started itself.
+// runs rather than a dev server it started itself. The stack answers on its nginx edge, port 80.
 export default defineConfig({
   testDir: './e2e',
   timeout: 60_000,
@@ -12,7 +12,7 @@ export default defineConfig({
   retries: 0,
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3000',
+    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost',
     colorScheme: 'dark',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',

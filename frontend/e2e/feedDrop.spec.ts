@@ -35,9 +35,9 @@ function watch_for_resync(page: Page): Promise<boolean> {
 // resyncs before it calls itself live again.
 //
 // Going offline at the browser is a silent outage: the open socket is not closed, frames simply
-// stop, which is what a dropped desk link looks like. The client notices through the socket
-// heartbeat, so the amber pill arrives about 45 seconds after the drop (the server pings every
-// 25 seconds and allows 20 more before a peer is considered gone). That wait is the test's cost
+// stop, which is what a dropped desk link looks like. The client notices through the hub's
+// keep-alive, so the amber pill arrives about 30 seconds after the drop (the server pings every
+// 15 seconds and the client gives up on it after 30 without a message). That wait is the test's cost
 // and the reason its timeout is longer than the suite's.
 test.describe('feed drop and recovery @critical', () => {
   test('booking is blocked while the link is down, then the blotter resyncs and goes live again', async ({ desk }) => {

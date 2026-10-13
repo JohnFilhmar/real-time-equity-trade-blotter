@@ -1,28 +1,46 @@
-import { io, type Socket } from 'socket.io-client';
-import type { ClientToServerEvents, ServerToClientEvents } from '@blotter/shared';
+import { HubConnectionBuilder, LogLevel, type HubConnection } from '@microsoft/signalr';
+import type { ServerToClientEvents } from '@blotter/shared';
+import { reconnect_delay } from './keepConnected';
 
-/** The blotter's socket, typed so an unknown event name will not compile. */
-export type BlotterSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
+/** Where the realtime service's hub listens, on this page's own origin. */
+export const hub_path = '/hubs/blotter';
+
+/** The blotter's live link to the realtime service. */
+export type BlotterSocket = HubConnection;
 
 /**
- * Creates a socket that authenticates with the access token and reconnects on its own.
+ * Creates the link to the realtime hub, not yet started, so the caller can attach listeners first.
  *
- * It connects to this page's own origin: the web server forwards `/socket.io/` to the API over the
- * internal network, so the socket needs no address of its own. The token travels in the handshake
- * `auth` payload, which is where the server looks first. It is created disconnected so the caller
- * can attach listeners before the first `connect` fires, and `auth` is a plain object on purpose:
- * the caller replaces it when the access token rotates, so a reconnect after that carries the fresh
- * token rather than the expired one.
+ * It connects to this page's own origin: the edge proxy forwards `/hubs/` to the realtime service
+ * over the internal network, so the link needs no address of its own. The token is read through a
+ * function on every connect and reconnect, so a reconnect after the access token rotates carries
+ * the fresh token rather than the expired one. After a drop it retries forever on the Socket.IO
+ * client's schedule. Logging is off, as Socket.IO's was: the connection pill is the user's view of
+ * the link, and a retry loop would otherwise fill the console during an outage.
  *
- * @param token - The current access token.
- * @returns A socket that has not connected yet.
+ * @param get_token - Returns the current access token.
+ * @returns A link that has not connected yet.
  */
-export function create_socket(token: string): BlotterSocket {
-  return io({
-    auth: { token },
-    autoConnect: false,
-    transports: ['websocket', 'polling'],
-    reconnectionDelay: 500,
-    reconnectionDelayMax: 5000,
-  });
+export function create_socket(get_token: () => string): BlotterSocket {
+  return new HubConnectionBuilder()
+    .withUrl(hub_path, { accessTokenFactory: get_token })
+    .withAutomaticReconnect({ nextRetryDelayInMilliseconds: (context) => reconnect_delay(context.previousRetryCount) })
+    .configureLogging(LogLevel.None)
+    .build();
+}
+
+/**
+ * Listens for one broadcast, typed so an unknown event name, or a handler for the wrong payload,
+ * will not compile.
+ *
+ * @param socket - The link.
+ * @param event - A name from `trade_events`.
+ * @param handler - Receives the payload the shared contract declares for that name.
+ */
+export function on_broadcast<E extends keyof ServerToClientEvents>(
+  socket: BlotterSocket,
+  event: E,
+  handler: ServerToClientEvents[E],
+): void {
+  socket.on(event, handler);
 }

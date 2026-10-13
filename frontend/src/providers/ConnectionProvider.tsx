@@ -11,7 +11,8 @@ import {
 import { event_feed_keys, position_keys, trade_keys } from '@/lib/query/keys';
 import { settle_event, settle_position } from '@/lib/query/settleEvent';
 import { settle_trade } from '@/lib/query/settleTrade';
-import { create_socket, type BlotterSocket } from '@/lib/socket/createSocket';
+import { create_socket, on_broadcast } from '@/lib/socket/createSocket';
+import { keep_connected } from '@/lib/socket/keepConnected';
 import { is_next_in_sequence, order_by_seq } from '@/lib/socket/sequence';
 import { useConnectionStore } from '@/lib/stores/connectionStore';
 import { useMarkStore } from '@/lib/stores/markStore';
@@ -89,11 +90,10 @@ function apply(query_client: QueryClient, pending: Pending): void {
 export function ConnectionProvider({ children }: { children: ReactNode }): ReactNode {
   const token = useAccessToken();
   const query_client = useQueryClient();
-  const socket_ref = useRef<BlotterSocket | null>(null);
+  const token_ref = useRef(token);
 
   useEffect(() => {
-    const socket = create_socket(token);
-    socket_ref.current = socket;
+    const socket = create_socket(() => token_ref.current);
 
     let generation = 0;
     const is_current = (candidate: number): boolean => candidate === generation;
@@ -134,44 +134,36 @@ export function ConnectionProvider({ children }: { children: ReactNode }): React
       }
     };
 
-    socket.on('connect', start_resync);
-    socket.on('disconnect', () => {
-      useConnectionStore.getState().set_status('reconnecting');
-    });
-    socket.on('connect_error', () => {
-      useConnectionStore.getState().set_status('reconnecting');
-    });
-    socket.on(trade_events.created, (envelope) => enqueue({ kind: 'trade', envelope }));
-    socket.on(trade_events.amended, (envelope) => enqueue({ kind: 'trade', envelope }));
-    socket.on(trade_events.cancelled, (envelope) => enqueue({ kind: 'trade', envelope }));
-    socket.on(trade_events.event_recorded, (envelope) => enqueue({ kind: 'event', envelope }));
-    socket.on(trade_events.position_updated, (envelope) => enqueue({ kind: 'position', envelope }));
-    socket.on(trade_events.mark_updated, (marks) => {
+    on_broadcast(socket, trade_events.created, (envelope) => enqueue({ kind: 'trade', envelope }));
+    on_broadcast(socket, trade_events.amended, (envelope) => enqueue({ kind: 'trade', envelope }));
+    on_broadcast(socket, trade_events.cancelled, (envelope) => enqueue({ kind: 'trade', envelope }));
+    on_broadcast(socket, trade_events.event_recorded, (envelope) => enqueue({ kind: 'event', envelope }));
+    on_broadcast(socket, trade_events.position_updated, (envelope) => enqueue({ kind: 'position', envelope }));
+    on_broadcast(socket, trade_events.mark_updated, (marks) => {
       useMarkStore.getState().set_marks(marks);
     });
 
     useConnectionStore.getState().set_status('connecting');
-    socket.connect();
+    const stop = keep_connected(socket, {
+      on_open: start_resync,
+      on_down: () => {
+        useConnectionStore.getState().set_status('reconnecting');
+      },
+    });
 
     return () => {
       if (frame !== null) {
         window.cancelAnimationFrame(frame);
       }
-      socket.removeAllListeners();
-      socket.close();
-      socket_ref.current = null;
       generation += 1;
+      void stop();
     };
-    // The socket lives for the session. A rotated token is handed to it below rather than by
-    // tearing the socket down, so a routine refresh never shows as a reconnect.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query_client]);
 
+  // The link lives for the session. A rotated token reaches it through the ref, which the link
+  // reads on its next connect, so a routine refresh never shows as a reconnect.
   useEffect(() => {
-    const socket = socket_ref.current;
-    if (socket !== null) {
-      socket.auth = { token };
-    }
+    token_ref.current = token;
   }, [token]);
 
   return children;

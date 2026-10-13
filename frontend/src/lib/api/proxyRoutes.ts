@@ -5,35 +5,50 @@ export interface ProxyRewrite {
 }
 
 /**
- * The paths the web server forwards to the API over the internal network, and nothing else.
+ * Checks one internal address and strips any trailing slash.
  *
- * The browser only ever talks to the web origin, and the API has no published port. `/metrics` is
- * left out on purpose, so the operational counters stay inside the network. The socket rule
- * forwards to `/socket.io/` with its trailing slash, because that is the exact path the engine
- * listens on; the redirect that would strip it is switched off in `next.config.ts`.
- *
- * @param internal_url - The API's address on the internal network, `http://backend:5000` in compose.
- * A trailing slash is ignored.
- * @returns The rewrites, in match order.
- * @throws {Error} When the address is not an absolute http or https URL, so a misconfigured build
- * fails instead of producing a proxy that forwards nowhere.
+ * @param url - The address.
+ * @param name - The setting it came from, named in the error.
+ * @returns The address without a trailing slash.
+ * @throws {Error} When it is not an absolute http or https URL.
  */
-export function api_rewrites(internal_url: string): ProxyRewrite[] {
+function base_of(url: string, name: string): string {
   let parsed: URL;
   try {
-    parsed = new URL(internal_url);
+    parsed = new URL(url);
   } catch {
-    throw new Error('API_INTERNAL_URL must be an absolute http or https URL');
+    throw new Error(`${name} must be an absolute http or https URL`);
   }
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-    throw new Error('API_INTERNAL_URL must be an absolute http or https URL');
+    throw new Error(`${name} must be an absolute http or https URL`);
   }
 
-  const base = internal_url.replace(/\/+$/, '');
+  return url.replace(/\/+$/, '');
+}
+
+/**
+ * The paths the web server forwards over the internal network, and nothing else.
+ *
+ * The browser only ever talks to the web origin, and no service has a published port. The API's
+ * paths and its probes go to the gateway; the live link's hub goes to the realtime service. In the
+ * shipped stack the edge proxy routes these paths itself, so these rules serve a web server reached
+ * directly, such as `next dev` pointed at a running stack. `/metrics` is left out on purpose, so
+ * the operational counters stay inside the network.
+ *
+ * @param api_url - The gateway's address, `http://gateway:8080` in compose. A trailing slash is ignored.
+ * @param realtime_url - The realtime service's address, `http://realtime:8080` in compose. Defaults
+ * to the gateway's, for a single edge proxy that routes both.
+ * @returns The rewrites, in match order.
+ * @throws {Error} When either address is not an absolute http or https URL, so a misconfigured
+ * build fails instead of producing a proxy that forwards nowhere.
+ */
+export function api_rewrites(api_url: string, realtime_url: string = api_url): ProxyRewrite[] {
+  const api = base_of(api_url, 'API_INTERNAL_URL');
+  const realtime = base_of(realtime_url, 'REALTIME_INTERNAL_URL');
   return [
-    { source: '/api/:path*', destination: `${base}/api/:path*` },
-    { source: '/socket.io', destination: `${base}/socket.io/` },
-    { source: '/ready', destination: `${base}/ready` },
-    { source: '/health', destination: `${base}/health` },
+    { source: '/api/:path*', destination: `${api}/api/:path*` },
+    { source: '/hubs/:path*', destination: `${realtime}/hubs/:path*` },
+    { source: '/ready', destination: `${api}/ready` },
+    { source: '/health', destination: `${api}/health` },
   ];
 }
