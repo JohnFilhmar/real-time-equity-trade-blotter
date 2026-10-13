@@ -27,7 +27,6 @@
 
   <ItemGroup Label="Services">
     <PackageVersion Include="BCrypt.Net-Next" Version="4.2.1" />
-    <PackageVersion Include="Bogus" Version="35.6.5" />
     <PackageVersion Include="Grpc.AspNetCore" Version="2.84.0" />
     <PackageVersion Include="Grpc.Net.Client" Version="2.84.0" />
     <PackageVersion Include="Grpc.Net.ClientFactory" Version="2.84.0" />
