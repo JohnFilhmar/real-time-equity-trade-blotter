@@ -1,0 +1,2156 @@
+{
+  "zod": "4",
+  "cases": [
+    {
+      "schema": "login",
+      "body": "{\"username\":\"jsmith\",\"password\":\"pw\"}",
+      "ok": true,
+      "output": {
+        "username": "jsmith",
+        "password": "pw"
+      }
+    },
+    {
+      "schema": "login",
+      "body": "{\"username\":\"  jsmith  \",\"password\":\"pw\"}",
+      "ok": true,
+      "output": {
+        "username": "jsmith",
+        "password": "pw"
+      }
+    },
+    {
+      "schema": "login",
+      "body": "{\"username\":\"jsmith\\n\",\"password\":\"pw\"}",
+      "ok": true,
+      "output": {
+        "username": "jsmith",
+        "password": "pw"
+      }
+    },
+    {
+      "schema": "login",
+      "body": "{\"username\":\"jsmith\",\"password\":\"pw\",\"extra\":1}",
+      "ok": true,
+      "output": {
+        "username": "jsmith",
+        "password": "pw"
+      }
+    },
+    {
+      "schema": "login",
+      "body": "{}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "username",
+          "message": "Enter your username"
+        },
+        {
+          "field": "password",
+          "message": "Enter your password"
+        }
+      ]
+    },
+    {
+      "schema": "login",
+      "body": "{\"username\":\"\",\"password\":\"\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "username",
+          "message": "Enter your username"
+        },
+        {
+          "field": "username",
+          "message": "Username can only use letters, numbers, dots, underscores and dashes"
+        },
+        {
+          "field": "password",
+          "message": "Enter your password"
+        }
+      ]
+    },
+    {
+      "schema": "login",
+      "body": "{\"username\":\"   \",\"password\":\"x\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "username",
+          "message": "Enter your username"
+        },
+        {
+          "field": "username",
+          "message": "Username can only use letters, numbers, dots, underscores and dashes"
+        }
+      ]
+    },
+    {
+      "schema": "login",
+      "body": "{\"username\":\"a user\",\"password\":\"x\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "username",
+          "message": "Username can only use letters, numbers, dots, underscores and dashes"
+        }
+      ]
+    },
+    {
+      "schema": "login",
+      "body": "{\"username\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"password\":\"x\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "username",
+          "message": "Username cannot be longer than 64 characters"
+        }
+      ]
+    },
+    {
+      "schema": "login",
+      "body": "{\"username\":\"ok\",\"password\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "password",
+          "message": "Password cannot be longer than 200 characters"
+        }
+      ]
+    },
+    {
+      "schema": "login",
+      "body": "{\"username\":123,\"password\":true}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "username",
+          "message": "Enter your username"
+        },
+        {
+          "field": "password",
+          "message": "Enter your password"
+        }
+      ]
+    },
+    {
+      "schema": "login",
+      "body": "{\"username\":null,\"password\":null}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "username",
+          "message": "Enter your username"
+        },
+        {
+          "field": "password",
+          "message": "Enter your password"
+        }
+      ]
+    },
+    {
+      "schema": "login",
+      "body": "{\"username\":\"j\\u00e9\",\"password\":\"x\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "username",
+          "message": "Username can only use letters, numbers, dots, underscores and dashes"
+        }
+      ]
+    },
+    {
+      "schema": "login",
+      "body": "{\"username\":\"\\u00a0jsmith\\ufeff\",\"password\":\"pw\"}",
+      "ok": true,
+      "output": {
+        "username": "jsmith",
+        "password": "pw"
+      }
+    },
+    {
+      "schema": "login",
+      "body": "{\"username\":\"\\u0085jsmith\",\"password\":\"pw\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "username",
+          "message": "Username can only use letters, numbers, dots, underscores and dashes"
+        }
+      ]
+    },
+    {
+      "schema": "login",
+      "body": "{\"username\":\"jsmith\",\"password\":\"  \"}",
+      "ok": true,
+      "output": {
+        "username": "jsmith",
+        "password": "  "
+      }
+    },
+    {
+      "schema": "login",
+      "body": "[]",
+      "ok": false,
+      "errors": [
+        {
+          "field": "",
+          "message": "Invalid input: expected object, received array"
+        }
+      ]
+    },
+    {
+      "schema": "login",
+      "body": null,
+      "ok": false,
+      "errors": [
+        {
+          "field": "",
+          "message": "Invalid input: expected object, received undefined"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": true,
+      "output": {
+        "symbol": "AAPL",
+        "side": "BUY",
+        "quantity": 5000,
+        "price": 227.45,
+        "book": "EQUITIES_US",
+        "counterparty": "Goldman Sachs",
+        "tradeTimestamp": "2026-08-18T09:15:23.000Z"
+      }
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\",\"trader\":\"SOMEONE_ELSE\",\"currency\":\"GBX\",\"status\":\"CANCELLED\",\"version\":9}",
+      "ok": true,
+      "output": {
+        "symbol": "AAPL",
+        "side": "BUY",
+        "quantity": 5000,
+        "price": 227.45,
+        "book": "EQUITIES_US",
+        "counterparty": "Goldman Sachs",
+        "tradeTimestamp": "2026-08-18T09:15:23.000Z"
+      }
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"  EQUITIES_UK  \",\"counterparty\":\" Nomura﻿\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": true,
+      "output": {
+        "symbol": "AAPL",
+        "side": "BUY",
+        "quantity": 5000,
+        "price": 227.45,
+        "book": "EQUITIES_UK",
+        "counterparty": "Nomura",
+        "tradeTimestamp": "2026-08-18T09:15:23.000Z"
+      }
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":0,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "quantity",
+          "message": "Quantity must be a whole number above zero"
+        },
+        {
+          "field": "counterparty",
+          "message": "Enter a counterparty"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":-5,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "quantity",
+          "message": "Quantity must be a whole number above zero"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":1.5,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "quantity",
+          "message": "Quantity must be a whole number above zero"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":-1.5,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "quantity",
+          "message": "Quantity must be a whole number above zero"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":10000001,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "quantity",
+          "message": "Quantity cannot be more than 10,000,000"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":10000000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": true,
+      "output": {
+        "symbol": "AAPL",
+        "side": "BUY",
+        "quantity": 10000000,
+        "price": 227.45,
+        "book": "EQUITIES_US",
+        "counterparty": "Goldman Sachs",
+        "tradeTimestamp": "2026-08-18T09:15:23.000Z"
+      }
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":100000000000000000000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "quantity",
+          "message": "Quantity cannot be more than 10,000,000"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":\"100\",\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "quantity",
+          "message": "Enter a quantity"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":null,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "quantity",
+          "message": "Enter a quantity"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":true,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "quantity",
+          "message": "Enter a quantity"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "quantity",
+          "message": "Enter a quantity"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":100.0,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": true,
+      "output": {
+        "symbol": "AAPL",
+        "side": "BUY",
+        "quantity": 100,
+        "price": 227.45,
+        "book": "EQUITIES_US",
+        "counterparty": "Goldman Sachs",
+        "tradeTimestamp": "2026-08-18T09:15:23.000Z"
+      }
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":1e3,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": true,
+      "output": {
+        "symbol": "AAPL",
+        "side": "BUY",
+        "quantity": 1000,
+        "price": 227.45,
+        "book": "EQUITIES_US",
+        "counterparty": "Goldman Sachs",
+        "tradeTimestamp": "2026-08-18T09:15:23.000Z"
+      }
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":9007199254740993,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "quantity",
+          "message": "Quantity cannot be more than 10,000,000"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":0,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "price",
+          "message": "Price must be above zero"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":-1,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "price",
+          "message": "Price must be above zero"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":10000000,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": true,
+      "output": {
+        "symbol": "AAPL",
+        "side": "BUY",
+        "quantity": 5000,
+        "price": 10000000,
+        "book": "EQUITIES_US",
+        "counterparty": "Goldman Sachs",
+        "tradeTimestamp": "2026-08-18T09:15:23.000Z"
+      }
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":10000000.5,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "price",
+          "message": "Price cannot be more than 10,000,000"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":1e300,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "price",
+          "message": "Price cannot be more than 10,000,000"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":1e400,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "price",
+          "message": "Enter a price"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":\"5\",\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "price",
+          "message": "Enter a price"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":null,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "price",
+          "message": "Enter a price"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "price",
+          "message": "Enter a price"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.4500001,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": true,
+      "output": {
+        "symbol": "AAPL",
+        "side": "BUY",
+        "quantity": 5000,
+        "price": 227.4500001,
+        "book": "EQUITIES_US",
+        "counterparty": "Goldman Sachs",
+        "tradeTimestamp": "2026-08-18T09:15:23.000Z"
+      }
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"ZZZZ\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "symbol",
+          "message": "Choose a symbol from the list"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"aapl\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "symbol",
+          "message": "Choose a symbol from the list"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":null,\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "symbol",
+          "message": "Choose a symbol from the list"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "symbol",
+          "message": "Choose a symbol from the list"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":5,\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "symbol",
+          "message": "Choose a symbol from the list"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"HSBA.L\",\"side\":\"BUY\",\"quantity\":5000,\"price\":982,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": true,
+      "output": {
+        "symbol": "HSBA.L",
+        "side": "BUY",
+        "quantity": 5000,
+        "price": 982,
+        "book": "EQUITIES_US",
+        "counterparty": "Goldman Sachs",
+        "tradeTimestamp": "2026-08-18T09:15:23.000Z"
+      }
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"buy\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "side",
+          "message": "Choose Buy or Sell"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"HOLD\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "side",
+          "message": "Choose Buy or Sell"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":null,\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "side",
+          "message": "Choose Buy or Sell"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "side",
+          "message": "Choose Buy or Sell"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "book",
+          "message": "Enter a book"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"   \",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "book",
+          "message": "Enter a book"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": true,
+      "output": {
+        "symbol": "AAPL",
+        "side": "BUY",
+        "quantity": 5000,
+        "price": 227.45,
+        "book": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "counterparty": "Goldman Sachs",
+        "tradeTimestamp": "2026-08-18T09:15:23.000Z"
+      }
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "book",
+          "message": "Book cannot be longer than 64 characters"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":5,\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "book",
+          "message": "Enter a book"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":null,\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "book",
+          "message": "Enter a book"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "counterparty",
+          "message": "Enter a counterparty"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "counterparty",
+          "message": "Counterparty cannot be longer than 128 characters"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":null,\"tradeTimestamp\":\"2026-08-18T09:15:23.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "counterparty",
+          "message": "Enter a counterparty"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2999-01-01T00:00:00.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "tradeTimestamp",
+          "message": "Trade time cannot be in the future"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":0,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2999-01-01T00:00:00.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "quantity",
+          "message": "Quantity must be a whole number above zero"
+        },
+        {
+          "field": "tradeTimestamp",
+          "message": "Trade time cannot be in the future"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"ZZZZ\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2999-01-01T00:00:00.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "symbol",
+          "message": "Choose a symbol from the list"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":\"7\",\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2999-01-01T00:00:00.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "quantity",
+          "message": "Enter a quantity"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":10000001,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2999-01-01T00:00:00.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "quantity",
+          "message": "Quantity cannot be more than 10,000,000"
+        },
+        {
+          "field": "tradeTimestamp",
+          "message": "Trade time cannot be in the future"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":1.5,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2999-01-01T00:00:00.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "quantity",
+          "message": "Quantity must be a whole number above zero"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":0,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2999-01-01T00:00:00.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "price",
+          "message": "Price must be above zero"
+        },
+        {
+          "field": "tradeTimestamp",
+          "message": "Trade time cannot be in the future"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":\"1\",\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2999-01-01T00:00:00.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "price",
+          "message": "Enter a price"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"HOLD\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2999-01-01T00:00:00.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "side",
+          "message": "Choose Buy or Sell"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2999-01-01T00:00:00.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "book",
+          "message": "Enter a book"
+        },
+        {
+          "field": "tradeTimestamp",
+          "message": "Trade time cannot be in the future"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":5,\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2999-01-01T00:00:00.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "book",
+          "message": "Enter a book"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"tradeTimestamp\":\"2999-01-01T00:00:00.000Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "counterparty",
+          "message": "Counterparty cannot be longer than 128 characters"
+        },
+        {
+          "field": "tradeTimestamp",
+          "message": "Trade time cannot be in the future"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2999-01-01\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "tradeTimestamp",
+          "message": "Enter the trade time as a valid date and time"
+        },
+        {
+          "field": "tradeTimestamp",
+          "message": "Trade time cannot be in the future"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2999-01-01T00:00Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "tradeTimestamp",
+          "message": "Enter the trade time as a valid date and time"
+        },
+        {
+          "field": "tradeTimestamp",
+          "message": "Trade time cannot be in the future"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "tradeTimestamp",
+          "message": "Enter the trade time as a valid date and time"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "tradeTimestamp",
+          "message": "Enter the trade time as a valid date and time"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23+01:00\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "tradeTimestamp",
+          "message": "Enter the trade time as a valid date and time"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-02-30T00:00:00Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "tradeTimestamp",
+          "message": "Enter the trade time as a valid date and time"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2024-02-29T00:00:00Z\"}",
+      "ok": true,
+      "output": {
+        "symbol": "AAPL",
+        "side": "BUY",
+        "quantity": 5000,
+        "price": 227.45,
+        "book": "EQUITIES_US",
+        "counterparty": "Goldman Sachs",
+        "tradeTimestamp": "2024-02-29T00:00:00Z"
+      }
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T09:15:23.123456789Z\"}",
+      "ok": true,
+      "output": {
+        "symbol": "AAPL",
+        "side": "BUY",
+        "quantity": 5000,
+        "price": 227.45,
+        "book": "EQUITIES_US",
+        "counterparty": "Goldman Sachs",
+        "tradeTimestamp": "2026-08-18T09:15:23.123456789Z"
+      }
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18T24:00:00Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "tradeTimestamp",
+          "message": "Enter the trade time as a valid date and time"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":\"2026-08-18 09:15:23Z\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "tradeTimestamp",
+          "message": "Enter the trade time as a valid date and time"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":5}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "tradeTimestamp",
+          "message": "Enter the trade time as a valid date and time"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\",\"tradeTimestamp\":null}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "tradeTimestamp",
+          "message": "Enter the trade time as a valid date and time"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":5000,\"price\":227.45,\"book\":\"EQUITIES_US\",\"counterparty\":\"Goldman Sachs\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "tradeTimestamp",
+          "message": "Enter the trade time as a valid date and time"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "{}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "symbol",
+          "message": "Choose a symbol from the list"
+        },
+        {
+          "field": "side",
+          "message": "Choose Buy or Sell"
+        },
+        {
+          "field": "quantity",
+          "message": "Enter a quantity"
+        },
+        {
+          "field": "price",
+          "message": "Enter a price"
+        },
+        {
+          "field": "book",
+          "message": "Enter a book"
+        },
+        {
+          "field": "counterparty",
+          "message": "Enter a counterparty"
+        },
+        {
+          "field": "tradeTimestamp",
+          "message": "Enter the trade time as a valid date and time"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": "[]",
+      "ok": false,
+      "errors": [
+        {
+          "field": "",
+          "message": "Invalid input: expected object, received array"
+        }
+      ]
+    },
+    {
+      "schema": "create_trade",
+      "body": null,
+      "ok": false,
+      "errors": [
+        {
+          "field": "",
+          "message": "Invalid input: expected object, received undefined"
+        }
+      ]
+    },
+    {
+      "schema": "amend_trade",
+      "body": "{\"version\":1,\"quantity\":100}",
+      "ok": true,
+      "output": {
+        "quantity": 100,
+        "version": 1
+      }
+    },
+    {
+      "schema": "amend_trade",
+      "body": "{\"version\":1}",
+      "ok": true,
+      "output": {
+        "version": 1
+      }
+    },
+    {
+      "schema": "amend_trade",
+      "body": "{\"version\":1,\"price\":230.1,\"book\":\"  TECH_GROWTH \"}",
+      "ok": true,
+      "output": {
+        "price": 230.1,
+        "book": "TECH_GROWTH",
+        "version": 1
+      }
+    },
+    {
+      "schema": "amend_trade",
+      "body": "{\"version\":1,\"symbol\":\"MSFT\",\"side\":\"SELL\",\"quantity\":100}",
+      "ok": true,
+      "output": {
+        "quantity": 100,
+        "version": 1
+      }
+    },
+    {
+      "schema": "amend_trade",
+      "body": "{}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "version",
+          "message": "Reload the trade and try again"
+        }
+      ]
+    },
+    {
+      "schema": "amend_trade",
+      "body": "{\"version\":0}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "version",
+          "message": "Reload the trade and try again"
+        }
+      ]
+    },
+    {
+      "schema": "amend_trade",
+      "body": "{\"version\":1.5}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "version",
+          "message": "Reload the trade and try again"
+        }
+      ]
+    },
+    {
+      "schema": "amend_trade",
+      "body": "{\"version\":-1.5}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "version",
+          "message": "Reload the trade and try again"
+        }
+      ]
+    },
+    {
+      "schema": "amend_trade",
+      "body": "{\"version\":\"1\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "version",
+          "message": "Reload the trade and try again"
+        }
+      ]
+    },
+    {
+      "schema": "amend_trade",
+      "body": "{\"version\":null}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "version",
+          "message": "Reload the trade and try again"
+        }
+      ]
+    },
+    {
+      "schema": "amend_trade",
+      "body": "{\"version\":1,\"quantity\":100,\"counterparty\":\"Nomura\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "counterparty",
+          "message": "Counterparty cannot be changed on an amendment. Cancel the trade and book it again."
+        }
+      ]
+    },
+    {
+      "schema": "amend_trade",
+      "body": "{\"version\":1,\"counterparty\":null}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "counterparty",
+          "message": "Counterparty cannot be changed on an amendment. Cancel the trade and book it again."
+        }
+      ]
+    },
+    {
+      "schema": "amend_trade",
+      "body": "{\"version\":1,\"quantity\":null}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "quantity",
+          "message": "Enter a quantity"
+        }
+      ]
+    },
+    {
+      "schema": "amend_trade",
+      "body": "{\"version\":1,\"quantity\":0,\"price\":-1,\"book\":\"   \"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "quantity",
+          "message": "Quantity must be a whole number above zero"
+        },
+        {
+          "field": "price",
+          "message": "Price must be above zero"
+        },
+        {
+          "field": "book",
+          "message": "Enter a book"
+        }
+      ]
+    },
+    {
+      "schema": "amend_trade",
+      "body": "{\"version\":1,\"price\":0}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "price",
+          "message": "Price must be above zero"
+        }
+      ]
+    },
+    {
+      "schema": "amend_trade",
+      "body": "{\"quantity\":0}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "quantity",
+          "message": "Quantity must be a whole number above zero"
+        },
+        {
+          "field": "version",
+          "message": "Reload the trade and try again"
+        }
+      ]
+    },
+    {
+      "schema": "amend_trade",
+      "body": "[]",
+      "ok": false,
+      "errors": [
+        {
+          "field": "",
+          "message": "Invalid input: expected object, received array"
+        }
+      ]
+    },
+    {
+      "schema": "amend_trade",
+      "body": null,
+      "ok": false,
+      "errors": [
+        {
+          "field": "",
+          "message": "Invalid input: expected object, received undefined"
+        }
+      ]
+    },
+    {
+      "schema": "cancel_trade",
+      "body": "{}",
+      "ok": true,
+      "output": {}
+    },
+    {
+      "schema": "cancel_trade",
+      "body": "{\"version\":2}",
+      "ok": true,
+      "output": {
+        "version": 2
+      }
+    },
+    {
+      "schema": "cancel_trade",
+      "body": "{\"version\":0}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "version",
+          "message": "Reload the trade and try again"
+        }
+      ]
+    },
+    {
+      "schema": "cancel_trade",
+      "body": "{\"version\":\"x\"}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "version",
+          "message": "Reload the trade and try again"
+        }
+      ]
+    },
+    {
+      "schema": "cancel_trade",
+      "body": "{\"version\":null}",
+      "ok": false,
+      "errors": [
+        {
+          "field": "version",
+          "message": "Reload the trade and try again"
+        }
+      ]
+    },
+    {
+      "schema": "cancel_trade",
+      "body": "[]",
+      "ok": false,
+      "errors": [
+        {
+          "field": "",
+          "message": "Invalid input: expected object, received array"
+        }
+      ]
+    },
+    {
+      "schema": "cancel_trade",
+      "body": null,
+      "ok": true,
+      "output": {}
+    },
+    {
+      "schema": "trade_query",
+      "query": {},
+      "ok": true,
+      "output": {
+        "sort_by": "tradeTimestamp",
+        "sort_dir": "desc",
+        "limit": 100
+      }
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "limit": "2"
+      },
+      "ok": true,
+      "output": {
+        "sort_by": "tradeTimestamp",
+        "sort_dir": "desc",
+        "limit": 2
+      }
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "limit": "5000"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "limit",
+          "message": "Page size must be a whole number from 1 to 1,000"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "limit": "0"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "limit",
+          "message": "Page size must be a whole number from 1 to 1,000"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "limit": "abc"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "limit",
+          "message": "Page size must be a whole number from 1 to 1,000"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "limit": ""
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "limit",
+          "message": "Page size must be a whole number from 1 to 1,000"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "limit": "1.5"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "limit",
+          "message": "Page size must be a whole number from 1 to 1,000"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "limit": "0x10"
+      },
+      "ok": true,
+      "output": {
+        "sort_by": "tradeTimestamp",
+        "sort_dir": "desc",
+        "limit": 16
+      }
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "limit": " 50 "
+      },
+      "ok": true,
+      "output": {
+        "sort_by": "tradeTimestamp",
+        "sort_dir": "desc",
+        "limit": 50
+      }
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "limit": "1e2"
+      },
+      "ok": true,
+      "output": {
+        "sort_by": "tradeTimestamp",
+        "sort_dir": "desc",
+        "limit": 100
+      }
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "limit": "Infinity"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "limit",
+          "message": "Page size must be a whole number from 1 to 1,000"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "limit": [
+          "5",
+          "6"
+        ]
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "limit",
+          "message": "Page size must be a whole number from 1 to 1,000"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "side": "buy"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "side",
+          "message": "Side must be BUY or SELL"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "side": "SELL",
+        "status": "CANCELLED"
+      },
+      "ok": true,
+      "output": {
+        "side": "SELL",
+        "status": "CANCELLED",
+        "sort_by": "tradeTimestamp",
+        "sort_dir": "desc",
+        "limit": 100
+      }
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "side": "HOLD"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "side",
+          "message": "Side must be BUY or SELL"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "status": "OPEN"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "status",
+          "message": "Status must be ACTIVE or CANCELLED"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "sort_by": "price",
+        "sort_dir": "asc"
+      },
+      "ok": true,
+      "output": {
+        "sort_by": "price",
+        "sort_dir": "asc",
+        "limit": 100
+      }
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "sort_by": "nope"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "sort_by",
+          "message": "Sort by one of the blotter's columns"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "sort_dir": "DESC"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "sort_dir",
+          "message": "Sort direction must be asc or desc"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "date_from": "2026-08-18T12:00:00.000Z",
+        "date_to": "2026-08-18T09:00:00.000Z"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "date_from",
+          "message": "From must be on or before To"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "date_from": "2026-08-18T09:15:23.000Z",
+        "date_to": "2026-08-18T09:15:23.000Z"
+      },
+      "ok": true,
+      "output": {
+        "date_from": "2026-08-18T09:15:23.000Z",
+        "date_to": "2026-08-18T09:15:23.000Z",
+        "sort_by": "tradeTimestamp",
+        "sort_dir": "desc",
+        "limit": 100
+      }
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "date_from": "garbage"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "date_from",
+          "message": "Enter a valid date and time"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "date_from": "garbage",
+        "date_to": "2026-01-01T00:00:00Z"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "date_from",
+          "message": "Enter a valid date and time"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "date_from": "2026-08-18T12:00:00.000Z",
+        "date_to": "garbage"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "date_to",
+          "message": "Enter a valid date and time"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "date_from": "2026-08-18T12:00:00.000Z",
+        "date_to": "2026-08-18T09:00:00.000Z",
+        "side": "HOLD"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "side",
+          "message": "Side must be BUY or SELL"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "date_from": "2026-08-18T12:00:00.000Z",
+        "date_to": "2026-08-18T09:00:00.000Z",
+        "limit": "0"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "limit",
+          "message": "Page size must be a whole number from 1 to 1,000"
+        },
+        {
+          "field": "date_from",
+          "message": "From must be on or before To"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "date_from": "2026-08-18T12:00:00.000Z",
+        "date_to": "2026-08-18T09:00:00.000Z",
+        "limit": "abc"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "limit",
+          "message": "Page size must be a whole number from 1 to 1,000"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "date_from": "2026-08-18T12:00:00.000Z",
+        "date_to": "2026-08-18T09:00:00.000Z",
+        "limit": "1.5"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "limit",
+          "message": "Page size must be a whole number from 1 to 1,000"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "date_from": "2026-08-18T12:00:00.000Z",
+        "date_to": "2026-08-18T09:00:00.000Z",
+        "sort_by": "nope"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "sort_by",
+          "message": "Sort by one of the blotter's columns"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "date_from": "2026-08-18T12:00:00.000Z",
+        "date_to": "2026-08-18T09:00:00.000Z",
+        "symbol": [
+          "a",
+          "b"
+        ]
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "symbol",
+          "message": "Invalid input: expected string, received array"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "date_from": "2026-08-18",
+        "date_to": "2026-08-17"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "date_from",
+          "message": "Enter a valid date and time"
+        },
+        {
+          "field": "date_to",
+          "message": "Enter a valid date and time"
+        },
+        {
+          "field": "date_from",
+          "message": "From must be on or before To"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "date_from": [
+          "2026-08-18T12:00:00.000Z",
+          "x"
+        ]
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "date_from",
+          "message": "Enter a valid date and time"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "symbol": [
+          "a",
+          "b"
+        ]
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "symbol",
+          "message": "Invalid input: expected string, received array"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "cursor": [
+          "a",
+          "b"
+        ]
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "cursor",
+          "message": "Invalid input: expected string, received array"
+        }
+      ]
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "symbol": "",
+        "book": "equities",
+        "counterparty": "morgan",
+        "trader": "js",
+        "cursor": "abc"
+      },
+      "ok": true,
+      "output": {
+        "symbol": "",
+        "trader": "js",
+        "book": "equities",
+        "counterparty": "morgan",
+        "sort_by": "tradeTimestamp",
+        "sort_dir": "desc",
+        "limit": 100,
+        "cursor": "abc"
+      }
+    },
+    {
+      "schema": "trade_query",
+      "query": {
+        "extra": "x"
+      },
+      "ok": true,
+      "output": {
+        "sort_by": "tradeTimestamp",
+        "sort_dir": "desc",
+        "limit": 100
+      }
+    },
+    {
+      "schema": "event_query",
+      "query": {},
+      "ok": true,
+      "output": {
+        "limit": 100
+      }
+    },
+    {
+      "schema": "event_query",
+      "query": {
+        "limit": "2"
+      },
+      "ok": true,
+      "output": {
+        "limit": 2
+      }
+    },
+    {
+      "schema": "event_query",
+      "query": {
+        "limit": "0"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "limit",
+          "message": "Too small: expected number to be >=1"
+        }
+      ]
+    },
+    {
+      "schema": "event_query",
+      "query": {
+        "limit": "501"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "limit",
+          "message": "Too big: expected number to be <=500"
+        }
+      ]
+    },
+    {
+      "schema": "event_query",
+      "query": {
+        "limit": "500"
+      },
+      "ok": true,
+      "output": {
+        "limit": 500
+      }
+    },
+    {
+      "schema": "event_query",
+      "query": {
+        "limit": "abc"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "limit",
+          "message": "Invalid input: expected number, received NaN"
+        }
+      ]
+    },
+    {
+      "schema": "event_query",
+      "query": {
+        "limit": "2.5"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "limit",
+          "message": "Invalid input: expected int, received number"
+        }
+      ]
+    },
+    {
+      "schema": "event_query",
+      "query": {
+        "limit": ""
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "limit",
+          "message": "Too small: expected number to be >=1"
+        }
+      ]
+    },
+    {
+      "schema": "event_query",
+      "query": {
+        "limit": [
+          "1",
+          "2"
+        ]
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "limit",
+          "message": "Invalid input: expected number, received NaN"
+        }
+      ]
+    },
+    {
+      "schema": "event_query",
+      "query": {
+        "limit": "Infinity"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "limit",
+          "message": "Invalid input: expected number, received Infinity"
+        }
+      ]
+    },
+    {
+      "schema": "event_query",
+      "query": {
+        "limit": "-1"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "limit",
+          "message": "Too small: expected number to be >=1"
+        }
+      ]
+    },
+    {
+      "schema": "event_query",
+      "query": {
+        "limit": "1e2"
+      },
+      "ok": true,
+      "output": {
+        "limit": 100
+      }
+    },
+    {
+      "schema": "event_query",
+      "query": {
+        "limit": " 7 "
+      },
+      "ok": true,
+      "output": {
+        "limit": 7
+      }
+    },
+    {
+      "schema": "event_query",
+      "query": {
+        "cursor": [
+          "a",
+          "b"
+        ]
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "cursor",
+          "message": "Invalid input: expected string, received array"
+        }
+      ]
+    },
+    {
+      "schema": "event_query",
+      "query": {
+        "cursor": "abc"
+      },
+      "ok": true,
+      "output": {
+        "limit": 100,
+        "cursor": "abc"
+      }
+    },
+    {
+      "schema": "trade_params",
+      "query": {
+        "trade_id": "TRD-100001"
+      },
+      "ok": true,
+      "output": {
+        "trade_id": "TRD-100001"
+      }
+    },
+    {
+      "schema": "trade_params",
+      "query": {
+        "trade_id": "TRD-1000000"
+      },
+      "ok": true,
+      "output": {
+        "trade_id": "TRD-1000000"
+      }
+    },
+    {
+      "schema": "trade_params",
+      "query": {
+        "trade_id": "nonsense"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "trade_id",
+          "message": "trade id must look like TRD-100001"
+        }
+      ]
+    },
+    {
+      "schema": "trade_params",
+      "query": {
+        "trade_id": "TRD-12345"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "trade_id",
+          "message": "trade id must look like TRD-100001"
+        }
+      ]
+    },
+    {
+      "schema": "trade_params",
+      "query": {
+        "trade_id": "trd-100001"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "trade_id",
+          "message": "trade id must look like TRD-100001"
+        }
+      ]
+    },
+    {
+      "schema": "trade_params",
+      "query": {
+        "trade_id": "TRD-100001x"
+      },
+      "ok": false,
+      "errors": [
+        {
+          "field": "trade_id",
+          "message": "trade id must look like TRD-100001"
+        }
+      ]
+    }
+  ]
+}
