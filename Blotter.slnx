@@ -5,6 +5,13 @@
     <Project Path="libs/Blotter.ServiceDefaults/Blotter.ServiceDefaults.csproj" />
   </Folder>
   <Folder Name="/services/" />
+  <Folder Name="/services/realtime/" />
+  <Folder Name="/services/realtime/src/">
+    <Project Path="services/realtime/src/Blotter.Realtime/Blotter.Realtime.csproj" />
+  </Folder>
+  <Folder Name="/services/realtime/tests/">
+    <Project Path="services/realtime/tests/Blotter.Realtime.Tests/Blotter.Realtime.Tests.csproj" />
+  </Folder>
   <Folder Name="/services/trades/" />
   <Folder Name="/services/trades/src/">
     <Project Path="services/trades/src/Blotter.Trades/Blotter.Trades.csproj" />
