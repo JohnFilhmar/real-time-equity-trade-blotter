@@ -54,7 +54,9 @@ public sealed class AuditTrailTests(SqlServerFixture server) : TradesDatabase(se
         await service.CancelAsync(created.TradeId, null, Trader, default);
         await appContext.Outbox.Where(row => row.Id > 0).ExecuteDeleteAsync();
 
-        Assert.Contains("append-only", (await Assert.ThrowsAsync<SqlException>(() => Execute(appConnection, "UPDATE [trade_event] SET [actor] = 'X'"))).Message, StringComparison.Ordinal);
+        // The role holds no UPDATE on the event log, so the permission check refuses before the
+        // trigger is even reached; the trigger is the second line, proven by the test above.
+        Assert.Contains("UPDATE permission was denied", (await Assert.ThrowsAsync<SqlException>(() => Execute(appConnection, "UPDATE [trade_event] SET [actor] = 'X'"))).Message, StringComparison.Ordinal);
         await Assert.ThrowsAsync<SqlException>(() => Execute(appConnection, "DELETE FROM [trade_event]"));
         await Assert.ThrowsAsync<SqlException>(() => Execute(appConnection, "DELETE FROM [trade]"));
         await Assert.ThrowsAsync<SqlException>(() => Execute(appConnection, "TRUNCATE TABLE [trade_event]"));
