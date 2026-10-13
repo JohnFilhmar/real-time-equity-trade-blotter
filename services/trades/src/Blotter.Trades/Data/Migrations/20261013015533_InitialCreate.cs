@@ -35,7 +35,7 @@ namespace Blotter.Trades.Data.Migrations
                 name: "trade",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    id = table.Column<string>(type: "char(36)", unicode: false, fixedLength: true, maxLength: 36, nullable: false, collation: "Latin1_General_100_BIN2"),
                     trade_id = table.Column<string>(type: "varchar(24)", unicode: false, maxLength: 24, nullable: false),
                     symbol = table.Column<string>(type: "varchar(12)", unicode: false, maxLength: 12, nullable: false, collation: "Latin1_General_100_CI_AS"),
                     side = table.Column<string>(type: "varchar(4)", unicode: false, maxLength: 4, nullable: false),
@@ -66,8 +66,8 @@ namespace Blotter.Trades.Data.Migrations
                 name: "trade_event",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    trade_uuid = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    id = table.Column<string>(type: "char(36)", unicode: false, fixedLength: true, maxLength: 36, nullable: false, collation: "Latin1_General_100_BIN2"),
+                    trade_uuid = table.Column<string>(type: "char(36)", unicode: false, fixedLength: true, maxLength: 36, nullable: false, collation: "Latin1_General_100_BIN2"),
                     version = table.Column<int>(type: "int", nullable: false),
                     action = table.Column<string>(type: "varchar(9)", unicode: false, maxLength: 9, nullable: false),
                     source = table.Column<string>(type: "varchar(9)", unicode: false, maxLength: 9, nullable: false),

@@ -37,11 +37,11 @@ public sealed class RulesTests
     }
 
     [Fact]
-    public void Change_set_records_every_field_that_moved_in_a_fixed_order()
+    public void Change_set_records_every_field_that_moved_in_the_order_postgres_jsonb_kept_them()
     {
         var changes = ChangeSets.ForAmendment(Before, new TradeChanges(7500, 230m, "TECH_GROWTH"));
 
-        Assert.Equal(new[] { "quantity", "price", "book" }, changes.Keys);
+        Assert.Equal(new[] { "book", "price", "quantity" }, changes.Keys);
     }
 
     [Fact]

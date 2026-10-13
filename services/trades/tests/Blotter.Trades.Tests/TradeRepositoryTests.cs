@@ -123,6 +123,24 @@ public sealed class TradeRepositoryTests(SqlServerFixture server) : TradesDataba
     }
 
     [Fact]
+    public async Task Rows_on_the_same_instant_break_ties_in_the_string_order_of_their_ids_as_the_blotter_does()
+    {
+        for (var index = 0; index < 8; index++)
+        {
+            await Service.CreateAsync(ATicket(tradeTimestamp: "2026-08-18T09:00:00.000Z"), Trader, default);
+        }
+
+        var ascending = await Service.ListAsync(
+            new TradeQuery(null, null, null, null, null, null, null, null, TradeSortColumn.TradeTimestamp, false, 100, null), default);
+        var descending = await Service.ListAsync(
+            new TradeQuery(null, null, null, null, null, null, null, null, TradeSortColumn.TradeTimestamp, true, 100, null), default);
+
+        var ids = ascending.Data.Select(trade => trade.Id.ToString()).ToList();
+        Assert.Equal(ids.Order(StringComparer.Ordinal), ids);
+        Assert.Equal(ids.AsEnumerable().Reverse(), descending.Data.Select(trade => trade.Id.ToString()));
+    }
+
+    [Fact]
     public async Task Business_ids_come_from_the_sequence_in_order_and_never_truncate()
     {
         var first = await Service.CreateAsync(ATicket(), Trader, default);

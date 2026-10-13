@@ -17,6 +17,28 @@ internal sealed class TradeRowConfiguration : IEntityTypeConfiguration<TradeRow>
     /// </summary>
     public const string FilterCollation = "Latin1_General_100_CI_AS";
 
+    /// <summary>
+    /// Row ids are stored as their lower-case text under a binary collation, so a tie on the sort
+    /// column breaks in the order a JavaScript string comparison gives, which is the order Postgres
+    /// gave uuids and the order the blotter uses when it places a live row. SQL Server's own
+    /// uniqueidentifier order compares the last six bytes first and would disagree with both.
+    /// </summary>
+    public const string IdCollation = "Latin1_General_100_BIN2";
+
+    /// <summary>Configures a uuid column as 36 characters of lower-case text under <see cref="IdCollation"/>.</summary>
+    /// <param name="property">The property to configure.</param>
+    /// <param name="column">Its column name.</param>
+    public static void ConfigureId(PropertyBuilder<Guid> property, string column)
+    {
+        ArgumentNullException.ThrowIfNull(property);
+        property.HasColumnName(column)
+            .HasConversion(id => id.ToString(), text => Guid.Parse(text))
+            .HasMaxLength(36)
+            .IsFixedLength()
+            .IsUnicode(false)
+            .UseCollation(IdCollation);
+    }
+
     /// <summary>Configures the table.</summary>
     /// <param name="builder">The entity builder.</param>
     public void Configure(EntityTypeBuilder<TradeRow> builder)
@@ -32,7 +54,8 @@ internal sealed class TradeRowConfiguration : IEntityTypeConfiguration<TradeRow>
         });
 
         builder.HasKey(trade => trade.Id).HasName("trade_pkey");
-        builder.Property(trade => trade.Id).HasColumnName("id").ValueGeneratedNever();
+        ConfigureId(builder.Property(trade => trade.Id), "id");
+        builder.Property(trade => trade.Id).ValueGeneratedNever();
         builder.Property(trade => trade.TradeId).HasColumnName("trade_id").HasMaxLength(24).IsUnicode(false);
         builder.Property(trade => trade.Symbol).HasColumnName("symbol").HasMaxLength(12).IsUnicode(false).UseCollation(FilterCollation);
         builder.Property(trade => trade.Side).HasColumnName("side").HasMaxLength(4).IsUnicode(false)

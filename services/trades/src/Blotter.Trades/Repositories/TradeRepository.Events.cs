@@ -37,15 +37,16 @@ internal sealed partial class TradeRepository
         var total = await db.TradeEvents.CountAsync(cancellationToken);
 
         var source = cursor is { } after
-            ? db.TradeEvents.FromSqlInterpolated(
-                $"""
+            ? db.TradeEvents.FromSqlRaw(
+                """
                 SELECT e.* FROM [trade_event] AS e
                 WHERE EXISTS (
                     SELECT 1 FROM [trade_event] AS c
-                    WHERE c.[id] = {after}
+                    WHERE c.[id] = @cursor
                       AND (e.[occurred_at] < c.[occurred_at]
                            OR (e.[occurred_at] = c.[occurred_at] AND e.[id] < c.[id])))
-                """)
+                """,
+                IdParameter(after))
             : db.TradeEvents;
 
         var rows = await source

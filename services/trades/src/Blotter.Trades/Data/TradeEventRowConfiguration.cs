@@ -24,8 +24,9 @@ internal sealed class TradeEventRowConfiguration : IEntityTypeConfiguration<Trad
         });
 
         builder.HasKey(tradeEvent => tradeEvent.Id).HasName("trade_event_pkey");
-        builder.Property(tradeEvent => tradeEvent.Id).HasColumnName("id").ValueGeneratedNever();
-        builder.Property(tradeEvent => tradeEvent.TradeUuid).HasColumnName("trade_uuid");
+        TradeRowConfiguration.ConfigureId(builder.Property(tradeEvent => tradeEvent.Id), "id");
+        builder.Property(tradeEvent => tradeEvent.Id).ValueGeneratedNever();
+        TradeRowConfiguration.ConfigureId(builder.Property(tradeEvent => tradeEvent.TradeUuid), "trade_uuid");
         builder.Property(tradeEvent => tradeEvent.Version).HasColumnName("version");
         builder.Property(tradeEvent => tradeEvent.Action).HasColumnName("action").HasMaxLength(9).IsUnicode(false)
             .HasConversion(action => WireNames.Of(action), name => WireNames.Parse<TradeEventAction>(name));

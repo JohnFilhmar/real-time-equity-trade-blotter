@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Blotter.Trades.Data.Migrations
 {
     [DbContext(typeof(TradesDbContext))]
-    [Migration("20261013004817_InitialCreate")]
+    [Migration("20261013015533_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -67,9 +67,13 @@ namespace Blotter.Trades.Data.Migrations
 
             modelBuilder.Entity("Blotter.Trades.Data.TradeEventRow", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("id");
+                    b.Property<string>("Id")
+                        .HasMaxLength(36)
+                        .IsUnicode(false)
+                        .HasColumnType("char(36)")
+                        .HasColumnName("id")
+                        .IsFixedLength()
+                        .UseCollation("Latin1_General_100_BIN2");
 
                     b.Property<string>("Action")
                         .IsRequired()
@@ -101,9 +105,14 @@ namespace Blotter.Trades.Data.Migrations
                         .HasColumnType("varchar(9)")
                         .HasColumnName("source");
 
-                    b.Property<Guid>("TradeUuid")
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("trade_uuid");
+                    b.Property<string>("TradeUuid")
+                        .IsRequired()
+                        .HasMaxLength(36)
+                        .IsUnicode(false)
+                        .HasColumnType("char(36)")
+                        .HasColumnName("trade_uuid")
+                        .IsFixedLength()
+                        .UseCollation("Latin1_General_100_BIN2");
 
                     b.Property<int>("Version")
                         .HasColumnType("int")
@@ -131,9 +140,13 @@ namespace Blotter.Trades.Data.Migrations
 
             modelBuilder.Entity("Blotter.Trades.Data.TradeRow", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("id");
+                    b.Property<string>("Id")
+                        .HasMaxLength(36)
+                        .IsUnicode(false)
+                        .HasColumnType("char(36)")
+                        .HasColumnName("id")
+                        .IsFixedLength()
+                        .UseCollation("Latin1_General_100_BIN2");
 
                     b.Property<string>("Book")
                         .IsRequired()

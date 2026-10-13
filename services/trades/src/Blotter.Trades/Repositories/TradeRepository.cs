@@ -1,7 +1,9 @@
+using System.Data;
 using System.Linq.Expressions;
 using Blotter.Contracts.Wire;
 using Blotter.Trades.Data;
 using Blotter.Trades.Domain;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace Blotter.Trades.Repositories;
@@ -73,13 +75,19 @@ internal sealed partial class TradeRepository(TradesDbContext db, TimeProvider c
             SELECT t.* FROM [trade] AS t
             WHERE EXISTS (
                 SELECT 1 FROM [trade] AS c
-                WHERE c.[id] = {0}
+                WHERE c.[id] = @cursor
                   AND (t.[{{column}}] {{comparison}} c.[{{column}}]
                        OR (t.[{{column}}] = c.[{{column}}] AND t.[id] {{comparison}} c.[id])))
             """,
-            cursor);
+            IdParameter(cursor));
 #pragma warning restore EF1002
     }
+
+    /// <summary>The cursor as a <c>char(36)</c> parameter, so it compares as text against the id column and keeps its index.</summary>
+    /// <param name="id">The row id the cursor names.</param>
+    /// <returns>The <c>@cursor</c> parameter.</returns>
+    private static SqlParameter IdParameter(Guid id) =>
+        new("@cursor", SqlDbType.Char, 36) { Value = id.ToString() };
 
     private static IQueryable<TradeRow> Filter(IQueryable<TradeRow> rows, TradeQuery query)
     {

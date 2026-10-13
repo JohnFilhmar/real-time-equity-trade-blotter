@@ -8,7 +8,8 @@ internal static class ChangeSets
     /// <summary>
     /// Records only the fields that really moved. A client may resend a field at the value it already
     /// holds, so the request is not the change: an amendment that moved one field records one field.
-    /// The order is fixed as quantity, price, book.
+    /// The keys come in the order Postgres JSONB kept them, shorter key first (book, price, quantity),
+    /// because the history panel shows them in the order they arrive.
     /// </summary>
     /// <param name="before">The trade before the amendment.</param>
     /// <param name="changes">The fields the client asked to change.</param>
@@ -17,9 +18,9 @@ internal static class ChangeSets
     {
         var moved = new Dictionary<string, FieldChange>(StringComparer.Ordinal);
 
-        if (changes.Quantity is { } quantity && quantity != before.Quantity)
+        if (changes.Book is { } book && !string.Equals(book, before.Book, StringComparison.Ordinal))
         {
-            moved["quantity"] = new FieldChange(ChangeValue.Of(before.Quantity), ChangeValue.Of(quantity));
+            moved["book"] = new FieldChange(ChangeValue.Of(before.Book), ChangeValue.Of(book));
         }
 
         if (changes.Price is { } price && price != before.Price)
@@ -27,9 +28,9 @@ internal static class ChangeSets
             moved["price"] = new FieldChange(ChangeValue.Of(before.Price), ChangeValue.Of(price));
         }
 
-        if (changes.Book is { } book && !string.Equals(book, before.Book, StringComparison.Ordinal))
+        if (changes.Quantity is { } quantity && quantity != before.Quantity)
         {
-            moved["book"] = new FieldChange(ChangeValue.Of(before.Book), ChangeValue.Of(book));
+            moved["quantity"] = new FieldChange(ChangeValue.Of(before.Quantity), ChangeValue.Of(quantity));
         }
 
         return moved;
