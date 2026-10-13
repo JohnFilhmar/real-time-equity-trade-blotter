@@ -9,12 +9,12 @@ import { Trend } from 'k6/metrics';
 // not capacity; a blotter desk does not hit 300 reads a minute per person.
 //
 // Run with the compose stack up:  k6 run load-testing/api_load.js
-// Override the target with:        k6 run -e API_URL=http://localhost:3000 load-testing/api_load.js
+// Override the target with:        k6 run -e API_URL=http://localhost:8088 load-testing/api_load.js
 //
-// The API has no published port, so the load goes through the web server's forwarding, which is
+// The services have no published port, so the load goes through the nginx edge, which is
 // the path a browser takes.
 
-const base = __ENV.API_URL || 'http://localhost:3000';
+const base = __ENV.API_URL || 'http://localhost';
 const password = __ENV.SEED_USER_PASSWORD || 'FusionDemo!2026';
 const accounts = ['jsmith', 'abrown', 'mjones', 'viewer'];
 
@@ -37,7 +37,7 @@ export const options = {
 const list_trend = new Trend('list_trades_ms');
 const write_trend = new Trend('write_trade_ms');
 
-const json = { headers: { 'content-type': 'application/json', origin: 'http://localhost:3000' } };
+const json = { headers: { 'content-type': 'application/json', origin: base } };
 
 /** Signs one virtual user in on its first iteration; the token is reused afterwards. */
 function sign_in(username) {
