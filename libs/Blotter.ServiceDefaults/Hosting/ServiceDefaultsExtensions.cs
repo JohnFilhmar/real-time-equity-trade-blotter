@@ -48,6 +48,10 @@ public static class ServiceDefaultsExtensions
                 .MinimumLevel.Override("Microsoft.AspNetCore", frameworkLevel)
                 .MinimumLevel.Override("Microsoft.EntityFrameworkCore", frameworkLevel)
                 .MinimumLevel.Override("Grpc", frameworkLevel)
+                // Authentication registers Data Protection, which nothing here uses: access tokens
+                // are JWTs and the refresh cookie holds one. Its start-up warnings about where keys
+                // live would only send an operator looking for a problem that is not there.
+                .MinimumLevel.Override("Microsoft.AspNetCore.DataProtection", LogEventLevel.Error)
                 .Enrich.FromLogContext()
                 .Enrich.WithProperty("service", serviceName)
                 .WriteTo.Console(new RenderedCompactJsonFormatter());
