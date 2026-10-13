@@ -153,3 +153,10 @@ frontend/test-results/
 frontend/playwright-report/
 frontend/lighthouse/
 load-testing/results/
+
+# .NET build output and local tooling state
+bin/
+obj/
+TestResults/
+*.user
+.vs/

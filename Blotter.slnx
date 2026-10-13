@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/libs/">
+    <Project Path="libs/Blotter.Contracts.Tests/Blotter.Contracts.Tests.csproj" />
+    <Project Path="libs/Blotter.Contracts/Blotter.Contracts.csproj" />
+    <Project Path="libs/Blotter.ServiceDefaults/Blotter.ServiceDefaults.csproj" />
+  </Folder>
+</Solution>
