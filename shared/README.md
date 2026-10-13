@@ -1,11 +1,17 @@
 # shared
 
-`@blotter/shared`: the one contract the API and the web app both import. One zod schema per model,
-every other shape derived from it, so a field added in one place reaches the API validation, the
-client types and the socket payload together.
+`@blotter/shared`: the client contract. One zod schema per model, every other shape derived from it,
+so a field added in one place reaches the client types, the ticket's validation and the live
+link's payload types together.
 
-Both apps import this package from its build output, and `main` and `types` point into `dist/`. That
-is why `npm run build:shared` is not optional on a fresh clone, and why the root `pretest` hook
+The .NET services do not import it. They mirror it: `libs/Blotter.Contracts` declares the same wire
+shapes, and the gateway's validators are tested against `zod_cases.json`, the answers these schemas
+give for 174 inputs. `node scripts/export_zod_cases.mjs` regenerates that fixture after a schema
+change, and CI fails when the two disagree, so the API and the ticket never refuse with different
+words.
+
+The web app imports this package from its build output, and `main` and `types` point into `dist/`.
+That is why `npm run build:shared` is not optional on a fresh clone, and why the root `pretest` hook
 rebuilds it before every test run. Built with `tsc`, zod v4, no runtime dependencies beyond zod.
 
 ## What derives from what
@@ -49,10 +55,10 @@ Most of this package is schemas, but two parts are behaviour that both sides run
 they live here rather than in either app.
 
 **`position_book.ts`.** One walk over a trade list produces average cost, net quantity and realised
-P&L. The server runs it after every write and broadcasts the result per symbol; the client runs the
-same `apply_trade` when patching its own mutation into the cache. Unrealised P&L is the same
-function marking open size against a mark. Two implementations would drift, and a P&L that disagrees
-between the server and the screen is worse than no P&L.
+P&L. The client runs `apply_trade` when patching its own mutation into the cache, and unrealised P&L
+is the same function marking open size against a mark. The trades service runs a C# port of the
+same walk in `decimal` after every write and broadcasts the result per symbol, and its tests check
+it against the cases this file was tested with.
 
 **`roles.ts`.** `permissions_for` derives a permission set from a role. The API authorises on the
 permission, and the interface hides controls using the same derivation, so a control is never offered
@@ -62,7 +68,7 @@ that the server will refuse.
 
 **Field names are camelCase.** The brief supplies its sample payloads that way, so a reviewer
 comparing a response against their own sample sees identical keys. Database columns stay snake_case,
-bridged by Prisma's `@map`.
+mapped column by column in each service's EF Core model.
 
 **Instruments and counterparties are a closed list.** `symbol` is an enum over the twelve names in
 `instruments.ts`, not a free string, so an unknown ticker fails validation instead of reaching the
