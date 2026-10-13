@@ -1,0 +1,412 @@
+name: tp-icap-blotter
+
+# The whole system on one machine: nginx at the edge as the only published port, the gateway,
+# trades and realtime services, the web app, SQL Server, RabbitMQ, Redis and a telemetry dashboard.
+#
+# Every service finds the others through addresses in its environment, never by discovery, and
+# each address below is a variable with the in-compose name as its default. Moving a service to
+# another host is an edit to .env: point its variable at the new address and stop it here.
+#
+# Secrets fall back to development values so `docker compose up` works on a clean checkout, and
+# they are obviously so. A real deployment sets every one of them in .env (see the README); the
+# services refuse signing secrets under 32 characters, which stops a short placeholder from quietly
+# becoming a production key. Passwords go into connection strings and URLs, so keep them to letters,
+# digits, underscores and dashes.
+
+x-hardened: &hardened
+  restart: unless-stopped
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+
+x-dotnet: &dotnet
+  <<: *hardened
+  read_only: true
+  tmpfs:
+    - /tmp
+
+x-telemetry: &telemetry
+  OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://aspire-dashboard:18889}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+
+x-gateway-build: &gateway-build
+  build:
+    context: .
+    dockerfile: services/gateway/Dockerfile
+  image: tp-icap/gateway:local
+  pull_policy: build
+
+x-trades-build: &trades-build
+  build:
+    context: .
+    dockerfile: services/trades/Dockerfile
+  image: tp-icap/trades:local
+  pull_policy: build
+
+x-gateway-env: &gateway-env
+  <<: *telemetry
+  DATABASE_CONNECTION: Server=${SQLSERVER_HOST:-sqlserver},1433;Database=identity;User Id=identity_app;Password=${IDENTITY_APP_PASSWORD:-Dev_Pw_IdApp_2026};Encrypt=True;TrustServerCertificate=True
+  REDIS_CONNECTION: ${REDIS_HOST:-redis}:6379,password=${REDIS_PASSWORD:-dev-redis-password}
+  TRADES_GRPC_URL: ${TRADES_GRPC_URL:-http://trades:8081}
+  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-access-secret-change-me-0123456789abcdef}
+  JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret-change-me-0123456789abcdef}
+  CORS_ORIGINS: ${PUBLIC_ORIGIN:-http://localhost,http://localhost:3000}
+  COOKIE_SECURE: ${COOKIE_SECURE:-false}
+  SEED_USER_PASSWORD: ${SEED_USER_PASSWORD:-FusionDemo!2026}
+
+x-trades-env: &trades-env
+  <<: *telemetry
+  DATABASE_CONNECTION: Server=${SQLSERVER_HOST:-sqlserver},1433;Database=trades;User Id=trades_app;Password=${TRADES_APP_PASSWORD:-Dev_Pw_TrApp_2026};Encrypt=True;TrustServerCertificate=True
+  RABBITMQ_URL: amqp://blotter:${RABBITMQ_PASSWORD:-dev-rabbitmq-password}@${RABBITMQ_HOST:-rabbitmq}:5672/
+  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-access-secret-change-me-0123456789abcdef}
+  SEED_TRADE_COUNT: ${SEED_TRADE_COUNT:-500}
+  LIVE_FEED_ENABLED: ${LIVE_FEED_ENABLED:-true}
+  LIVE_FEED_MIN_INTERVAL_MS: ${LIVE_FEED_MIN_INTERVAL_MS:-3000}
+  LIVE_FEED_MAX_INTERVAL_MS: ${LIVE_FEED_MAX_INTERVAL_MS:-8000}
+  LIVE_FEED_MAX_ACTIVE_TRADES: ${LIVE_FEED_MAX_ACTIVE_TRADES:-2000}
+
+x-sql-passwords: &sql-passwords
+  IDENTITY_MIGRATOR_PASSWORD: ${IDENTITY_MIGRATOR_PASSWORD:-Dev_Pw_IdMig_2026}
+  IDENTITY_APP_PASSWORD: ${IDENTITY_APP_PASSWORD:-Dev_Pw_IdApp_2026}
+  TRADES_MIGRATOR_PASSWORD: ${TRADES_MIGRATOR_PASSWORD:-Dev_Pw_TrMig_2026}
+  TRADES_APP_PASSWORD: ${TRADES_APP_PASSWORD:-Dev_Pw_TrApp_2026}
+
+services:
+  # ---------------------------------------------------------------- edge
+  nginx:
+    <<: *hardened
+    image: nginxinc/nginx-unprivileged:1.29-alpine@sha256:0c79d56aee561a1d81c63f00eee5fb5fe29279560cdc55e91425133104c7fbe6
+    ports:
+      - "${WEB_PORT:-80}:8080"
+    environment:
+      NGINX_RESOLVER: ${NGINX_RESOLVER:-127.0.0.11}
+      GATEWAY_UPSTREAM: ${GATEWAY_UPSTREAM:-gateway:8080}
+      REALTIME_UPSTREAM: ${REALTIME_UPSTREAM:-realtime:8080}
+      WEB_UPSTREAM: ${WEB_UPSTREAM:-frontend:3000}
+    volumes:
+      - ./deploy/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+    # The template is rendered into conf.d at start, which is why that one directory is writable,
+    # and owned by the image's non-root nginx user (101).
+    read_only: true
+    tmpfs:
+      - /tmp:uid=101,gid=101
+      - /etc/nginx/conf.d:uid=101,gid=101
+    depends_on:
+      gateway:
+        condition: service_healthy
+      realtime:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    networks:
+      - edge
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    # One worker per host CPU, which is two on the target instance.
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+
+  # ---------------------------------------------------------------- services
+  gateway:
+    <<: [*dotnet, *gateway-build]
+    environment:
+      <<: *gateway-env
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      gateway-migrate:
+        condition: service_completed_successfully
+    networks:
+      - edge
+      - backend
+    healthcheck:
+      test: ["CMD", "dotnet", "Blotter.Gateway.dll", "healthcheck"]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+
+  trades:
+    <<: [*dotnet, *trades-build]
+    environment:
+      <<: *trades-env
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      trades-migrate:
+        condition: service_completed_successfully
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "dotnet", "Blotter.Trades.dll", "healthcheck"]
+      interval: 15s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+
+  realtime:
+    <<: *dotnet
+    build:
+      context: .
+      dockerfile: services/realtime/Dockerfile
+    image: tp-icap/realtime:local
+    pull_policy: build
+    environment:
+      <<: *telemetry
+      RABBITMQ_URL: amqp://blotter:${RABBITMQ_PASSWORD:-dev-rabbitmq-password}@${RABBITMQ_HOST:-rabbitmq}:5672/
+      REDIS_CONNECTION: ${REDIS_HOST:-redis}:6379,password=${REDIS_PASSWORD:-dev-redis-password}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-access-secret-change-me-0123456789abcdef}
+      # The default also admits `next dev` on :3000, which forwards /hubs here during development.
+      CORS_ORIGINS: ${PUBLIC_ORIGIN:-http://localhost,http://localhost:3000}
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - edge
+      - backend
+    healthcheck:
+      test: ["CMD", "dotnet", "Blotter.Realtime.dll", "healthcheck"]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 384M
+
+  frontend:
+    <<: *hardened
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      target: runtime
+      args:
+        # Compiled into the web server's rewrites at build time. The edge routes these paths itself,
+        # so the rewrites only matter to someone reaching the web server directly.
+        API_INTERNAL_URL: http://gateway:8080
+        REALTIME_INTERNAL_URL: http://realtime:8080
+    image: tp-icap/frontend:local
+    pull_policy: build
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+      NEXT_TELEMETRY_DISABLED: "1"
+    networks:
+      - edge
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+
+  # ---------------------------------------------------------------- one-shot jobs
+  # Creates the databases, the logins and the writer roles. Runs on every start and changes only
+  # what is missing or rotated.
+  sqlserver-init:
+    <<: *hardened
+    image: mcr.microsoft.com/mssql/server:2022-CU27-ubuntu-22.04@sha256:4402d880dd4c34bfa7d8705e56a86cd6c88da80a1f6bbbe741f999e76264a090
+    restart: "no"
+    entrypoint: ["/opt/mssql-tools18/bin/sqlcmd"]
+    command: ["-C", "-S", "${SQLSERVER_HOST:-sqlserver}", "-U", "sa", "-b", "-i", "/init/init.sql"]
+    environment:
+      <<: *sql-passwords
+      SQLCMDPASSWORD: ${MSSQL_SA_PASSWORD:-Dev_Sa_Password_2026}
+    volumes:
+      - ./deploy/sqlserver/init.sql:/init/init.sql:ro
+    read_only: true
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - backend
+
+  # Each migration job is its service's own image run with `migrate`, as the owner login, so the
+  # schema that ships is always the one the code was built against.
+  gateway-migrate:
+    <<: *dotnet
+    # Built once, by the gateway service, and reused here.
+    image: tp-icap/gateway:local
+    pull_policy: never
+    restart: "no"
+    command: ["migrate"]
+    environment:
+      <<: *gateway-env
+      DATABASE_CONNECTION: Server=${SQLSERVER_HOST:-sqlserver},1433;Database=identity;User Id=identity_migrator;Password=${IDENTITY_MIGRATOR_PASSWORD:-Dev_Pw_IdMig_2026};Encrypt=True;TrustServerCertificate=True
+    depends_on:
+      sqlserver-init:
+        condition: service_completed_successfully
+    networks:
+      - backend
+    healthcheck:
+      disable: true
+
+  trades-migrate:
+    <<: *dotnet
+    # Built once, by the trades service, and reused here.
+    image: tp-icap/trades:local
+    pull_policy: never
+    restart: "no"
+    command: ["migrate"]
+    environment:
+      <<: *trades-env
+      DATABASE_CONNECTION: Server=${SQLSERVER_HOST:-sqlserver},1433;Database=trades;User Id=trades_migrator;Password=${TRADES_MIGRATOR_PASSWORD:-Dev_Pw_TrMig_2026};Encrypt=True;TrustServerCertificate=True
+    depends_on:
+      sqlserver-init:
+        condition: service_completed_successfully
+    networks:
+      - backend
+    healthcheck:
+      disable: true
+
+  # ---------------------------------------------------------------- dependencies
+  sqlserver:
+    <<: *hardened
+    image: mcr.microsoft.com/mssql/server:2022-CU27-ubuntu-22.04@sha256:4402d880dd4c34bfa7d8705e56a86cd6c88da80a1f6bbbe741f999e76264a090
+    # The sqlservr binary carries cap_net_bind_service as a file capability, and the kernel refuses
+    # to run a binary whose file capability is missing from the bounding set. Found by running the
+    # stack: with every capability dropped it exited "Operation not permitted". The server runs as
+    # the non-root mssql user and no-new-privileges still applies.
+    cap_add:
+      - NET_BIND_SERVICE
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Express
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-Dev_Sa_Password_2026}
+      MSSQL_MEMORY_LIMIT_MB: "2048"
+      # Lets the healthcheck's sqlcmd sign in without the password on its command line.
+      SQLCMDPASSWORD: ${MSSQL_SA_PASSWORD:-Dev_Sa_Password_2026}
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools18/bin/sqlcmd", "-C", "-S", "localhost", "-U", "sa", "-Q", "SELECT 1", "-b", "-o", "/dev/null"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 3G
+
+  rabbitmq:
+    <<: *hardened
+    image: rabbitmq:4.3.6-management-alpine@sha256:3ef7f7e89fed709a78f79b8b5f4e30e1312a1d4089da752e23595566d9d61a95
+    # The node's name comes from the hostname, and the data volume belongs to that name.
+    hostname: rabbitmq
+    # Started as the rabbitmq user, so the entrypoint never needs the capabilities it would use to
+    # drop from root, and every capability stays dropped.
+    user: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: blotter
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-dev-rabbitmq-password}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      start_period: 30s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+
+  redis:
+    <<: *hardened
+    image: redis:8.10.2-alpine@sha256:3811787313eba226a2ef38658c6ccb91cd5e110edc89c37767de373120a0e5a0
+    # No persistence. Redis holds sessions, lockout counters, rate-limit windows, the broadcast
+    # sequence and the marks, all of which may be lost on a restart: everyone signs in again and
+    # clients resync. Persisting them would be a disk of credential-adjacent state for no gain.
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--requirepass", "${REDIS_PASSWORD:-dev-redis-password}"]
+    user: redis
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD:-dev-redis-password}
+    read_only: true
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+  # Traces, metrics and logs from all three services. The UI is bound to the host's loopback only:
+  # reach it over an SSH tunnel, and sign in with the token it prints to its log.
+  aspire-dashboard:
+    <<: *hardened
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:13.6.1@sha256:613f297a274958abd85e7b71664f51fb42b0ddeb697ebd4c159677774433345b
+    environment:
+      DASHBOARD__FRONTEND__AUTHMODE: BrowserToken
+      # The OTLP port is not published and only the backend network can reach it.
+      DASHBOARD__OTLP__AUTHMODE: Unsecured
+    ports:
+      - "127.0.0.1:${DASHBOARD_PORT:-18888}:18888"
+    networks:
+      - backend
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+
+networks:
+  # nginx and the services it forwards to.
+  edge:
+    driver: bridge
+  # The services and their data stores. nginx is not on it, so the edge cannot reach a database.
+  backend:
+    driver: bridge
+
+volumes:
+  sqlserver-data:
+  rabbitmq-data:
