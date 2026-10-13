@@ -9,7 +9,8 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <!-- CS1591 then fails the build on any public member without an XML doc comment. -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- No InvariantGlobalization here: Microsoft.Data.SqlClient refuses to open a connection
+         without ICU culture data, so only a service that never touches SQL Server turns it on. -->
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
