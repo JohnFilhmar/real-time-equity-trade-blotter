@@ -169,6 +169,28 @@ public sealed partial class HubTests(RealtimeInfrastructure infrastructure) : IC
         Assert.Equal("{\"status\":\"ready\",\"redis\":\"up\",\"broker\":\"up\"}", ready);
     }
 
+    /// <summary>Ported from the Node API's metrics route test: the scrape keeps the socket metrics' names.</summary>
+    [Fact]
+    public async Task Exposes_the_socket_metrics_under_their_node_names_in_the_prometheus_text_format()
+    {
+        await factory.WaitForConsumerAsync();
+        var (connection, received) = await factory.ConnectAsync(RealtimeFactory.Token());
+        await using var _ = connection;
+        await NextAsync(received);
+        await infrastructure.PublishAsync(new TradeChanged(TradeChangeKind.Created, SampleTrade, null, SamplePosition));
+        await NextAsync(received);
+        await NextAsync(received);
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync(new Uri("/metrics", UriKind.Relative));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("text/plain", response.Content.Headers.ContentType?.MediaType);
+        var text = await response.Content.ReadAsStringAsync();
+        Assert.Contains("blotter_socket_clients_connected", text, StringComparison.Ordinal);
+        Assert.Contains("blotter_broadcast_lag_seconds", text, StringComparison.Ordinal);
+    }
+
     /// <inheritdoc />
     public async ValueTask InitializeAsync() => await infrastructure.ResetConsumerQueueAsync();
 
