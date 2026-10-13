@@ -1136,3 +1136,15 @@ decimal rounding to 6 places, deleting the Node backend once the .NET suite pass
 with SQL Server Express. The owner then picked the raw RabbitMQ client, OTLP into an Aspire Dashboard
 plus `/metrics`, one-shot migrate jobs, minimal APIs on SQL Server 2022, and the
 `services/<name>/{src,tests}` layout.
+
+### 2026-10-13T04:59Z - fix_red_ci_pull_request_run
+
+**Prompt:** "fix the red on ci"
+
+**Outcome:** The pull request run failed two jobs the push run had passed: gitleaks 8.24.3 ignored the
+newer `[[allowlists]]` table and flagged the deliberate forged test secret across all 23 commits, and
+the feed-drop e2e test installed its resync observer while restoring the network, so a hub reconnect
+24 ms later slipped past it. The allowlist now uses the `[allowlist]` form that version reads, with
+the version pinned in CI, and the test awaits its observer before going back online.
+
+**Commits:** `0ff8256`, `58da54d`
