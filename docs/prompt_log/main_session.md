@@ -1118,3 +1118,21 @@ rendering boundaries and where each kind of state lives.
 `SUMMARY.md` on the new `feat/dotnet-microservices-backend` worktree. Building is paused for review
 because the real-time transport is Socket.IO, which a SignalR hub cannot serve, so the frontend's
 socket module has to change.
+
+### 2026-10-13T00:08Z - dotnet_microservices_decisions
+
+**Prompt:** "approve all 10, I'll install the .NET 10 SDK"
+
+> Selections:
+>
+> - Messaging: "RabbitMQ.Client 7 (Recommended)"
+> - Telemetry: "OTLP + Aspire Dashboard (Recommended)"
+> - Migrations: "One-shot migrate job (Recommended)"
+> - Defaults: "Approve all (Recommended)"
+
+**Outcome:** The owner approved SignalR with a frontend client swap, a gateway, trades and realtime
+split, two SQL Server databases on one instance, an outbox to RabbitMQ, Redis-backed rate limits,
+decimal rounding to 6 places, deleting the Node backend once the .NET suite passes, and an x86 EC2
+with SQL Server Express. The owner then picked the raw RabbitMQ client, OTLP into an Aspire Dashboard
+plus `/metrics`, one-shot migrate jobs, minimal APIs on SQL Server 2022, and the
+`services/<name>/{src,tests}` layout.
