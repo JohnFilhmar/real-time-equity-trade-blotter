@@ -4,4 +4,12 @@
     <Project Path="libs/Blotter.Contracts/Blotter.Contracts.csproj" />
     <Project Path="libs/Blotter.ServiceDefaults/Blotter.ServiceDefaults.csproj" />
   </Folder>
+  <Folder Name="/services/" />
+  <Folder Name="/services/trades/" />
+  <Folder Name="/services/trades/src/">
+    <Project Path="services/trades/src/Blotter.Trades/Blotter.Trades.csproj" />
+  </Folder>
+  <Folder Name="/services/trades/tests/">
+    <Project Path="services/trades/tests/Blotter.Trades.Tests/Blotter.Trades.Tests.csproj" />
+  </Folder>
 </Solution>
