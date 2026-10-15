@@ -1,8 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
 // Runs against an already running stack: `npm run start` at the repository root, then
-// `npm run test:e2e`. No webServer block on purpose, so the suite tests the compose build a grader
-// runs rather than a dev server it started itself. The stack answers on its nginx edge, port 80.
+// `npm run test:e2e`. No webServer block on purpose, so the suite tests the compose build that
+// ships rather than a dev server it started itself. The stack answers on its nginx edge, port 80.
 export default defineConfig({
   testDir: './e2e',
   timeout: 60_000,

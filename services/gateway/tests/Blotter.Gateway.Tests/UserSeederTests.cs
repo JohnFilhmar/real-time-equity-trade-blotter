@@ -38,7 +38,7 @@ public sealed class UserSeederTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task It_issues_the_three_roles_a_reviewer_signs_in_with()
+    public async Task It_issues_the_three_roles_a_demo_user_signs_in_with()
     {
         await Seeder.SeedIfEmptyAsync(CancellationToken.None);
 

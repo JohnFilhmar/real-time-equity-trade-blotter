@@ -17,8 +17,8 @@
 
 `frontend/` is a bare `create-next-app` scaffold and `backend/src/app.ts` mounts only the health
 router, so there is no trade API for a frontend to call. The request was to start the frontend; the
-decision was to build the API first, because the brief scores frontend and backend interaction at
-20% and a UI built against a mock cannot demonstrate it.
+decision was to build the API first, because frontend and backend interaction is the core of the
+app and a UI built against a mock cannot demonstrate it.
 
 Every choice below was put to the repository owner as an explicit question with options and a
 recommendation, per the `agent-never-decides` memory. The skill each option was checked against is
@@ -30,7 +30,7 @@ named with the decision.
 |---|---|---|---|
 | 1 | Build order | Backend trade API first, then the frontend against it | `testing-stance`, integration over mocks |
 | 2 | API surface | Business id in the path, cancel as a named action | `ts-house-style`, Zod at every boundary |
-| 3 | Scope | Audit trail, positions and P&L, virtualised grid, login, all in | brief's bonus list |
+| 3 | Scope | Audit trail, positions and P&L, virtualised grid, login, all in | optional feature list |
 | 4 | Audit model | Rename `TradeAmendment` to `TradeEvent`, add action and source | closes audit D4 and D5 |
 | 5 | Marks | In-memory random walk, broadcast, never persisted | closes audit D2 |
 | 6 | Auth | Access plus rotated refresh, families in Postgres | `backend-security-baseline` |
@@ -48,7 +48,7 @@ Two deviations are deliberate and named rather than silent:
   two committed suites. The same skill says to read `package.json` before applying advice.
 - **Postgres, not Redis, for refresh-token families and rate limiting.**
   `backend/src/middleware/rate_limit.ts:17` already records this trade-off for a single-container
-  exercise. `docker-compose.yaml` has no Redis service and this design does not add one.
+  deployment. `docker-compose.yaml` has no Redis service and this design does not add one.
 
 ## Data model
 
@@ -220,8 +220,8 @@ A `VIEWER` therefore reads the blotter, the positions and the audit trail, and i
 write with a 403. A `TRADER` writing another trader's row gets a 404, per the leak rule above.
 
 The path parameter is `:trade_id` in snake_case per the global naming rule, and binds to the
-`tradeId` field, which stays camelCase because `shared/src/schemas/trade.ts:20` documents that the
-model mirrors the brief's own payload.
+`tradeId` field, which stays camelCase because `shared/src/schemas/trade.ts` keeps payload field
+names camelCase.
 
 `trade_query_schema` gains two optional ISO datetime parameters, `from` and `to`, decided as C4 on
 2026-09-12. They derive from the canonical schema rather than being hand-written, and the existing
@@ -303,16 +303,16 @@ in a test, which is what makes the split worth building rather than describing.
 The public list holds exactly two routes: `/health` and `/auth/login`. Nothing else, including
 `GET /trades`, is readable without a token. Guests do not read the blotter.
 
-The reason is domain correctness, not the rubric. A blotter carries counterparty names, sizes and
+The reason is domain correctness. A blotter carries counterparty names, sizes and
 prices, which is precisely the data a firm does not publish, and no desk serves one to anonymous
 readers. The MVP research does not make this argument: it ranks authentication 27th of 28 and scores
-it 1.5 out of 10, and its stated reason every time is that the rubric has no security line. It cites
+it 1.5 out of 10, and its stated reason every time is that no requirement asks for security. It cites
 17 CFR 240.17a-3 and 17a-4 only for what a blotter is as a record and how long it is kept, which is
 retention rather than access control. The confidentiality argument stands on its own and was the
 owner's, taken with the research's contrary ranking in view.
 
-The README publishes a working trader code and password, which is normal for a take-home and removes
-the only real cost of locking the app down: a reviewer can still open it and watch it run.
+The README publishes a working trader code and password, which is normal for a demo and removes
+the only real cost of locking the app down: anyone can still open it and watch it run.
 
 ### No registration
 
@@ -352,7 +352,7 @@ error responses leak nothing.
 
 Password change and nothing else. No profile edit, no deletion. Deleting a trader whose code is
 stamped on historical trades would break attribution, which is the one thing an audit trail may
-never do, and the brief's bonus asks only for simple login capability.
+never do, and the requirement asks only for simple login capability.
 
 ## Module layout
 

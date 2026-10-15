@@ -35,8 +35,6 @@ export interface Instrument {
  * The London names are quoted in GBX because that is what the London Stock Exchange does. Pricing
  * them in pounds, as an earlier version of the seed did, produces a blotter where a reader who
  * knows the market sees VOD.L at 0.78 and stops reading.
- *
- * Price levels for AAPL, MSFT and TSLA are the brief's own sample figures.
  */
 export const instruments: readonly Instrument[] = [
   { symbol: 'AAPL', currency: 'USD', book: 'EQUITIES_US', base_price: 227.45 },

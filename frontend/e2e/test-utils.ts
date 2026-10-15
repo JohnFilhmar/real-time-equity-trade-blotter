@@ -20,8 +20,8 @@ export type Account = keyof typeof accounts;
  * The API rate-limits the credential endpoints to ten requests a minute per address, and every
  * sign-in costs two (the page's session restore, then the login). Signing in per test blew
  * through that limit within the suite, so each account signs in once and tests reset the page
- * between themselves instead. The limit is left as shipped on purpose: the suite tests the stack
- * a grader runs.
+ * between themselves instead. The limit stays as shipped on purpose, so the suite tests the real
+ * stack.
  */
 export interface Desk {
   /** Returns the page for an account, signing in on first use. */

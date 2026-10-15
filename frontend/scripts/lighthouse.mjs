@@ -1,7 +1,7 @@
 // Audits the login page and the signed-in blotter with Lighthouse, driving the Chromium that
 // Playwright already installed so no system Chrome is needed. Scores are printed and the HTML
-// reports land in frontend/lighthouse/, which is gitignored. No score is a gate: the rubric has no
-// performance line, and the numbers are quoted in the README as observed.
+// reports land in frontend/lighthouse/, which is gitignored. No score is a gate. The README quotes
+// the numbers as observed.
 //
 // Needs the stack running: `npm run start` at the repository root, then `npm run test:lighthouse`.
 

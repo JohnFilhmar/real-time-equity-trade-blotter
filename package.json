@@ -1,5 +1,5 @@
 {
-  "name": "tp-icap-trade-blotter",
+  "name": "trade-blotter",
   "version": "1.0.0",
   "private": true,
   "description": "Real-time equity trade blotter",

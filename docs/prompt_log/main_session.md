@@ -1148,3 +1148,19 @@ the feed-drop e2e test installed its resync observer while restoring the network
 the version pinned in CI, and the test awaits its observer before going back online.
 
 **Commits:** `0ff8256`, `58da54d`
+
+### 2026-10-15T23:13Z - remove_assessment_context
+
+**Prompt:** "remove any details around TP-ICAP or assessment and fix documentation accordingly, retain ai logs."
+
+> Selections:
+>
+> - AI logs: "All agent records (Recommended)"
+> - Brief file: "Delete it (Recommended)"
+> - Identifiers: "Rename to trade-blotter (Recommended)"
+> - Code text: "Reword comments (Recommended)"
+
+**Outcome:** The owner kept `docs/prompt_log/`, `docs/artifacts/`, `docs/handoff/` and
+`docs/ai_usage_report.md` verbatim, deleted `take-home-assessment.md`, renamed the package, compose
+project and image tags from `tp-icap` to `trade-blotter`, and had every other doc, comment and test
+title reworded so it no longer cites the company, the brief, a grader or a rubric.

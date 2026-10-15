@@ -1,4 +1,4 @@
-name: tp-icap-blotter
+name: trade-blotter
 
 # The whole system on one machine: nginx at the edge as the only published port, the gateway,
 # trades and realtime services, the web app, SQL Server, RabbitMQ, Redis and a telemetry dashboard.
@@ -34,14 +34,14 @@ x-gateway-build: &gateway-build
   build:
     context: .
     dockerfile: services/gateway/Dockerfile
-  image: tp-icap/gateway:local
+  image: trade-blotter/gateway:local
   pull_policy: build
 
 x-trades-build: &trades-build
   build:
     context: .
     dockerfile: services/trades/Dockerfile
-  image: tp-icap/trades:local
+  image: trade-blotter/trades:local
   pull_policy: build
 
 x-gateway-env: &gateway-env
@@ -171,7 +171,7 @@ services:
     build:
       context: .
       dockerfile: services/realtime/Dockerfile
-    image: tp-icap/realtime:local
+    image: trade-blotter/realtime:local
     pull_policy: build
     environment:
       <<: *telemetry
@@ -211,7 +211,7 @@ services:
         # so the rewrites only matter to someone reaching the web server directly.
         API_INTERNAL_URL: http://gateway:8080
         REALTIME_INTERNAL_URL: http://realtime:8080
-    image: tp-icap/frontend:local
+    image: trade-blotter/frontend:local
     pull_policy: build
     environment:
       NODE_ENV: production
@@ -262,7 +262,7 @@ services:
   gateway-migrate:
     <<: *dotnet
     # Built once, by the gateway service, and reused here.
-    image: tp-icap/gateway:local
+    image: trade-blotter/gateway:local
     pull_policy: never
     restart: "no"
     command: ["migrate"]
@@ -280,7 +280,7 @@ services:
   trades-migrate:
     <<: *dotnet
     # Built once, by the trades service, and reused here.
-    image: tp-icap/trades:local
+    image: trade-blotter/trades:local
     pull_policy: never
     restart: "no"
     command: ["migrate"]

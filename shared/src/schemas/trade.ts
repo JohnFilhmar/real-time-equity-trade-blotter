@@ -8,11 +8,11 @@ export const trade_side_values = ['BUY', 'SELL'] as const;
  * The two states a trade can hold.
  *
  * Amending a trade is deliberately not a status: it increments `version` and writes an audit row,
- * which keeps the state machine to the two values the brief specifies.
+ * which keeps the state machine to two values.
  */
 export const trade_status_values = ['ACTIVE', 'CANCELLED'] as const;
 
-/** Business identifier pattern, matching the `TRD-100001` form in the brief's sample data. */
+/** Business identifier pattern, in the `TRD-100001` form. */
 export const trade_id_pattern = /^TRD-\d{6,}$/;
 
 /**
@@ -28,9 +28,8 @@ export const future_timestamp_tolerance_ms = 60_000;
  * The canonical trade model. Every other trade shape in the codebase is derived from this one,
  * so a field added here reaches the API contract, the client types and the validation together.
  *
- * Field names are camelCase because the brief supplies the payload that way and a reviewer
- * comparing a response against their own sample should see identical keys. Database columns are
- * snake_case, bridged by Prisma's `@map`.
+ * Field names are camelCase, so clients read the JSON keys as they arrive with no mapping layer.
+ * Database columns are snake_case, bridged by Prisma's `@map`.
  *
  * Every rule a client can break carries the sentence a trader reads, so the ticket and the API's
  * 422 say the same thing. A quantity or price that is absent or not a number asks for one rather
@@ -94,8 +93,7 @@ export const trade_schema = z.object({
  *
  * `trader` is server-owned for the same reason once there is authentication: you book as yourself.
  * It comes from the access token, so a client cannot book under another desk code, and the trade's
- * trader and its audit actor are guaranteed to agree. This is a deliberate divergence from the
- * brief's sample payload, which shows trader as a client field.
+ * trader and its audit actor are guaranteed to agree.
  *
  * The future-time rule judges only a timestamp it can read. An unreadable one has already failed
  * the datetime rule, and reporting it as in the future too would put two messages on one box.

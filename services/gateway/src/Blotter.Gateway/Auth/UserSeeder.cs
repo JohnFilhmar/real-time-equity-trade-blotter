@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Blotter.Gateway.Auth;
 
 /// <summary>
-/// Creates the four demo accounts in an empty identity database, one per role a reviewer signs in
+/// Creates the four demo accounts in an empty identity database, one per role a demo user signs in
 /// with. They share one documented password, which is only acceptable because this is a throwaway
 /// stack, so the log says so out loud.
 /// </summary>

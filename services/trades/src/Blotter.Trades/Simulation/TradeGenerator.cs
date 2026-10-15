@@ -17,10 +17,10 @@ internal sealed record SeedTrade(NewTrade Trade, TradeStatus Status);
 /// </summary>
 internal static class TradeGenerator
 {
-    /// <summary>The seed the startup dataset uses, so a reviewer sees the same blotter twice.</summary>
+    /// <summary>The seed the startup dataset uses, so every fresh stack shows the same blotter.</summary>
     public const int DefaultSeed = 20_260_818;
 
-    /// <summary>Desk codes in the brief's initial-plus-surname form. Desk codes, not accounts.</summary>
+    /// <summary>Desk codes in initial-plus-surname form. Desk codes, not accounts.</summary>
     public static readonly IReadOnlyList<string> Traders =
         ["JSMITH", "ABROWN", "MJONES", "RPATEL", "KOSULLIVAN", "DWRIGHT", "LCHEN", "FMORENO"];
 
