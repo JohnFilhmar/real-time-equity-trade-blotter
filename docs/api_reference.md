@@ -4,9 +4,10 @@ Everything lives under `/api/v1`. Payloads are camelCase, matching the brief's s
 query parameters are snake_case. A trade is addressed by its business identifier, `TRD-100001`,
 because that is the value a trader reads off the blotter.
 
-The API has no published port. Browsers reach it through the web app's own origin: the web
-server forwards `/api/*`, `/socket.io/`, `/health` and `/ready` to it over the internal network,
-so every request and the socket are same-origin. `/metrics` is not forwarded.
+Three services sit behind one origin. nginx, the only published port, sends `/api/*`, `/health`
+and `/ready` to the gateway and `/hubs/*` to the realtime service over the internal network, so
+every request and the live link are same-origin. The gateway serves this contract and calls the
+trades service over gRPC; `/metrics` is not forwarded from any of them.
 
 | Method | Path | Permission | Purpose |
 |---|---|---|---|
@@ -122,8 +123,10 @@ per-address rate limit answers `429` with code `rate_limited`. Both carry a `Ret
 seconds; the sign-in form counts down from it and remembers an account lock per username across a
 reload.
 
-The socket handshake verifies the same access token, passed as `auth: { token }`, and refuses
-anyone without `trade.read` or from an origin outside `CORS_ORIGINS`.
+The SignalR hub verifies the same access token. Browsers cannot set headers on a WebSocket, so the
+client sends it as the `access_token` query value, which the hub accepts on its own path only and
+which nginx leaves out of its access log. The hub refuses anyone without `trade.read` or from an
+origin outside `CORS_ORIGINS`.
 
 ## Roles and permissions
 
@@ -179,18 +182,27 @@ failure. `request_id` matches the log line. `validation_failed` is 422, `unauthe
 `forbidden` 403, `not_found` 404, `conflict` 409, `rate_limited` 429 for a request limit, and
 `locked_out` 429 for an account locked by failed logins. Both 429s send `Retry-After`.
 
+A body that is not JSON answers 400 and one over 100 kB answers 413, both with code
+`validation_failed`. If the trades service cannot be reached, a trade route answers 503 with code
+`internal`. Optional members (`detail`, `instance`, `errors`, `request_id`) are left out rather than
+sent as `null`.
+
 ## Real-time
 
-Socket.IO emits `trade.created`, `trade.amended` and `trade.cancelled`, each carrying an envelope:
+The realtime service's SignalR hub at `/hubs/blotter` emits `trade.created`, `trade.amended` and
+`trade.cancelled`, each carrying an envelope:
 
 ```json
 { "seq": 42, "emitted_at": "2026-09-12T03:19:47.881Z", "trade": { /* the whole trade */ } }
 ```
 
-`seq` is monotonic for the life of the process, so a client that sees 41 then 43 knows it missed
-one and refetches. The sequence restarts when the process does, and the client treats a decrease
-the same way. The whole row travels rather than a patch. Clients send nothing: mutations go over
-HTTP so they get the same validation, error handling and rate limiting as any other write.
+The trades service writes every change to an outbox in the same transaction as the change, and a
+dispatcher publishes it to RabbitMQ; the realtime service consumes it and broadcasts through a Redis
+backplane, so every replica reaches every client. `seq` is a Redis counter shared by the replicas,
+so a client that sees 41 then 43 knows it missed one and refetches. The counter restarts if Redis
+does, and the client treats a decrease the same way. The whole row travels rather than a patch.
+Clients send nothing: mutations go over HTTP so they get the same validation, error handling and
+rate limiting as any other write.
 
 Three further events share the same sequence and the same envelope shape:
 
@@ -218,45 +230,88 @@ the fields that moved with both sides:
 ```
 
 The table is append-only, enforced by a database trigger that raises on `UPDATE` and `DELETE`.
-Deleting a trade cascades to its events and is therefore also refused.
+The foreign key from an event to its trade does not cascade, so a trade with history cannot be
+deleted either. The trades service connects as a login whose role can insert events but not update,
+delete or truncate them, or switch the trigger off.
 
 ## Logging and metrics
 
-One structured JSON line per request, carrying a correlation id taken from an incoming
-`x-request-id` or generated, echoed on the response header and included in every error body.
+One structured JSON line per request from each service, carrying a correlation id taken from an
+incoming `x-request-id` or generated at the edge, echoed on the response header, included in every
+error body, and forwarded from the gateway to the trades service on the gRPC call.
 
-`GET /metrics` exposes Prometheus text: `blotter_socket_clients_connected`,
+Each service exports traces, metrics and logs over OTLP to the Aspire dashboard in the compose
+stack, and serves `GET /metrics` in Prometheus text for a scraper on the internal network. The
+realtime service's scrape keeps the Node API's names: `blotter_socket_clients_connected`,
 `blotter_broadcasts_emitted_total`, and `blotter_broadcast_lag_seconds`, the distance between a
-change committing and its broadcast leaving the server. The web server does not forward
-`/metrics`, so it answers only inside the compose network, for a scraper on that network or:
-
-```bash
-docker compose exec backend node -e "fetch('http://127.0.0.1:5000/metrics').then(r=>r.text()).then(console.log)"
-```
+change committing and its broadcast leaving the server. nginx answers `/metrics` with 404.
 
 ## Configuration
 
+Each service reads its own environment once at start, validates it, and refuses to start with a
+list of what is wrong, naming the setting but never its value. `docker-compose.yml` fills these in
+from `.env`, with development fallbacks.
+
+Shared by all three services:
+
 | Variable | Default | Purpose |
 |---|---|---|
-| `DATABASE_URL` | none, required | Postgres connection string |
-| `REDIS_URL` | none, required | Redis for sessions, lockouts and rate limits |
-| `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated origin allowlist; the socket handshake is refused from any other origin, so a public address in front of the web app, such as a tunnel, has to be listed |
-| `JWT_ACCESS_SECRET` | none, required | Signing key, refused under 32 characters |
-| `JWT_REFRESH_SECRET` | none, required | Signing key, refused under 32 characters |
-| `ACCESS_TOKEN_TTL_SECONDS` | `900` | Access token lifetime |
-| `REFRESH_TOKEN_TTL_SECONDS` | `604800` | Refresh token lifetime |
-| `SEED_ON_STARTUP` | `true` | Seed accounts and trades into an empty database |
-| `SEED_TRADE_COUNT` | `500` | Trades generated on first start |
+| `JWT_ACCESS_SECRET` | none, required | Signs access tokens at the gateway, verifies them everywhere. Refused under 32 characters |
+| `HTTP_PORT` | `8080` | Port for the service's HTTP listener: the API or hub, health, readiness and metrics |
+| `LOG_LEVEL` | `info` | `trace`, `debug`, `info`, `warn`, `error`, `fatal` or `silent`, the Node API's names. Framework logs stay at `warn` or quieter |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | unset | Where traces, metrics and logs go over OTLP. Unset sends none |
+
+Gateway:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `DATABASE_CONNECTION` | none, required | SQL Server connection string for the identity database |
+| `REDIS_CONNECTION` | none, required | Redis for sessions, lockouts and rate-limit windows |
+| `TRADES_GRPC_URL` | none, required | The trades service's gRPC address, such as `http://trades:8081` |
+| `JWT_REFRESH_SECRET` | none, required | Signs refresh tokens. Refused under 32 characters, and refused when equal to the access secret |
+| `ACCESS_TOKEN_TTL_SECONDS` | `900` | Access token lifetime, at most an hour |
+| `REFRESH_TOKEN_TTL_SECONDS` | `604800` | Refresh token lifetime, and the life of a session family |
+| `BCRYPT_ROUNDS` | `12` | bcrypt cost, from 10 to 15 |
+| `COOKIE_SECURE` | `false` | Marks the refresh cookie `Secure`. Always on in the Production environment |
+| `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated origin allowlist for credentialed calls |
+| `AUTH_RATE_LIMIT` | `10` | Requests a minute on the credential endpoints, per address |
+| `READ_RATE_LIMIT` | `300` | Requests a minute on guarded routes, per user |
+| `WRITE_RATE_LIMIT` | `60` | Writes a minute, per user, on top of the read limit |
+| `LOGIN_MAX_ATTEMPTS` | `5` | Failures before an account locks |
+| `LOGIN_LOCKOUT_SECONDS` | `900` | How long a lock lasts, re-armed by every further failure |
+| `SEED_ON_STARTUP` | `true` | Create the demo accounts in an empty identity database |
 | `SEED_USER_PASSWORD` | `FusionDemo!2026` | Password given to the demo accounts |
+
+Trades service:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `DATABASE_CONNECTION` | none, required | SQL Server connection string for the trades database |
+| `RABBITMQ_URL` | none, required while the outbox dispatches | AMQP URL of the broker trade changes are published to |
+| `OUTBOX_DISPATCH_ENABLED` | `true` | Publish the outbox to RabbitMQ. Off only in tests |
+| `GRPC_PORT` | `8081` | Port for the gRPC listener, HTTP/2 without TLS on the internal network |
+| `SEED_ON_STARTUP` | `true` | Seed trades into an empty trades database |
+| `SEED_TRADE_COUNT` | `500` | Trades generated on first start |
 | `LIVE_FEED_ENABLED` | `true` | Set false to silence the simulated desk while demonstrating manually |
 | `LIVE_FEED_MIN_INTERVAL_MS` | `3000` | Shortest gap between simulated actions |
 | `LIVE_FEED_MAX_INTERVAL_MS` | `8000` | Longest gap between simulated actions |
 | `LIVE_FEED_MAX_ACTIVE_TRADES` | `2000` | Active trades the simulated desk keeps near. From 90% of this it increasingly cancels instead of booking, and at or over it still books one ticket in seven. A soft limit: trades people book count toward it, and cancelled trades and audit rows still accumulate |
 | `MAX_NOTIONAL_USD` | `50000000` | Desk notional ceiling for USD names |
 | `MAX_NOTIONAL_GBX` | `4000000000` | Desk notional ceiling for GBX names, in pence |
-| `AUTH_RATE_LIMIT` | `10` | Requests a minute on the credential endpoints, per address |
-| `READ_RATE_LIMIT` | `300` | Reads a minute, per user |
-| `WRITE_RATE_LIMIT` | `60` | Writes a minute, per user |
-| `LOGIN_MAX_ATTEMPTS` | `5` | Failures before an account locks |
-| `LOG_LEVEL` | `info` | pino level |
-| `API_INTERNAL_URL` | `http://localhost:5000`, `http://backend:5000` in compose | Web app only: where its server forwards the API's paths, compiled into the rewrites at build |
+
+Realtime service:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `RABBITMQ_URL` | none, required | AMQP URL of the broker trade changes arrive from |
+| `REDIS_CONNECTION` | none, required | Redis for the SignalR backplane, the broadcast sequence and the marks |
+| `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated origin allowlist; the hub refuses any other origin, so the public address in front of the stack has to be listed |
+| `MARK_FEED_ENABLED` | `true` | Run the simulated marks |
+| `MARK_INTERVAL_MS` | `900` | How often the marks move |
+
+Web app, at build time:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `API_INTERNAL_URL` | `http://localhost`, `http://gateway:8080` in compose | Where the web server forwards the API's paths, compiled into its rewrites |
+| `REALTIME_INTERNAL_URL` | the API address, `http://realtime:8080` in compose | Where the web server forwards `/hubs/*` |

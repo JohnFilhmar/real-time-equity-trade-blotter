@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
 
-const ui = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
+const ui = process.env.E2E_BASE_URL ?? 'http://localhost';
 const password = process.env.SEED_USER_PASSWORD ?? 'FusionDemo!2026';
 const out_dir = fileURLToPath(new URL('../../docs/readme/', import.meta.url));
 mkdirSync(out_dir, { recursive: true });

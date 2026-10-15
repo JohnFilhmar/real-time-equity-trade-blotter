@@ -1,7 +1,7 @@
 # frontend
 
 The blotter's web app. Next.js 16.3 App Router, React 19.2, Tailwind v4, TanStack Query 5, TanStack
-Table 8 with react-virtual, socket.io-client 4.8, Zustand 5 for hot client state, and the shared zod
+Table 8 with react-virtual, @microsoft/signalr 10, Zustand 5 for hot client state, and the shared zod
 contract for every payload it reads.
 
 Run it through the root scripts in the [repository README](../README.md). 134 TypeScript files, 27
@@ -139,11 +139,11 @@ Run from `frontend/`, or from the root with `--workspace frontend`.
 
 | Script | Does |
 |---|---|
-| `npm run dev` | `next dev`, forwarding the API paths to `:5000` |
+| `npm run dev` | `next dev` on `:3000`, forwarding the API and hub paths to the running stack's edge at `http://localhost` |
 | `npm run build` | `next build` |
 | `npm run typecheck` | `next typegen` then `tsc --noEmit` |
 | `npm test` | The unit tier, vitest with jsdom |
-| `npm run test:e2e` | Playwright against `http://localhost:3000`, or `E2E_BASE_URL` |
+| `npm run test:e2e` | Playwright against the stack's edge at `http://localhost`, or `E2E_BASE_URL` |
 | `npm run test:lighthouse` | Lighthouse on the login page and the blotter, reports in `lighthouse/` |
 
 ## Styling

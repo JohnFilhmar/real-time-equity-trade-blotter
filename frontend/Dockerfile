@@ -3,19 +3,19 @@ FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY shared/package.json shared/package.json
-COPY database/package.json database/package.json
-COPY backend/package.json backend/package.json
 COPY frontend/package.json frontend/package.json
 RUN npm ci --workspace @blotter/shared --workspace frontend --include-workspace-root
 
 FROM deps AS build
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
-# The browser talks only to this server, which forwards the API's paths over the internal network.
-# The API's address there is compiled into the rewrites at build time; compose passes the service
-# name, and a deployment with the API elsewhere overrides API_INTERNAL_URL.
-ARG API_INTERNAL_URL=http://backend:5000
-ENV API_INTERNAL_URL=$API_INTERNAL_URL
+# The browser talks only to this server's origin. Where the server forwards the API's paths and the
+# hub is compiled into the rewrites at build time; compose passes the service names, and a
+# deployment with a service elsewhere overrides its address.
+ARG API_INTERNAL_URL=http://gateway:8080
+ARG REALTIME_INTERNAL_URL=http://realtime:8080
+ENV API_INTERNAL_URL=$API_INTERNAL_URL \
+    REALTIME_INTERNAL_URL=$REALTIME_INTERNAL_URL
 COPY shared shared
 COPY frontend frontend
 RUN npm run build --workspace @blotter/shared

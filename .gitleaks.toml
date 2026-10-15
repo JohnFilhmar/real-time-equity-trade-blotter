@@ -1,0 +1,12 @@
+# The default rules, and one exception: the value the trades and realtime tests sign tokens with to
+# prove a forged token is refused. It is fake by design and already in history, so it is allowed by
+# its exact text rather than by skipping the test directories, which would hide a real leak there.
+#
+# The single [allowlist] table, not the [[allowlists]] array: CI runs gitleaks 8.24.3, which predates
+# the array and silently ignores it. Newer versions still read this form.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "The deliberately forged signing secret in the services' tests"
+regexes = ['''forged-secret-0123456789abcdefghijklmnop''']

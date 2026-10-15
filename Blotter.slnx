@@ -1,0 +1,29 @@
+<Solution>
+  <Folder Name="/libs/">
+    <Project Path="libs/Blotter.Contracts.Tests/Blotter.Contracts.Tests.csproj" />
+    <Project Path="libs/Blotter.Contracts/Blotter.Contracts.csproj" />
+    <Project Path="libs/Blotter.ServiceDefaults/Blotter.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/services/" />
+  <Folder Name="/services/gateway/" />
+  <Folder Name="/services/gateway/src/">
+    <Project Path="services/gateway/src/Blotter.Gateway/Blotter.Gateway.csproj" />
+  </Folder>
+  <Folder Name="/services/gateway/tests/">
+    <Project Path="services/gateway/tests/Blotter.Gateway.Tests/Blotter.Gateway.Tests.csproj" />
+  </Folder>
+  <Folder Name="/services/realtime/" />
+  <Folder Name="/services/realtime/src/">
+    <Project Path="services/realtime/src/Blotter.Realtime/Blotter.Realtime.csproj" />
+  </Folder>
+  <Folder Name="/services/realtime/tests/">
+    <Project Path="services/realtime/tests/Blotter.Realtime.Tests/Blotter.Realtime.Tests.csproj" />
+  </Folder>
+  <Folder Name="/services/trades/" />
+  <Folder Name="/services/trades/src/">
+    <Project Path="services/trades/src/Blotter.Trades/Blotter.Trades.csproj" />
+  </Folder>
+  <Folder Name="/services/trades/tests/">
+    <Project Path="services/trades/tests/Blotter.Trades.Tests/Blotter.Trades.Tests.csproj" />
+  </Folder>
+</Solution>

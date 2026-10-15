@@ -1081,3 +1081,70 @@ architecture at all, and now covers how a broadcast reaches the screen, the prov
 rendering boundaries and where each kind of state lives.
 
 **Commits:** `3e550df`
+
+### 2026-10-12T23:54Z - dotnet_microservices_discovery
+
+**Prompt:**
+
+> "You are working in my existing Trade Blotter repository. I want to rebuild the backend as C#/.NET
+> microservices on a new branch, keeping the existing frontend and API behavior intact. Work carefully
+> and in order.
+>
+> 0. Load and apply my house skills, translating them to idiomatic C#/.NET where they are written for
+> TypeScript: ts-house-style, backend-security-baseline, testing-stance, project-structure-conventions,
+> code-documentation-policy, devsecops-pipeline, and worktree-feature-flow. Where a rule names a TS
+> tool, use the .NET equivalent (FluentValidation in place of Zod, XML doc comments in place of JSDoc,
+> xUnit in place of Jest). Follow my git conventions, including no AI attribution in any commit,
+> branch, or PR.
+>
+> 1. First, explore the repo before writing anything. Read the current backend end to end and write a
+> short SUMMARY.md in the repo root covering: the existing stack, the full REST API surface (routes,
+> request and response shapes), the real-time events, the data model, and the core business rules
+> (trade booking, amendment, cancellation, decimal price handling, the audit trail, optimistic
+> concurrency, pagination). Do not guess, read the code. Stop and show me this summary plus your
+> proposed service decomposition before building.
+>
+> 2. Create a new branch off the current branch named feat/dotnet-microservices-backend, following my
+> worktree-feature-flow convention.
+>
+> 3. Rebuild the backend as independently deployable C#/.NET microservices on the latest .NET LTS with
+> ASP.NET Core. Decompose into a small, balanced set of services (aim for three, adapt to what the code
+> actually does), each self-contained with its own domain, its own database, and its own container,
+> evenly sized. [truncated: steps 3 to 9 cover the service split, single-EC2 compose with nginx, SQL
+> Server, RabbitMQ, Redis, gRPC, OpenTelemetry, Serilog, the security baseline, decimal precision,
+> xUnit with Testcontainers, frontend compatibility and the deliverables]"
+
+**Outcome:** Read the Node backend, the shared Zod contract and the Prisma migrations, and wrote
+`SUMMARY.md` on the new `feat/dotnet-microservices-backend` worktree. Building is paused for review
+because the real-time transport is Socket.IO, which a SignalR hub cannot serve, so the frontend's
+socket module has to change.
+
+### 2026-10-13T00:08Z - dotnet_microservices_decisions
+
+**Prompt:** "approve all 10, I'll install the .NET 10 SDK"
+
+> Selections:
+>
+> - Messaging: "RabbitMQ.Client 7 (Recommended)"
+> - Telemetry: "OTLP + Aspire Dashboard (Recommended)"
+> - Migrations: "One-shot migrate job (Recommended)"
+> - Defaults: "Approve all (Recommended)"
+
+**Outcome:** The owner approved SignalR with a frontend client swap, a gateway, trades and realtime
+split, two SQL Server databases on one instance, an outbox to RabbitMQ, Redis-backed rate limits,
+decimal rounding to 6 places, deleting the Node backend once the .NET suite passes, and an x86 EC2
+with SQL Server Express. The owner then picked the raw RabbitMQ client, OTLP into an Aspire Dashboard
+plus `/metrics`, one-shot migrate jobs, minimal APIs on SQL Server 2022, and the
+`services/<name>/{src,tests}` layout.
+
+### 2026-10-13T04:59Z - fix_red_ci_pull_request_run
+
+**Prompt:** "fix the red on ci"
+
+**Outcome:** The pull request run failed two jobs the push run had passed: gitleaks 8.24.3 ignored the
+newer `[[allowlists]]` table and flagged the deliberate forged test secret across all 23 commits, and
+the feed-drop e2e test installed its resync observer while restoring the network, so a hub reconnect
+24 ms later slipped past it. The allowlist now uses the `[allowlist]` form that version reads, with
+the version pinned in CI, and the test awaits its observer before going back online.
+
+**Commits:** `0ff8256`, `58da54d`

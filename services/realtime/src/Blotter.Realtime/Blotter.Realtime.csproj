@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <Description>Fans trade changes out to blotter clients over a SignalR hub, and simulates market marks.</Description>
+    <!-- Never touches SQL Server, so it needs no ICU data and runs on the smallest runtime image. -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" />
+    <PackageReference Include="RabbitMQ.Client" />
+    <PackageReference Include="StackExchange.Redis" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\libs\Blotter.Contracts\Blotter.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\..\libs\Blotter.ServiceDefaults\Blotter.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Blotter.Realtime.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- xUnit1051 asks every async call to pass the test's cancellation token; the suites here are
+         bounded by their containers instead, so the extra argument on every line buys nothing. -->
+    <NoWarn>$(NoWarn);xUnit1051</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+    <PackageReference Include="Testcontainers.MsSql" />
+    <PackageReference Include="Testcontainers.Redis" />
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Blotter.Gateway\Blotter.Gateway.csproj" />
+    <!-- The real trades service runs in memory behind the gateway. Both projects declare a global
+         Program, so this one is reached through the trades alias. -->
+    <ProjectReference Include="..\..\..\trades\src\Blotter.Trades\Blotter.Trades.csproj" Aliases="trades" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Fixtures\zod_cases.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

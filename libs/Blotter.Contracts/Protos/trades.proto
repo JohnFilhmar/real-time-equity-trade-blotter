@@ -1,0 +1,187 @@
+syntax = "proto3";
+
+package blotter.trades.v1;
+
+option csharp_namespace = "Blotter.Contracts.Grpc";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+// The trade lifecycle. Served by the trades service, called by the gateway with the caller's
+// access token in the `authorization` metadata, which the trades service verifies again.
+//
+// Money never travels as a float: every price and notional is a decimal string in invariant
+// culture, such as "227.45".
+service Trades {
+  rpc ListTrades (ListTradesRequest) returns (TradePage);
+  rpc GetTrade (TradeRef) returns (Trade);
+  rpc CreateTrade (CreateTradeRequest) returns (Trade);
+  rpc AmendTrade (AmendTradeRequest) returns (Trade);
+  rpc CancelTrade (CancelTradeRequest) returns (Trade);
+  rpc ListTradeHistory (TradeRef) returns (TradeEventList);
+  rpc ListEvents (ListEventsRequest) returns (TradeEventPage);
+  rpc ListPositions (google.protobuf.Empty) returns (PositionList);
+}
+
+enum Side {
+  SIDE_UNSPECIFIED = 0;
+  SIDE_BUY = 1;
+  SIDE_SELL = 2;
+}
+
+enum TradeStatus {
+  TRADE_STATUS_UNSPECIFIED = 0;
+  TRADE_STATUS_ACTIVE = 1;
+  TRADE_STATUS_CANCELLED = 2;
+}
+
+enum Currency {
+  CURRENCY_UNSPECIFIED = 0;
+  CURRENCY_USD = 1;
+  // Pence sterling, as the London Stock Exchange quotes.
+  CURRENCY_GBX = 2;
+}
+
+enum EventAction {
+  EVENT_ACTION_UNSPECIFIED = 0;
+  EVENT_ACTION_AMENDED = 1;
+  EVENT_ACTION_CANCELLED = 2;
+}
+
+enum EventSource {
+  EVENT_SOURCE_UNSPECIFIED = 0;
+  EVENT_SOURCE_API = 1;
+  EVENT_SOURCE_LIVE_FEED = 2;
+}
+
+enum SortDirection {
+  SORT_DIRECTION_UNSPECIFIED = 0;
+  SORT_DIRECTION_ASC = 1;
+  SORT_DIRECTION_DESC = 2;
+}
+
+message Trade {
+  string id = 1;
+  string trade_id = 2;
+  string symbol = 3;
+  Side side = 4;
+  int32 quantity = 5;
+  string price = 6;
+  Currency currency = 7;
+  string trader = 8;
+  string book = 9;
+  string counterparty = 10;
+  google.protobuf.Timestamp trade_timestamp = 11;
+  TradeStatus status = 12;
+  int32 version = 13;
+  google.protobuf.Timestamp created_at = 14;
+  google.protobuf.Timestamp updated_at = 15;
+}
+
+message TradeRef {
+  string trade_id = 1;
+}
+
+// Filters are optional: an empty string, an unspecified enum or an unset timestamp means "any".
+message ListTradesRequest {
+  string symbol = 1;
+  Side side = 2;
+  TradeStatus status = 3;
+  string trader = 4;
+  string book = 5;
+  string counterparty = 6;
+  google.protobuf.Timestamp date_from = 7;
+  google.protobuf.Timestamp date_to = 8;
+  // One of the blotter's column names, such as "tradeTimestamp".
+  string sort_by = 9;
+  SortDirection sort_dir = 10;
+  int32 limit = 11;
+  string cursor = 12;
+}
+
+// An empty next_cursor means this was the last page.
+message TradePage {
+  repeated Trade data = 1;
+  int32 total = 2;
+  int32 limit = 3;
+  string next_cursor = 4;
+}
+
+message CreateTradeRequest {
+  string symbol = 1;
+  Side side = 2;
+  int32 quantity = 3;
+  string price = 4;
+  string book = 5;
+  string counterparty = 6;
+  google.protobuf.Timestamp trade_timestamp = 7;
+}
+
+message AmendTradeRequest {
+  string trade_id = 1;
+  int32 version = 2;
+  optional int32 quantity = 3;
+  optional string price = 4;
+  optional string book = 5;
+}
+
+message CancelTradeRequest {
+  string trade_id = 1;
+  optional int32 version = 2;
+}
+
+// A string such as a book or a status, or a decimal number such as a quantity or a price.
+message ChangeValue {
+  oneof value {
+    string text = 1;
+    string number = 2;
+  }
+}
+
+message FieldChange {
+  ChangeValue from = 1;
+  ChangeValue to = 2;
+}
+
+message TradeEvent {
+  string id = 1;
+  string trade_id = 2;
+  int32 version = 3;
+  EventAction action = 4;
+  EventSource source = 5;
+  map<string, FieldChange> changes = 6;
+  string actor = 7;
+  google.protobuf.Timestamp occurred_at = 8;
+}
+
+message TradeEventList {
+  repeated TradeEvent data = 1;
+}
+
+message ListEventsRequest {
+  int32 limit = 1;
+  string cursor = 2;
+}
+
+message TradeEventPage {
+  repeated TradeEvent data = 1;
+  int32 total = 2;
+  int32 limit = 3;
+  string next_cursor = 4;
+}
+
+message Position {
+  string symbol = 1;
+  Currency currency = 2;
+  int64 net_quantity = 3;
+  int64 buy_quantity = 4;
+  int64 sell_quantity = 5;
+  string gross_notional = 6;
+  int32 trade_count = 7;
+  string average_price = 8;
+  string realised_pnl = 9;
+}
+
+message PositionList {
+  repeated Position data = 1;
+}

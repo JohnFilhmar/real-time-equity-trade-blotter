@@ -145,11 +145,15 @@ vite.config.ts.timestamp-*
 # Claude Code session state and feature worktrees
 .claude/
 
-# Prisma generated client
-backend/src/generated/
-
 # Browser test and audit output
 frontend/test-results/
 frontend/playwright-report/
 frontend/lighthouse/
 load-testing/results/
+
+# .NET build output and local tooling state
+bin/
+obj/
+TestResults/
+*.user
+.vs/

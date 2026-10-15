@@ -11,55 +11,39 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
-  check:
-    name: typecheck, lint and test
+  services:
+    name: build and test the .NET services
     runs-on: ubuntu-latest
-
-    # The integration tier runs against a real Postgres rather than a mocked client, so CI has to
-    # provide one. Without this service those tests skip, and a green run would prove less than it
-    # appears to.
-    services:
-      postgres:
-        image: postgres:17-alpine
-        env:
-          POSTGRES_USER: blotter
-          POSTGRES_PASSWORD: blotter
-          POSTGRES_DB: blotter
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U blotter -d blotter"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-
-      # The refresh token store and the rate limiter both live in Redis, and their behaviour under
-      # concurrency is the part worth testing, so the integration tier needs a real server.
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-
-    env:
-      DATABASE_URL: postgresql://blotter:blotter@localhost:5432/blotter?schema=public
-      TEST_DATABASE_URL: postgresql://blotter:blotter@localhost:5432/blotter?schema=public
-      REDIS_URL: redis://localhost:6379
-      TEST_REDIS_URL: redis://localhost:6379
-      # CI-only values. The env schema refuses anything under 32 characters, which is what stops a
-      # placeholder from quietly becoming a real signing key.
-      JWT_ACCESS_SECRET: ci-access-secret-0123456789abcdefghijklmnop
-      JWT_REFRESH_SECRET: ci-refresh-secret-0123456789abcdefghijklmnop
-
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore Blotter.slnx
+
+      # Warnings are errors in every project, so this step is also the analyzer and style gate.
+      - name: Build
+        run: dotnet build Blotter.slnx --configuration Release --no-restore
+
+      # The integration tiers start real SQL Server, RabbitMQ and Redis containers through
+      # Testcontainers on the runner's own Docker, so nothing here is mocked.
+      - name: Test
+        run: dotnet test --solution Blotter.slnx --configuration Release --no-build
+
+  contract:
+    name: validation parity with the shared schemas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -67,25 +51,138 @@ jobs:
       - name: Install
         run: npm ci
 
-      # Both apps import @blotter/shared from its build output, and the Prisma client is generated
-      # rather than committed, so neither typecheck nor tests can run until these two exist.
       - name: Build the shared contract
         run: npm run build:shared
 
-      - name: Generate the Prisma client
-        run: npm run db:generate
+      # The gateway's validators are tested against this fixture. If someone changes a Zod schema
+      # in the shared package without regenerating it, the .NET API would drift from the frontend.
+      - name: Check the Zod fixture is current
+        run: node scripts/export_zod_cases.mjs --check
+
+  frontend:
+    name: frontend typecheck, lint and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Build the shared contract
+        run: npm run build:shared
 
       - name: Typecheck
-        run: npm run typecheck
+        run: npm run typecheck --workspace frontend
 
       - name: Lint
-        run: npm run lint
+        run: npm run lint --workspace frontend
 
-      - name: Unit and route tests
-        run: npm test
+      - name: Unit tests
+        run: npm test --workspace frontend
 
-      - name: Apply migrations
-        run: npm run db:migrate
+  images:
+    name: build and scan the ${{ matrix.image }} image
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: gateway
+            dockerfile: services/gateway/Dockerfile
+            gate: '1'
+          - image: trades
+            dockerfile: services/trades/Dockerfile
+            gate: '1'
+          - image: realtime
+            dockerfile: services/realtime/Dockerfile
+            gate: '1'
+          # Reported but not yet gating: the web app's Next.js version has published advisories
+          # whose fix is a framework upgrade, which is its own change.
+          - image: frontend
+            dockerfile: frontend/Dockerfile
+            gate: '0'
+    steps:
+      - uses: actions/checkout@v7
 
-      - name: Integration tests against Postgres
-        run: npm run test:integration --workspace backend
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          tags: blotter/${{ matrix.image }}:ci
+          load: true
+          push: false
+
+      # Third-party actions are pinned to a commit, since a tag can be moved to other code.
+      - name: Scan for known vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: blotter/${{ matrix.image }}:ci
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: ${{ matrix.gate }}
+
+  secrets:
+    name: secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Pinned so .gitleaks.toml is read by the version it was written for.
+          GITLEAKS_VERSION: 8.24.3
+
+  e2e:
+    name: whole stack in compose, with the browser suite
+    runs-on: ubuntu-latest
+    needs: [services, frontend]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      # The same one command a deployment runs, with the development secrets compose falls back to.
+      - name: Start the stack
+        run: docker compose up --build --detach --wait --wait-timeout 600
+
+      - name: Install the browser
+        run: npx playwright install --with-deps chromium
+        working-directory: frontend
+
+      - name: Browser suite against the nginx edge
+        run: npm run test:e2e
+        env:
+          E2E_BASE_URL: http://localhost
+
+      - name: Keep the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: frontend/playwright-report
+          retention-days: 7
+
+      - name: Service logs
+        if: failure()
+        run: docker compose logs --no-color --timestamps
+
+      - name: Stop the stack
+        if: always()
+        run: docker compose down --volumes

@@ -11,7 +11,7 @@ import { chromium } from '@playwright/test';
 import lighthouse from 'lighthouse';
 import desktop_config from 'lighthouse/core/config/desktop-config.js';
 
-const ui = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
+const ui = process.env.E2E_BASE_URL ?? 'http://localhost';
 const password = process.env.SEED_USER_PASSWORD ?? 'FusionDemo!2026';
 const debugging_port = Number(process.env.LIGHTHOUSE_PORT ?? 9333);
 const out_dir = fileURLToPath(new URL('../lighthouse/', import.meta.url));

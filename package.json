@@ -10,8 +10,6 @@
   },
   "workspaces": [
     "shared",
-    "database",
-    "backend",
     "frontend"
   ],
   "scripts": {
@@ -19,24 +17,20 @@
     "stop": "docker compose down",
     "logs": "docker compose logs -f",
     "dev": "docker compose up --build",
-    "dev:deps": "docker compose up -d --wait database redis",
-    "dev:backend": "npm run dev --workspace backend",
     "dev:frontend": "npm run dev --workspace frontend",
-    "build": "npm run build:shared && node scripts/with_build_env.mjs run build --workspace backend && npm run build --workspace frontend",
+    "build": "npm run build:shared && npm run build --workspace frontend",
     "build:shared": "npm run build --workspace @blotter/shared",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "pretest": "npm run build:shared",
     "test": "npm run test --workspaces --if-present",
-    "pretest:integration": "npm run db:generate && npm run build:shared",
-    "test:integration": "node scripts/test_integration.mjs",
+    "test:services": "dotnet test --solution Blotter.slnx",
+    "pretest:contract": "npm run build:shared",
+    "test:contract": "node scripts/export_zod_cases.mjs --check",
     "test:e2e": "npm run test:e2e --workspace frontend",
     "test:load": "k6 run load-testing/api_load.js",
     "test:lighthouse": "npm run test:lighthouse --workspace frontend",
-    "test:all": "npm test && npm run test:integration && npm run test:e2e",
-    "db:generate": "node scripts/with_build_env.mjs run generate --workspace @blotter/database",
-    "db:migrate": "npm run migrate --workspace @blotter/database",
-    "db:status": "npm run migrate:status --workspace @blotter/database",
+    "test:all": "npm test && npm run test:contract && npm run test:services && npm run test:e2e",
     "capture:readme": "npm run capture:readme --workspace frontend"
   }
 }

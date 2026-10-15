@@ -21,3 +21,8 @@ Dockerfile
 **/Dockerfile
 .dockerignore
 **/.dockerignore
+
+# .NET build output, restored inside the image instead
+**/bin
+**/obj
+**/TestResults

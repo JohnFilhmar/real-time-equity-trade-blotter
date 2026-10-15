@@ -1,0 +1,5 @@
+root = true
+
+# EF Core writes these files. Code analysis reviews code people write, so it skips them.
+[**/Data/Migrations/*.cs]
+generated_code = true
