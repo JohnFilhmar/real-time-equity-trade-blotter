@@ -1,6 +1,6 @@
 # API reference
 
-Everything lives under `/api/v1`. Payloads are camelCase, matching the brief's sample data, while
+Everything lives under `/api/v1`. Payloads are camelCase, while
 query parameters are snake_case. A trade is addressed by its business identifier, `TRD-100001`,
 because that is the value a trader reads off the blotter.
 

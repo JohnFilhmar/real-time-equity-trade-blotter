@@ -5,7 +5,7 @@ connected window without a refresh.
 
 ![Two windows: a trade booked on the left arrives on the right without a refresh](docs/readme/two_windows.png)
 
-Built for the TP ICAP full stack take-home exercise. Next.js 16 and React 19 on the front. Behind
+Next.js 16 and React 19 on the front. Behind
 it, three ASP.NET Core services on .NET 10: a gateway, a trades service and a realtime service,
 over SQL Server, RabbitMQ and Redis, with nginx at the edge. One `docker-compose.yml` runs the lot.
 
@@ -21,7 +21,7 @@ development values.
 
 ```bash
 git clone <this repository>
-cd tp-icap-take-home-assessment
+cd real-time-equity-trade-blotter
 docker compose up --build -d --wait
 ```
 
@@ -103,7 +103,7 @@ in `.env` here, and restart.
 
 ## Where to find things
 
-| The brief asks for | Where it is |
+| Feature | Where it is |
 |---|---|
 | Trade blotter with sorting, filtering, refresh | <http://localhost>, `frontend/src/components/blotter/` |
 | Create, amend, cancel | The ticket at `frontend/src/components/trade/`, the rules in `services/trades/src/Blotter.Trades/Services/` and `Domain/` |
@@ -197,7 +197,7 @@ permissions; routes require the permission, never the role, and a trader may act
 trades. Access tokens are short-lived JWTs, refresh tokens rotate on every use, and a replayed
 refresh token ends the whole session family.
 
-**Amendment is a version, not a status,** over adding `AMENDED`. The brief allows `ACTIVE` and
+**Amendment is a version, not a status,** over adding `AMENDED`. A trade is only `ACTIVE` or
 `CANCELLED`, so an amendment increments `version`, writes an audit row, and the grid shows a `v2`
 pill. A stale version is refused with 409.
 
@@ -296,14 +296,12 @@ are the differences a client can see:
 
 ## Assumptions
 
-- A trade's `trader` comes from the access token, so you book as yourself. The brief's sample
-  payload shows `trader` as a client field.
-- The brief states the trade model twice and the two disagree. The model carries every field from
-  both, plus `version`, `currency`, `createdAt` and `updatedAt`.
+- A trade's `trader` comes from the access token, so you book as yourself and a client cannot
+  send it.
 - The browser reaches only nginx. Its public address has to be in `PUBLIC_ORIGIN`, because the hub
   checks the origin of every connection.
-- The demo accounts share a documented password. They exist so a reviewer can sign in to a
-  throwaway stack, and nothing about that should survive a real deployment.
+- The demo accounts share a documented password. They exist so whoever runs the stack can sign
+  in to it, and nothing about that should survive a real deployment.
 - Sessions live in Redis without persistence, so a Redis restart signs everybody out.
 - The seed skips weekends but not exchange holidays, since a real calendar is per venue.
 - All times are shown in UTC, because a session runs on the venue's clock, not the viewer's.
@@ -325,18 +323,18 @@ are the differences a client can see:
   is its own change, so CI reports the web image's scan without failing on it until then.
 - **The React Compiler is off.** TanStack Table v8 returns functions it cannot memoise.
 - **Text filters match case-insensitive substrings,** which forgoes plain index seeks on those
-  columns. Acceptable at the dataset size the brief describes.
+  columns. Acceptable at the seeded dataset's size.
 - **The e2e suite shares sign-ins** rather than isolating every test, because the gateway limits
   credential requests to ten a minute per address. Each test resets the page instead.
 - **No market data feed.** Marks are a simulated walk, and the P&L is real arithmetic on simulated
   prices.
-- **No column resizing, reordering, grouping or CSV export.** The brief asks for sorting and basic
-  filtering.
+- **No column resizing, reordering, grouping or CSV export.** The grid sorts and filters, and
+  nothing more.
 
 ## AI usage
 
 AI-assisted development was used throughout, under a rule that no agent decides anything about the
 system. Which tools, how, and where suggestions were taken or refused is in
 [`docs/ai_usage_report.md`](docs/ai_usage_report.md). The prompts are in
-[`docs/prompt_log/`](docs/prompt_log/index.md), including the brief for the .NET rebuild and the
+[`docs/prompt_log/`](docs/prompt_log/index.md), including the instructions for the .NET rebuild and the
 decisions taken on it.

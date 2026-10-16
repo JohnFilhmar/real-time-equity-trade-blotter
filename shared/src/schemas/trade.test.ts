@@ -60,7 +60,7 @@ function messages_for(schema: ZodType, input: unknown, field: string): string[] 
 }
 
 describe('trade_schema', () => {
-  it('accepts the payload shape the brief supplies', () => {
+  it('accepts a complete trade payload', () => {
     expect(trade_schema.safeParse(valid_trade).success).toBe(true);
   });
 
@@ -135,7 +135,7 @@ describe('trade_schema', () => {
     expect(trade_schema.safeParse({ ...valid_trade, currency: 'EUR' }).success).toBe(false);
   });
 
-  it('rejects a status outside the two the brief allows', () => {
+  it('rejects a status other than ACTIVE or CANCELLED', () => {
     expect(trade_schema.safeParse({ ...valid_trade, status: 'AMENDED' }).success).toBe(false);
   });
 

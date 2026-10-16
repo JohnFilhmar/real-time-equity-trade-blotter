@@ -2,7 +2,7 @@
 # Build context is the repository root: the service builds against the shared libraries and the
 # repository-wide build settings. docker build -f services/gateway/Dockerfile .
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:e70cdb7f80b0348f5cb85f19a8f670fca061f033d57eed12fa003d58b0e06317 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:0d99ebf1ccad15037b5c98c9fe8979d6b8dbac23812feae2277a0b277b5c5ffa AS build
 WORKDIR /src
 
 # Restore from the project files alone, so a source change reuses the package layer.
@@ -20,7 +20,7 @@ RUN dotnet publish services/gateway/src/Blotter.Gateway/Blotter.Gateway.csproj \
 
 # Chiseled: no shell, no package manager, a non-root user. The -extra variant carries ICU, which
 # SqlClient needs for its collation handling.
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled-extra@sha256:00e0ad6a7ef8c0c1391b87f05c7ac757a15740455688f2bfcd146a3f4b987efd AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled-extra@sha256:3ed6558056b54d5c9dfefb7ff473728e022ff2bf1d976cbf8ee07b05ec594374 AS runtime
 WORKDIR /app
 COPY --from=build /app ./
 

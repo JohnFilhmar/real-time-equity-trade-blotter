@@ -66,8 +66,8 @@ that the server will refuse.
 
 ## Conventions
 
-**Field names are camelCase.** The brief supplies its sample payloads that way, so a reviewer
-comparing a response against their own sample sees identical keys. Database columns stay snake_case,
+**Field names are camelCase.** Clients read the JSON keys as they arrive, with no mapping layer.
+Database columns stay snake_case,
 mapped column by column in each service's EF Core model.
 
 **Instruments and counterparties are a closed list.** `symbol` is an enum over the twelve names in

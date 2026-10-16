@@ -1,6 +1,6 @@
 # Project conventions
 
-Repo: real-time equity trade blotter (TP ICAP take-home exercise).
+Repo: real-time equity trade blotter.
 
 These conventions override `~/.claude/CLAUDE.md` where they disagree. Everything the global file
 says that is not restated here still applies, including `snake_case` naming, the ban on `any`,
@@ -22,9 +22,8 @@ backend, `shared` and `database` stay `snake_case`.
 
 ## Prompt log
 
-The brief asks for a file of **significant prompts** with **relevant responses, summarised**, and
-says plainly: *"We are not interested in exhaustive logs; a representative sample is sufficient."*
-Write the log to that standard, not to a transcript standard.
+The log records **significant prompts** with **relevant responses, summarised**. A representative
+sample is enough. Write it to that standard, not to a transcript standard.
 
 ### The rule
 
@@ -68,8 +67,8 @@ agent builds an artifact and links it. The outcome stays two sentences and point
 Do not escalate for routine work whose result is visible in the diff.
 
 **Artifacts are committed at `docs/artifacts/<snake_case_slug>.html`,** and the entry links that
-relative path. The assessor receives a git repository and nothing else, so an entry linking only to
-a published Artifact URL, which is private to the author's account, hands them a dead link.
+relative path. Someone reading the repository cannot open a published Artifact URL, which is private
+to the author's account, so an entry linking only to one hands them a dead link.
 Publishing as well is fine; link the in-repo path first.
 
 ### Subagents
@@ -79,7 +78,7 @@ the dispatcher writes the entry under the subagent's slug and marks it `(logged 
 
 ### Never
 
-- Paraphrase or tidy a prompt. The assessor is reading the prompts that were really used.
+- Paraphrase or tidy a prompt. The log exists to show the prompts that were really used.
 - Edit or delete a past entry. Correct it by appending a new one.
 - Write three sentences where the rule says two. That is the escalation rule firing: build the
   artifact instead.

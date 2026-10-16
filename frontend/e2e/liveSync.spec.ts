@@ -1,6 +1,6 @@
 import { book_trade, expect, open_trade, test } from './test-utils';
 
-// The brief's literal acceptance criterion: a change made by one client is visible to every other
+// The core acceptance criterion: a change made by one client is visible to every other
 // connected client without a page refresh. Two browser contexts, two people, two sockets.
 test.describe('live sync between two clients @critical', () => {
   test('a trade booked by one trader appears on the other trader\'s blotter, then follows its amend and cancel', async ({ desk }) => {
