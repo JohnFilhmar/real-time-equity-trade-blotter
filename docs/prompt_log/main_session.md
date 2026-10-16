@@ -1164,3 +1164,16 @@ the version pinned in CI, and the test awaits its observer before going back onl
 `docs/ai_usage_report.md` verbatim, deleted `take-home-assessment.md`, renamed the package, compose
 project and image tags from `tp-icap` to `trade-blotter`, and had every other doc, comment and test
 title reworded so it no longer cites the company, the brief, a grader or a rubric.
+
+### 2026-10-16T00:05Z - fix_dotnet_security_advisories
+
+**Prompt:** "resolve any issues from the pr before we merge it"
+
+> Selections:
+>
+> - Fix placement: "Own commit on PR #8 (Recommended)"
+> - Pkcs pin: "10.0.13 (Recommended)"
+
+**Outcome:** PR #8's red CI came from .NET advisories published after PR #7, not from the docs change.
+The owner had the 10.0.12 packages, the `dotnet-ef` tool and the three .NET base image digests moved
+to 10.0.13, with `System.Security.Cryptography.Pkcs` pinned to 10.0.13 through transitive pinning.
